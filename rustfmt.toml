@@ -1,0 +1,6 @@
+newline_style = "Unix"
+tab_spaces = 4
+# single_line_if_else = true
+# combine_control_expr = true
+# control_brace_style = "AlwaysSameLine"
+max_width = 120

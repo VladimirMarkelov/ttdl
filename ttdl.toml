@@ -1,0 +1,42 @@
+# A TTDL config. It can be in the current working directory - to support
+#   ttdl settings on per project basis. Global user config must be in:
+# * Linux: ~/.config/ttdl.toml
+# * Windows: c:\Users\<username>\AppData\Roaming\ttdl.toml
+# * MacOS: /Users/<username>/Library/Preferences/ttdl.toml
+#
+# available colors: black, red, dark_red, green, dark_green,
+#   yellow, dark_yellow, blue, dark_blue, magenta, dark_magenta,
+#   cyan, dark_cyan, grey, white
+# If a value is not any of above colors it defaults to 'white'
+[colors]
+# overdue incomplete todos
+overdue = "red"
+# todos with overdue threshold date
+theshold = "dark_red"
+# todos with highest priority (A)
+top = "red"
+# important todos - with a priority equal to or higher than `ranges.important`
+#important = "white"
+# done todos
+done = "grey"
+# todos that are due today
+today = "yellow"
+# todos that are due in and less in `ranges.soon` days
+#soon = "white"
+
+[ranges]
+# TTDL filter `soon` selects todos that are due in and less than in `soon` days
+# 0 - disable `soon` feature
+soon = 0
+# todos that have priority equal or higher than `important` are displayed in
+#   in `colors.important` font color.
+# Priority is a chracter from 'a'(highest priority) through 'z'. Setting
+#   `important` to any other value disables the feature
+important = ""
+
+[global]
+# set global todo.txt filename. It works as environment variable TTDL_FILENAME,
+#   but environment variable overrides config setting
+# filename = "./"
+# automatically set creation date to today if it is not set when adding a new todo
+# creation_date_auto = true

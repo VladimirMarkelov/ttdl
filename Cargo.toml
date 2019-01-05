@@ -1,0 +1,29 @@
+[package]
+name = "ttdl"
+version = "0.3.0"
+authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
+edition = "2018"
+keywords = ["todotxt", "terminal", "cli", "todo"]
+license = "MIT"
+description = "TTDL - Terminal ToDo List manager"
+readme = "README.md"
+repository = "https://github.com/VladimirMarkelov/ttdl"
+
+[profile.release]
+lto = true
+
+[dependencies]
+todo_lib = "0.2.0"
+getopts = "0.2"
+chrono = "^0.4"
+crossterm = "=0.5.1"
+textwrap = "0.11"
+lazy_static = "1.0"
+caseless = "0.2.1"
+dirs = "1.0"
+toml = "0.4"
+atty = "0.2"
+
+[dependencies.todo-txt]
+version = "^1.0"
+features = ["extended"]
