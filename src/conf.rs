@@ -9,6 +9,7 @@ use std::str::FromStr;
 use termcolor::{Color, ColorSpec};
 
 use crate::fmt;
+use crate::tml;
 use dirs;
 use term_size;
 use todo_lib::{terr, tfilter, todo, tsort};
@@ -528,13 +529,8 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     conf.done_file = conf.todo_file.with_file_name(DONE_FILE);
 }
 
-fn read_color(info: &toml::Value, name: &str) -> ColorSpec {
-    let c = match info.get(name) {
-        Some(cv) => cv,
-        None => return fmt::default_color(),
-    };
-
-    let s = match c.as_str() {
+fn read_color(clr: &Option<String>) -> ColorSpec {
+    let s = match clr {
         Some(ss) => ss,
         None => return fmt::default_color(),
     };
@@ -542,72 +538,58 @@ fn read_color(info: &toml::Value, name: &str) -> ColorSpec {
     color_from_str(s)
 }
 
-fn update_colors_from_conf(cls: &toml::Value, conf: &mut Conf) {
-    conf.fmt.colors.overdue = read_color(cls, "overdue");
-    conf.fmt.colors.top = read_color(cls, "top");
-    conf.fmt.colors.important = read_color(cls, "important");
-    conf.fmt.colors.today = read_color(cls, "today");
-    conf.fmt.colors.soon = read_color(cls, "soon");
-    conf.fmt.colors.done = read_color(cls, "done");
-    conf.fmt.colors.threshold = read_color(cls, "threshold");
+fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) {
+    conf.fmt.colors.overdue = read_color(&tc.colors.overdue);
+    conf.fmt.colors.top = read_color(&tc.colors.top);
+    conf.fmt.colors.important = read_color(&tc.colors.important);
+    conf.fmt.colors.today = read_color(&tc.colors.today);
+    conf.fmt.colors.soon = read_color(&tc.colors.soon);
+    conf.fmt.colors.done = read_color(&tc.colors.done);
+    conf.fmt.colors.threshold = read_color(&tc.colors.threshold);
 
     if conf.fmt.color_term == fmt::TermColorType::Auto {
-        if let Some(cv) = cls.get("color_term") {
-            if let Some(cs) = cv.as_str() {
-                conf.fmt.color_term = match cs.to_lowercase().as_str() {
-                    "ansi" => fmt::TermColorType::Ansi,
-                    "none" => fmt::TermColorType::None,
-                    _ => fmt::TermColorType::Auto,
-                }
+        if let Some(cs) = &tc.colors.color_term {
+            conf.fmt.color_term = match cs.to_lowercase().as_str() {
+                "ansi" => fmt::TermColorType::Ansi,
+                "none" => fmt::TermColorType::None,
+                _ => fmt::TermColorType::Auto,
             }
         }
     }
 }
 
-fn update_ranges_from_conf(rng: &toml::Value, conf: &mut Conf) {
-    if let Some(imp_v) = rng.get("important") {
-        if let Some(imp) = imp_v.as_str() {
-            if imp.len() == 1 {
-                let lowst = imp.to_lowercase();
-                let p = lowst.as_bytes()[0];
-                if p >= b'a' || p <= b'z' {
-                    conf.fmt.colors.important_limit = p - b'a';
-                }
+fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
+    if let Some(imp) = &tc.ranges.important {
+        if imp.len() == 1 {
+            let lowst = imp.to_lowercase();
+            let p = lowst.as_bytes()[0];
+            if p >= b'a' || p <= b'z' {
+                conf.fmt.colors.important_limit = p - b'a';
             }
         }
     }
 
-    if let Some(soon_v) = rng.get("soon") {
-        if let Some(soon) = soon_v.as_integer() {
-            if soon > 0 && soon < 256 {
-                conf.fmt.colors.soon_days = soon as u8;
-            }
+    if let Some(soon) = tc.ranges.soon {
+        if soon > 0 && soon < 256 {
+            conf.fmt.colors.soon_days = soon as u8;
         }
     }
 }
 
-fn update_global_from_conf(global: &toml::Value, conf: &mut Conf) {
-    if let Some(fn_v) = global.get("filename") {
-        if let Some(fname) = fn_v.as_str() {
-            if !fname.is_empty() {
-                conf.todo_file = PathBuf::from(fname);
-            }
+fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
+    if let Some(fname) = &tc.global.filename {
+        if !fname.is_empty() {
+            conf.todo_file = PathBuf::from(fname);
         }
     }
-    if let Some(crd) = global.get("creation_date_auto") {
-        if let Some(auto_date) = crd.as_bool() {
-            conf.todo.auto_create_date = auto_date;
-        }
+    if let Some(auto_date) = tc.global.creation_date_auto {
+        conf.todo.auto_create_date = auto_date;
     }
-    if conf.fmt.fields.is_empty() {
-        if let Some(fv) = global.get("fields") {
-            if let Some(fs) = fv.as_str() {
-                if fs.find(',').is_some() {
-                    conf.fmt.fields = fs.split(',').map(|s| s.to_string()).collect();
-                } else if fs.find(':').is_some() {
-                    conf.fmt.fields = fs.split(':').map(|s| s.to_string()).collect();
-                }
-            }
+    if let Some(fs) = &tc.global.fields {
+        if fs.find(',').is_some() {
+            conf.fmt.fields = fs.split(',').map(|s| s.to_string()).collect();
+        } else if fs.find(':').is_some() {
+            conf.fmt.fields = fs.split(':').map(|s| s.to_string()).collect();
         }
     }
 }
@@ -639,22 +621,17 @@ fn load_from_config(conf: &mut Conf) {
         return;
     }
 
-    let info: toml::Value = match toml::from_str(&data) {
+    let info_toml: tml::Conf = match toml::from_str(&data) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to parse config file: {:?}", e);
             return;
         }
     };
-    if let Some(cls) = info.get("colors") {
-        update_colors_from_conf(&cls, conf);
-    }
-    if let Some(rng) = info.get("ranges") {
-        update_ranges_from_conf(&rng, conf);
-    }
-    if let Some(global) = info.get("global") {
-        update_global_from_conf(&global, conf);
-    }
+
+    update_colors_from_conf(&info_toml, conf);
+    update_ranges_from_conf(&info_toml, conf);
+    update_global_from_conf(&info_toml, conf);
 }
 
 pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {

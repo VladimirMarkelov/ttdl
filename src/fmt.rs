@@ -478,10 +478,12 @@ fn print_custom_info(stdout: &mut StandardStream, task: &todo_txt::task::Extende
 
 pub fn print_header(c: &Conf) {
     match c.fmt {
-        Format::Full => if c.fields.is_empty() {
-            print_full_header(c)
-        } else {
-            print_custom_header(c);
+        Format::Full => {
+            if c.fields.is_empty() {
+                print_full_header(c)
+            } else {
+                print_custom_header(c);
+            }
         }
         Format::Short => print_short_header(c),
     };
@@ -506,10 +508,12 @@ fn print_body_selected(
         let print = print && (*id < tasks.len());
         if print {
             match c.fmt {
-                Format::Full => if c.fields.is_empty() {
-                    print_full_info(stdout, &tasks[*id], *id + 1, c);
-                } else {
-                    print_custom_info(stdout, &tasks[*id], *id + 1, c);
+                Format::Full => {
+                    if c.fields.is_empty() {
+                        print_full_info(stdout, &tasks[*id], *id + 1, c);
+                    } else {
+                        print_custom_info(stdout, &tasks[*id], *id + 1, c);
+                    }
                 }
                 Format::Short => print_short_info(stdout, &tasks[*id], *id + 1, c),
             }
@@ -532,10 +536,12 @@ fn print_body_all(
         };
         if print {
             match c.fmt {
-                Format::Full => if c.fields.is_empty() {
-                    print_full_info(stdout, t, id + 1, c);
-                } else {
-                    print_custom_info(stdout, t, id + 1, c);
+                Format::Full => {
+                    if c.fields.is_empty() {
+                        print_full_info(stdout, t, id + 1, c);
+                    } else {
+                        print_custom_info(stdout, t, id + 1, c);
+                    }
                 }
                 Format::Short => print_short_info(stdout, t, id + 1, c),
             }
