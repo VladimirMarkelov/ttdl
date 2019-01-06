@@ -16,13 +16,14 @@ lto = true
 todo_lib = "0.2.0"
 getopts = "0.2"
 chrono = "^0.4"
-crossterm = "=0.5.1"
 textwrap = "0.11"
 lazy_static = "1.0"
 caseless = "0.2.1"
 dirs = "1.0"
 toml = "0.4"
 atty = "0.2"
+term_size = "0.3.1"
+termcolor = "1.0.4"
 
 [dependencies.todo-txt]
 version = "^1.0"

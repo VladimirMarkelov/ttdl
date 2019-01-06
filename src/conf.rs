@@ -6,10 +6,11 @@ use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
+use termcolor::{Color, ColorSpec};
 
 use crate::fmt;
-use crossterm;
 use dirs;
+use term_size;
 use todo_lib::{terr, tfilter, todo, tsort};
 use toml;
 
@@ -473,7 +474,10 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
     }
     c.human = matches.opt_present("human");
     c.atty = atty::is(Stream::Stdout);
-    c.colored = !matches.opt_present("no-colors") && c.atty;
+
+    if matches.opt_present("no-colors") || !c.atty {
+        c.color_term = fmt::TermColorType::None;
+    }
 
     if matches.opt_present("compact") {
         c.compact = true;
@@ -490,9 +494,9 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
     } else if c.atty {
         // TODO: sane limit?
         if c.width > 2000 || c.width < 20 {
-            let term = crossterm::terminal::terminal();
-            let (w, _) = term.terminal_size();
-            c.width = w;
+            if let Some((w, _)) = term_size::dimensions() {
+                c.width = (w % 65536) as u16;
+            }
         }
     }
 
@@ -525,37 +529,38 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     conf.done_file = conf.todo_file.with_file_name(DONE_FILE);
 }
 
-fn read_color(info: &toml::Value, name: &str) -> Option<crossterm::Color> {
-    let c = info.get(name)?;
-    let s = c.as_str()?;
-    match crossterm::Color::from_str(s) {
-        Ok(clr) => Some(clr),
-        Err(_) => None,
-    }
+fn read_color(info: &toml::Value, name: &str) -> ColorSpec {
+    let c = match info.get(name) {
+        Some(cv) => cv,
+        None => return fmt::default_color(),
+    };
+
+    let s = match c.as_str() {
+        Some(ss) => ss,
+        None => return fmt::default_color(),
+    };
+
+    color_from_str(s)
 }
 
 fn update_colors_from_conf(info: &toml::Value, conf: &mut Conf) {
     if let Some(cls) = info.get("colors") {
-        if let Some(clr) = read_color(cls, "overdue") {
-            conf.fmt.colors.overdue = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "top") {
-            conf.fmt.colors.top = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "important") {
-            conf.fmt.colors.important = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "today") {
-            conf.fmt.colors.today = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "soon") {
-            conf.fmt.colors.soon = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "done") {
-            conf.fmt.colors.done = Some(clr);
-        }
-        if let Some(clr) = read_color(cls, "threshold") {
-            conf.fmt.colors.threshold = Some(clr);
+        conf.fmt.colors.overdue = read_color(cls, "overdue");
+        conf.fmt.colors.top = read_color(cls, "top");
+        conf.fmt.colors.important = read_color(cls, "important");
+        conf.fmt.colors.today = read_color(cls, "today");
+        conf.fmt.colors.soon = read_color(cls, "soon");
+        conf.fmt.colors.done = read_color(cls, "done");
+        conf.fmt.colors.threshold = read_color(cls, "threshold");
+
+        if let Some(cv) = cls.get("color_term") {
+            if let Some(cs) = cv.as_str() {
+                conf.fmt.color_term = match cs.to_lowercase().as_str() {
+                    "ansi" => fmt::TermColorType::Ansi,
+                    "none" => fmt::TermColorType::None,
+                    _ => fmt::TermColorType::Auto,
+                }
+            }
         }
     }
 }
@@ -856,4 +861,50 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
 
     // TODO: validate
     Ok(conf)
+}
+
+fn color_from_str(s: &str) -> ColorSpec {
+    let mut spc = ColorSpec::new();
+
+    let lows = s.to_lowercase();
+    for clr in lows.split_whitespace() {
+        match clr {
+            "black" => {
+                spc.set_fg(Some(Color::Black));
+            }
+            "white" => {
+                spc.set_fg(Some(Color::White));
+            }
+            "red" => {
+                spc.set_fg(Some(Color::Red));
+            }
+            "green" => {
+                spc.set_fg(Some(Color::Green));
+            }
+            "yellow" => {
+                spc.set_fg(Some(Color::Yellow));
+            }
+            "blue" => {
+                spc.set_fg(Some(Color::Blue));
+            }
+            "cyan" => {
+                spc.set_fg(Some(Color::Cyan));
+            }
+            "magenta" => {
+                spc.set_fg(Some(Color::Magenta));
+            }
+            "bright" | "intense" => {
+                spc.set_intense(true);
+            }
+            "underline" => {
+                spc.set_underline(true);
+            }
+            "bold" => {
+                spc.set_bold(true);
+            }
+            _ => {}
+        };
+    }
+
+    spc
 }

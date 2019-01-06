@@ -4,23 +4,33 @@
 # * Windows: c:\Users\<username>\AppData\Roaming\ttdl.toml
 # * MacOS: /Users/<username>/Library/Preferences/ttdl.toml
 #
-# available colors: black, red, dark_red, green, dark_green,
-#   yellow, dark_yellow, blue, dark_blue, magenta, dark_magenta,
-#   cyan, dark_cyan, grey, white
-# If a value is not any of above colors it defaults to 'white'
+# available colors (names are case-insensitive):
+#   black, red, green, yellow, blue, magenta, cyan, white
+# every color may have upto 3 modifiers:
+#   bold, underline, bright(or intense)
+# the first two modifiers works only in ANSI-compatible terminal.
+# To make them work on Windows, use ConEmu or Cmder instead
+#   of standard cmd or PowerShell.
+# If a color value cannot be parsed it defaults to 'white'
 [colors]
+# color_term: terminal color support
+#   auto: standard console API for Windows, ANSI for *nix OSes
+#   ansi: use ANSI-compatible colors (to make it work on Windows you have to
+#       use a thirdparty console emulator like ConEmu or Cmder
+#   none: disable colors
+color_term = "ansi"
 # overdue incomplete todos
-overdue = "red"
+overdue = "bright red"
 # todos with overdue threshold date
-theshold = "dark_red"
+threshold = "red"
 # todos with highest priority (A)
-top = "red"
+top = "bright red"
 # important todos - with a priority equal to or higher than `ranges.important`
 #important = "white"
 # done todos
-done = "grey"
+done = "bright black"
 # todos that are due today
-today = "yellow"
+today = "bright yellow"
 # todos that are due in and less in `ranges.soon` days
 #soon = "white"
 
