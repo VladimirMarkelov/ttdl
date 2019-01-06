@@ -26,13 +26,13 @@ threshold = "red"
 # todos with highest priority (A)
 top = "bright red"
 # important todos - with a priority equal to or higher than `ranges.important`
-#important = "white"
+important = "white"
 # done todos
 done = "bright black"
 # todos that are due today
 today = "bright yellow"
 # todos that are due in and less in `ranges.soon` days
-#soon = "white"
+soon = "white"
 
 [ranges]
 # TTDL filter `soon` selects todos that are due in and less than in `soon` days
@@ -48,5 +48,10 @@ important = ""
 # set global todo.txt filename. It works as environment variable TTDL_FILENAME,
 #   but environment variable overrides config setting
 # filename = "./"
+
 # automatically set creation date to today if it is not set when adding a new todo
 # creation_date_auto = true
+
+# fields that are displayed by default. Available fields:
+#   pri, done, due, created, finished, thr
+# fields = "pri,due,done"
