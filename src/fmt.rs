@@ -91,7 +91,7 @@ impl Default for Colors {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TermColorType {
     None,
     Auto,

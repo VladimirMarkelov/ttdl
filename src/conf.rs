@@ -553,12 +553,14 @@ fn update_colors_from_conf(info: &toml::Value, conf: &mut Conf) {
         conf.fmt.colors.done = read_color(cls, "done");
         conf.fmt.colors.threshold = read_color(cls, "threshold");
 
-        if let Some(cv) = cls.get("color_term") {
-            if let Some(cs) = cv.as_str() {
-                conf.fmt.color_term = match cs.to_lowercase().as_str() {
-                    "ansi" => fmt::TermColorType::Ansi,
-                    "none" => fmt::TermColorType::None,
-                    _ => fmt::TermColorType::Auto,
+        if conf.fmt.color_term == fmt::TermColorType::Auto {
+            if let Some(cv) = cls.get("color_term") {
+                if let Some(cs) = cv.as_str() {
+                    conf.fmt.color_term = match cs.to_lowercase().as_str() {
+                        "ansi" => fmt::TermColorType::Ansi,
+                        "none" => fmt::TermColorType::None,
+                        _ => fmt::TermColorType::Auto,
+                    }
                 }
             }
         }
