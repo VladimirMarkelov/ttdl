@@ -1,2 +1,8 @@
+2019-01-06 - version 0.3.1
+[+] New option in config: `fields` - set default displayed todo fields.
+    Overrideable by command line options `short` and `fields`.
+[*] Changed the way of reading TOML config. Now all its sections must present
+    in the file, but all options inside sections are optional
+
 2019-01-04 - version 0.3.0
 [!] First release

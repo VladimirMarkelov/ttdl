@@ -4,6 +4,9 @@
 # * Windows: c:\Users\<username>\AppData\Roaming\ttdl.toml
 # * MacOS: /Users/<username>/Library/Preferences/ttdl.toml
 #
+# All section must exists in the custom configuration file, but all options
+#   inside every section are optional.
+#
 # available colors (names are case-insensitive):
 #   black, red, green, yellow, blue, magenta, cyan, white
 # every color may have upto 3 modifiers:
@@ -16,7 +19,7 @@
 # color_term: terminal color support
 #   auto: standard console API for Windows, ANSI for *nix OSes
 #   ansi: use ANSI-compatible colors (to make it work on Windows you have to
-#       use a thirdparty console emulator like ConEmu or Cmder
+#       use a third-party console emulator like ConEmu or Cmder
 #   none: disable colors
 color_term = "ansi"
 # overdue incomplete todos
@@ -40,7 +43,7 @@ soon = "white"
 soon = 0
 # todos that have priority equal or higher than `important` are displayed in
 #   in `colors.important` font color.
-# Priority is a chracter from 'a'(highest priority) through 'z'. Setting
+# Priority is a character from 'a'(highest priority) through 'z'. Setting
 #   `important` to any other value disables the feature
 important = ""
 
