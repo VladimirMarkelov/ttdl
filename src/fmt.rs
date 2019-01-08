@@ -71,6 +71,7 @@ fn default_threshold_color() -> ColorSpec {
 pub(crate) fn default_color() -> ColorSpec {
     let mut spc = ColorSpec::new();
     spc.set_fg(Some(Color::White));
+    spc.set_intense(true);
     spc
 }
 impl Default for Colors {

@@ -1,3 +1,7 @@
+2019-01-07 - version 0.3.2
+[+] New option: `version` - show application version
+[*] Default color is bright white instead of bright black
+
 2019-01-06 - version 0.3.1
 [+] New option in config: `fields` - set default displayed todo fields.
     Overrideable by command line options `short` and `fields`.

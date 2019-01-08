@@ -746,6 +746,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "done",
         "Use file of completed todos - done.txt. In this mode the only available command is 'list'",
     );
+    opts.optflag("", "version", "Show TTDL version");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -756,6 +757,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         }
     };
 
+    if matches.opt_present("version") {
+        let version = env!("CARGO_PKG_VERSION");
+        println!("TTDL Version {}", version);
+        exit(0);
+    }
+    // TODO: matches.empty -> list, not empty+no_command = { subj? add : list }
     if matches.opt_present("h") || matches.free.is_empty() {
         print_usage(&program, &opts);
         exit(0);
