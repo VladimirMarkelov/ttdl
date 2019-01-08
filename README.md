@@ -1,5 +1,6 @@
 # TTDL (Terminal ToDo List)
 
+![](https://travis-ci.com/VladimirMarkelov/ttdl.svg?branch=master)
 [![](https://img.shields.io/crates/v/ttdl.svg)](https://crates.io/crates/ttdl)
 
 A CLI tool to manage todo lists in (todo.txt format)[http://todotxt.org/]. A short demo of TTDL in action:

@@ -93,7 +93,7 @@ fn task_add(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
         std::process::exit(1);
     }
 
-    println!("Added todo: {}", id);
+    println!("Added todo:");
     fmt::print_header(&conf.fmt);
     fmt::print_todos(&tasks, &[id], &[true], &conf.fmt, false);
     if let Err(e) = todo::save(&tasks, Path::new(&conf.todo_file)) {
