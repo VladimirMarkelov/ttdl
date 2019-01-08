@@ -5,7 +5,6 @@ use textwrap;
 use todo_lib::todo;
 use todo_txt;
 
-const SEPARATOR: &str = "----------------------------------------------------";
 const REL_WIDTH: usize = 12;
 const REL_COMPACT_WIDTH: usize = 3;
 
@@ -409,33 +408,6 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     }
 }
 
-fn print_full_header(c: &Conf) {
-    print_header_line(c, &["done", "pri", "created", "finished", "due", "thr"]);
-}
-
-fn print_short_header(c: &Conf) {
-    print_header_line(c, &["done", "pri"]);
-}
-
-fn print_custom_header(c: &Conf) {
-    let fields: Vec<&str> = c.fields.iter().map(|s| s.as_str()).collect();
-    print_header_line(c, &fields);
-}
-
-fn print_full_info(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf) {
-    print_line(
-        stdout,
-        task,
-        id,
-        c,
-        &["done", "pri", "created", "finished", "due", "thr"],
-    );
-}
-
-fn print_short_info(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf) {
-    print_line(stdout, task, id, c, &["done", "pri"]);
-}
-
 fn format_days(num: i64, compact: bool) -> String {
     let num = if num < 0 { -num } else { num };
     match num {
@@ -471,29 +443,29 @@ fn format_relative_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
     (format!("{:wid$} ", v, wid = width), diff)
 }
 
-fn print_custom_info(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf) {
-    let fields: Vec<&str> = c.fields.iter().map(|s| s.as_str()).collect();
-    print_line(stdout, task, id, c, &fields);
-}
-
-pub fn print_header(c: &Conf) {
+fn field_list(c: &Conf) -> Vec<&str> {
     match c.fmt {
         Format::Full => {
             if c.fields.is_empty() {
-                print_full_header(c)
+                vec!["done", "pri", "created", "finished", "due", "thr"]
             } else {
-                print_custom_header(c);
+                let fields: Vec<&str> = c.fields.iter().map(|s| s.as_str()).collect();
+                fields
             }
         }
-        Format::Short => print_short_header(c),
-    };
-    let uwidth = c.width as usize;
-    if c.atty && SEPARATOR.len() > uwidth {
-        let slice = &SEPARATOR[..uwidth];
-        println!("{}", slice);
-    } else {
-        println!("{}", SEPARATOR);
+        Format::Short => vec!["done", "pri"],
     }
+}
+
+fn header_len(c: &Conf, flist: &[&str]) -> usize {
+    let (other, _) = calc_width(c, flist);
+    other + "Subject".len() + 1
+}
+
+pub fn print_header(c: &Conf) {
+    let flist = field_list(c);
+    print_header_line(c, &flist);
+    println!("{}", "-".repeat(header_len(c, &flist)));
 }
 
 fn print_body_selected(
@@ -503,20 +475,12 @@ fn print_body_selected(
     updated: &todo::ChangedSlice,
     c: &Conf,
 ) {
+    let flist = field_list(c);
     for (i, id) in selected.iter().enumerate() {
         let print = updated.is_empty() || (i < updated.len() && updated[i]);
         let print = print && (*id < tasks.len());
         if print {
-            match c.fmt {
-                Format::Full => {
-                    if c.fields.is_empty() {
-                        print_full_info(stdout, &tasks[*id], *id + 1, c);
-                    } else {
-                        print_custom_info(stdout, &tasks[*id], *id + 1, c);
-                    }
-                }
-                Format::Short => print_short_info(stdout, &tasks[*id], *id + 1, c),
-            }
+            print_line(stdout, &tasks[*id], *id + 1, c, &flist);
         }
     }
 }
@@ -528,6 +492,7 @@ fn print_body_all(
     updated: &todo::ChangedSlice,
     c: &Conf,
 ) {
+    let flist = field_list(c);
     for (i, t) in tasks.iter().enumerate() {
         let (id, print) = if i < selected.len() {
             (selected[i], updated[i])
@@ -535,28 +500,14 @@ fn print_body_all(
             (0, false)
         };
         if print {
-            match c.fmt {
-                Format::Full => {
-                    if c.fields.is_empty() {
-                        print_full_info(stdout, t, id + 1, c);
-                    } else {
-                        print_custom_info(stdout, t, id + 1, c);
-                    }
-                }
-                Format::Short => print_short_info(stdout, t, id + 1, c),
-            }
+            print_line(stdout, t, id + 1, c, &flist);
         }
     }
 }
 
 pub fn print_footer(tasks: &todo::TaskSlice, selected: &todo::IDSlice, updated: &todo::ChangedSlice, c: &Conf) {
-    let uwidth = c.width as usize;
-    if c.atty && SEPARATOR.len() > uwidth {
-        let slice = &SEPARATOR[..uwidth];
-        println!("{}", slice);
-    } else {
-        println!("{}", SEPARATOR);
-    }
+    let flist = field_list(c);
+    println!("{}", "-".repeat(header_len(c, &flist)));
 
     if updated.is_empty() && !selected.is_empty() {
         println!("{} todos (of {} total)", selected.len(), c.max);
