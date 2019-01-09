@@ -762,8 +762,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         println!("TTDL Version {}", version);
         exit(0);
     }
-    // TODO: matches.empty -> list, not empty+no_command = { subj? add : list }
-    if matches.opt_present("h") || matches.free.is_empty() {
+    if matches.opt_present("h") {
         print_usage(&program, &opts);
         exit(0);
     }
@@ -798,11 +797,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     }
 
     // first should be command
-    let mode = str_to_mode(&matches.free[idx]);
-    if mode == RunMode::None {
-        conf.mode = RunMode::List;
-    } else {
-        conf.mode = mode;
+    conf.mode = str_to_mode(&matches.free[idx]);
+    if conf.mode != RunMode::None {
         idx += 1;
     }
     if idx >= matches.free.len() {
@@ -849,7 +845,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         } else if matches.free[idx].starts_with('+') {
             let project = matches.free[idx].trim_start_matches('+');
             conf.flt.projects.push(project.to_owned().to_lowercase());
-        } else if conf.mode == RunMode::Add || conf.mode == RunMode::Edit {
+        } else if conf.mode == RunMode::Add || conf.mode == RunMode::Edit || conf.mode == RunMode::None {
             conf.todo.subject = Some(matches.free[idx].clone());
         } else {
             conf.flt.regex = Some(matches.free[idx].clone());

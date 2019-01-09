@@ -1,3 +1,10 @@
+2019-01-08 - version 0.3.2
+[*] Change comand detection rule:
+    - If the first word is not a command, and the subject is not empty then
+    the command is Add
+    - If the first word is not a command and there is no subject then the
+    command is List
+
 2019-01-07 - version 0.3.2
 [+] New option: `version` - show application version
 [*] Default color is bright white instead of bright black

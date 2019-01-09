@@ -269,6 +269,14 @@ fn main() {
     };
     conf.fmt.max = tasks.len();
 
+    if conf.mode == conf::RunMode::None {
+        if conf.todo.subject.is_none() {
+            conf.mode = conf::RunMode::List;
+        } else {
+            conf.mode = conf::RunMode::Add;
+        }
+    }
+
     if conf.mode != conf::RunMode::List && conf.use_done {
         eprintln!("Invalid command: when using done.txt the only available command is `list`");
         exit(1);
