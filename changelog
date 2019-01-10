@@ -1,19 +1,11 @@
-2019-01-08 - version 0.3.2
-[*] Change comand detection rule:
-    - If the first word is not a command, and the subject is not empty then
-    the command is Add
-    - If the first word is not a command and there is no subject then the
-    command is List
+ttdl (0.3.2) unstable; urgency=medium
 
-2019-01-07 - version 0.3.2
-[+] New option: `version` - show application version
-[*] Default color is bright white instead of bright black
+  * Change command detection rule:
+  If the first word is not a command, and the subject is not empty then
+  the command is Add;
+  If the first word is not a command and there is no subject then the
+  command is List;
 
-2019-01-06 - version 0.3.1
-[+] New option in config: `fields` - set default displayed todo fields.
-    Overrideable by command line options `short` and `fields`.
-[*] Changed the way of reading TOML config. Now all its sections must present
-    in the file, but all options inside sections are optional
+  * New option: 'version' - show application version
 
-2019-01-04 - version 0.3.0
-[!] First release
+-- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 09 Jan 2019 21:43:01 -0800
