@@ -30,3 +30,18 @@ serde_derive = "1.0.84"
 [dependencies.todo-txt]
 version = "^1.0"
 features = ["extended"]
+
+[package.metadata.deb]
+section = "utility"
+depends = "$auto"
+priority = "optional"
+assets = [
+	["target/release/ttdl", "usr/bin/", "755"],
+	["LICENSE", "usr/share/doc/ttdl/", "644"],
+	["README.md", "usr/share/doc/ttdl/README", "644"],
+	["ttdl.toml", "usr/share/doc/ttdl/ttdl.toml", "644"],
+]
+extended-description = """\
+A powerful terminal todo list manager. It keeps the list in todo.txt format.\
+"""
+changelog = "changelog"
