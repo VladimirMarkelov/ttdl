@@ -136,10 +136,10 @@ fn print_usage(program: &str, opts: &Options) {
 
 fn str_to_mode(s: &str) -> RunMode {
     match s {
-        "l" | "list" => RunMode::List,
-        "a" | "add" => RunMode::Add,
-        "d" | "done" => RunMode::Done,
-        "u" | "undone" => RunMode::Undone,
+        "l" | "list" | "ls" => RunMode::List,
+        "a" | "add" | "new" => RunMode::Add,
+        "d" | "done" | "complete" | "close" => RunMode::Done,
+        "u" | "undone" | "open" => RunMode::Undone,
         "c" | "clean" | "arc" | "archive" => RunMode::Clean,
         "e" | "edit" => RunMode::Edit,
         "rm" | "remove" => RunMode::Remove,
