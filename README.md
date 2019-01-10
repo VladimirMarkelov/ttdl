@@ -8,6 +8,25 @@ A CLI tool to manage todo lists in (todo.txt format)[http://todotxt.org/]. A sho
 
 <img src="./images/ttdl_demo.gif" alt="TTDL in action">
 
+## Known issues
+
+**Adding a todo that starts with project or context results in error:**
+
+```shell
+$ ttdl add "+myproject documentation due:2019-01-12"
+Subject is empty
+```
+
+**Workaround**: add a space between quotation mark and '+' or '@' symbol. The todo will be added without leading space:
+
+```shell
+$ ttdl add " +myproject documentation due:2019-01-12"
+Added todo:
+# D P Created    Finished   Due        Threshold  Subject
+----------------------------------------------------------
+8                           2019-01-12            +myproject documentation
+```
+
 ## Configuration
 
 TTDL is a standalone binary and it does not create any files in user's directory. But at start, it checks for a configuration file - please see example configuration (ttdl.toml)[./ttdl.toml] in user's configuration directory and loads it. Local configuration files are supported as well. Locations where TTDL looks for a configuration file:
