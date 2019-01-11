@@ -840,7 +840,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         let mut v: Vec<usize> = Vec::new();
         for s in matches.free[idx].split(',') {
             if let Ok(id) = s.parse::<usize>() {
-                v.push(id-1);
+                v.push(id - 1);
             }
         }
         conf.flt.range = tfilter::ItemRange::List(v);
@@ -848,10 +848,10 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     }
 
     while idx < matches.free.len() {
-        if matches.free[idx].starts_with('@') {
+        if matches.free[idx].starts_with('@') && matches.free[idx].find(' ').is_none() {
             let context = matches.free[idx].trim_start_matches('@');
             conf.flt.contexts.push(context.to_owned().to_lowercase());
-        } else if matches.free[idx].starts_with('+') {
+        } else if matches.free[idx].starts_with('+') && matches.free[idx].find(' ').is_none() {
             let project = matches.free[idx].trim_start_matches('+');
             conf.flt.projects.push(project.to_owned().to_lowercase());
         } else if conf.mode == RunMode::Add || conf.mode == RunMode::Edit || conf.mode == RunMode::None {
