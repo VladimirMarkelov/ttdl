@@ -836,6 +836,15 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             }
             (_, _) => {}
         }
+    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != ',').is_none() {
+        let mut v: Vec<usize> = Vec::new();
+        for s in matches.free[idx].split(',') {
+            if let Ok(id) = s.parse::<usize>() {
+                v.push(id-1);
+            }
+        }
+        conf.flt.range = tfilter::ItemRange::List(v);
+        idx += 1;
     }
 
     while idx < matches.free.len() {

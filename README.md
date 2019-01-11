@@ -57,7 +57,7 @@ Options can be at any position. ID range and subject are optional but if you are
 
 If a non-option starts with `+` or `@`, the option is considered as a filter by project or context respectively. Command line can contain as many projects and contexts as needed. In this case, all items of the same group are combined with OR. Example: if you execute `ttdl list +myproj +demo @docs`, it displays all todos that belongs to either `myproj` or `demo`, and have `docs` context.
 
-If the first non-option word contains only digits and dash character, it is treated as a single ID(only digits) or ID range(digits with a dash). ID is 1-based: a number between 1 and the number of todos in the entire list. It is OK to use ID out of that range: IDs that greater than the number of todos or lower than 1 are skipped. So, e.g, if you want to remove all todos starting from 10th todo, you can run the command `ttdl remove 10-999999 -a` - `-a` to delete both completed and incomplete todos.
+If the first non-option word contains only digits and dash character, it is treated as a single ID(only digits) or ID range(digits with a dash) or ID list(numbers separated with comma). ID is 1-based: a number between 1 and the number of todos in the entire list. It is OK to use ID out of that range: IDs that greater than the number of todos or lower than 1 are skipped. So, e.g, if you want to remove all todos starting from 10th todo, you can run the command `ttdl remove 10-999999 -a` - `-a` to delete both completed and incomplete todos.
 
 The second non-option(or the first one if ID range is not defined) is a subject. Subject's usage depends on command:
 
@@ -140,23 +140,28 @@ For easier reading due date, there is an option `--human` that turns dates into 
 
 ## Command line examples
 
+By default todos from a given range are processed only if they are incomplete. To process all(both done and incomplete), add an option `--all` or `-a`. To process only done todos, add an option `-A`. NOTE: the only exception is the command `clean`|`archive`, it enables option `-A` automatically if `--all` is not present in command line.
+
 ### List and filter
 
 | Command | Description |
 |---|---|
-| `ttdl l -s=proj,pri` | show all incomplete todos sorted by their project and by priority inside each project |
-| `ttdl l "car*"` | list all todos which have substring `car*` in their subject, project or context |
-| `ttdl l "car*" -e` | list all todos which have subject, project or context matched regular expression `car*` |
-| `ttdl l "car"` | list all todos which have substring `car` in their subject, project or context |
-| `ttdl l --pri=a` | show all incomplete todos with the highest priority A |
-| `ttdl l --pri=b+` | show all incomplete todos with priority B and higher (only A and B in this case) |
-| `ttdl l +car +train` | show all incomplete todos which related either to `car` or to `train` projects |
-| `ttdl l +my* @*tax` | show all incomplete todos that have a project tag starts with `my` and a context ends with `tax` |
-| `ttdl l --due=tomorrow -a` | show all todos that are due tomorrow |
-| `ttdl l --due=soon` | show all incomplete todos which are due are due in less a few days, including overdue ones (the range is configurable and default value is 7 days) |
-| `ttdl l --due=overdue` | show all incomplete overdue todos |
-| `ttdl l --due=today -a` | show all todos that are due today |
-| `ttdl l +myproj @ui @rest` | show all incomplete todos related to project 'myproj' which contains either 'ui' or 'rest' context |
+| `ttdl l 2` | show a single todo with ID 2 |
+| `ttdl l 2-5` | show todos with ID from 2 through 5 |
+| `ttdl l 2,5` | show only todos with ID 2 and 5 |
+| `ttdl l -s=proj,pri` | show all todos sorted by their project and by priority inside each project |
+| `ttdl l "car*"` | list todos which have substring `car*` in their subject, project or context |
+| `ttdl l "car*" -e` | list todos which have subject, project or context matched regular expression `car*` |
+| `ttdl l "car"` | list todos which have substring `car` in their subject, project or context |
+| `ttdl l --pri=a` | show todos with the highest priority A |
+| `ttdl l --pri=b+` | show todos with priority B and higher (only A and B in this case) |
+| `ttdl l +car +train` | show todos which related either to `car` or to `train` projects |
+| `ttdl l +my* @*tax` | show todos that have a project tag starts with `my` and a context ends with `tax` |
+| `ttdl l --due=tomorrow` | show todos that are due tomorrow |
+| `ttdl l --due=soon` | show todos which are due are due in less a few days, including overdue ones (the range is configurable and default value is 7 days) |
+| `ttdl l --due=overdue` | show overdue todos |
+| `ttdl l --due=today` | show todos that are due today |
+| `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context |
 
 ### Add a new todo
 

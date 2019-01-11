@@ -1,3 +1,9 @@
+ttdl (0.3.3) unstable; urgency=medium
+
+  * A list of IDs can be set in command line: "ttdl list 2,3,4"
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 10 Jan 2019 22:28:14 -0800
+
 ttdl (0.3.2) unstable; urgency=medium
 
   * Change command detection rule:
