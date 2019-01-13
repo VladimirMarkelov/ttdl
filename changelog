@@ -4,6 +4,8 @@ ttdl (0.3.3) unstable; urgency=medium
 
   * Fix adding todos that start with project or context
 
+  * Two new commands: append and prepend
+
  -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 10 Jan 2019 22:28:14 -0800
 
 ttdl (0.3.2) unstable; urgency=medium

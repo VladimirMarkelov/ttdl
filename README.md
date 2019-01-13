@@ -10,21 +10,23 @@ A CLI tool to manage todo lists in (todo.txt format)[http://todotxt.org/]. A sho
 
 ## Known issues
 
-**Adding a todo that starts with project or context results in error:**
+**Adding a new todo, append or prepend a text to existing todo results in error:**
+
+It may happend if the text starts with(or contains only) a project or a context:
 
 ```shell
-$ ttdl add "+myproject documentation due:2019-01-12"
+$ ttdl add "+myproject"
 Subject is empty
 ```
 
 **Workaround**: add a space between quotation mark and '+' or '@' symbol. The todo will be added without leading space:
 
 ```shell
-$ ttdl add " +myproject documentation due:2019-01-12"
+$ ttdl add " +myproject"
 Added todo:
 # D P Created    Finished   Due        Threshold  Subject
 ----------------------------------------------------------
-8                           2019-01-12            +myproject documentation
+8                                                 +myproject
 ```
 
 ## Configuration
@@ -113,7 +115,9 @@ Commands:
 * undone - remove `finished` mark from completed todos;
 * remove - deletes the selected todos;
 * clean  - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
-* edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped.
+* edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped;
+* append - adds a text to the end of the selected todos (space between old text and new one is added automatically);
+* prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically).
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 

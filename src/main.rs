@@ -237,6 +237,66 @@ fn task_edit(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
     }
 }
 
+fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
+    let subj = match &conf.todo.subject {
+        None => {
+            println!("Subject is empty");
+            return;
+        }
+        Some(s) => s,
+    };
+    let todos = tfilter::filter(tasks, &conf.flt);
+    if todos.is_empty() {
+        println!("No todo changed");
+        return;
+    }
+
+    if conf.dry {
+        let mut clones = todo::clone_tasks(tasks, &todos);
+        let updated: Vec<bool> = vec![true; clones.len()];
+
+        for t in clones.iter_mut() {
+            if to_end {
+                t.subject.push_str(" ");
+                t.subject.push_str(subj);
+            } else {
+                t.subject = format!("{} {}", subj, t.subject);
+            }
+        }
+
+        println!("Todos to be changed:");
+        fmt::print_header(&conf.fmt);
+        fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+        println!("\nNew todos:");
+        fmt::print_todos(&clones, &todos, &updated, &conf.fmt, true);
+        fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+    } else {
+        let updated: Vec<bool> = vec![true; todos.len()];
+
+        for idx in todos.iter() {
+            if *idx >= tasks.len() {
+                continue;
+            }
+
+            if to_end {
+                tasks[*idx].subject.push_str(" ");
+                tasks[*idx].subject.push_str(subj);
+            } else {
+                tasks[*idx].subject = format!("{} {}", subj, tasks[*idx].subject);
+            }
+        }
+
+        println!("Changed todos:");
+        fmt::print_header(&conf.fmt);
+        fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+        fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+        if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+            println!("Failed to save to '{:?}': {}", &conf.todo_file, e);
+            std::process::exit(1);
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -290,6 +350,8 @@ fn main() {
         conf::RunMode::Remove => task_remove(&mut tasks, &conf),
         conf::RunMode::Clean => task_clean(&mut tasks, &conf),
         conf::RunMode::Edit => task_edit(&mut tasks, &conf),
+        conf::RunMode::Append => task_add_text(&mut tasks, &conf, true),
+        conf::RunMode::Prepend => task_add_text(&mut tasks, &conf, false),
         _ => {}
     }
 }

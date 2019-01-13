@@ -30,6 +30,8 @@ pub enum RunMode {
     Remove,
     Clean,
     Edit,
+    Append,
+    Prepend,
     // Start,
     // Stop,
 }
@@ -130,6 +132,8 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl e @customer_acme --set-due=none` - remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context
         `ttdl e --pri=none --set-pri=z` - set the lowest priority for all incomplete todos which do not have a priority set`
         `ttdl e @bug1000 --set-pri=+` - increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z`
+    append | app - adds a text to the end of todos
+    prepend | prep - inserts a text at the beginning of todos
     "#;
     println!("{}\n\n{}\n\n{}\n\n{}", commands, filter, newones, extras);
 }
@@ -143,6 +147,8 @@ fn str_to_mode(s: &str) -> RunMode {
         "c" | "clean" | "arc" | "archive" => RunMode::Clean,
         "e" | "edit" => RunMode::Edit,
         "rm" | "remove" => RunMode::Remove,
+        "app" | "append" => RunMode::Append,
+        "prep" | "prepend" => RunMode::Prepend,
         // "start" => RunMode::Start,
         // "stop" => RunMode::Stop,
         _ => RunMode::None,
@@ -847,6 +853,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         idx += 1;
     }
 
+    let edit_mode = conf.mode == RunMode::Add
+        || conf.mode == RunMode::Edit
+        || conf.mode == RunMode::None
+        || conf.mode == RunMode::Append
+        || conf.mode == RunMode::Prepend;
+
     while idx < matches.free.len() {
         if matches.free[idx].starts_with('@') && matches.free[idx].find(' ').is_none() {
             let context = matches.free[idx].trim_start_matches('@');
@@ -854,7 +866,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         } else if matches.free[idx].starts_with('+') && matches.free[idx].find(' ').is_none() {
             let project = matches.free[idx].trim_start_matches('+');
             conf.flt.projects.push(project.to_owned().to_lowercase());
-        } else if conf.mode == RunMode::Add || conf.mode == RunMode::Edit || conf.mode == RunMode::None {
+        } else if edit_mode {
             conf.todo.subject = Some(matches.free[idx].clone());
         } else {
             conf.flt.regex = Some(matches.free[idx].clone());
