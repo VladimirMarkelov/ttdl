@@ -5,7 +5,8 @@ use textwrap;
 use todo_lib::todo;
 use todo_txt;
 
-const REL_WIDTH: usize = 12;
+const REL_WIDTH_DUE: usize = 12;
+const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
 
 lazy_static! {
@@ -103,6 +104,7 @@ pub struct Conf {
     pub long: LongLine,
     pub fields: Vec<String>,
     pub human: bool,
+    pub human_fields: Vec<String>,
     pub compact: bool,
     pub color_term: TermColorType,
     pub header: bool,
@@ -120,6 +122,7 @@ impl Default for Conf {
             long: LongLine::Simple,
             fields: Vec::new(),
             human: false,
+            human_fields: Vec::new(),
             color_term: TermColorType::Auto,
             header: true,
             footer: true,
@@ -128,6 +131,26 @@ impl Default for Conf {
             colors: Default::default(),
             atty: true,
         }
+    }
+}
+
+impl Conf {
+    fn is_human(&self, s: &str) -> bool {
+        if !self.human {
+            return false;
+        }
+
+        if self.human_fields.is_empty() {
+            return true;
+        }
+
+        for f in self.human_fields.iter() {
+            if f == s {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
@@ -141,23 +164,55 @@ fn number_of_digits(val: usize) -> usize {
     }
 }
 
-fn rel_date_width(c: &Conf) -> usize {
-    if c.human {
+fn rel_due_date_width(field: &str, c: &Conf) -> usize {
+    if c.is_human(field) {
         if c.compact {
             REL_COMPACT_WIDTH
         } else {
-            REL_WIDTH
+            REL_WIDTH_DUE
         }
     } else {
         "2018-12-12".len()
     }
 }
 
-fn calc_width(c: &Conf, fields: &[&str]) -> (usize, usize) {
+fn rel_date_width(field: &str, c: &Conf) -> usize {
+    if c.is_human(field) {
+        REL_WIDTH_DATE
+    } else {
+        "2018-12-12".len()
+    }
+}
+
+fn field_width(field: &str, c: &Conf) -> usize {
     let id_width = number_of_digits(c.max);
     let dt_width = "2018-12-12".len();
-    let rel_dt_width = rel_date_width(c);
-    let mut before: usize = id_width + 1;
+    let rel_due_dt_width = rel_due_date_width(field, c);
+    let rel_dt_width = rel_date_width(field, c);
+
+    match field {
+        "id" => id_width,
+        "done" | "pri" => 1,
+        "created" | "finished" => {
+            if c.is_human(field) {
+                rel_dt_width
+            } else {
+                dt_width
+            }
+        }
+        "due" | "thr" => {
+            if c.is_human(field) {
+                rel_due_dt_width
+            } else {
+                dt_width
+            }
+        }
+        _ => 0,
+    }
+}
+
+fn calc_width(c: &Conf, fields: &[&str]) -> (usize, usize) {
+    let mut before: usize = field_width("id", c) + 1;
 
     for f in FIELDS.iter() {
         let mut found = false;
@@ -169,12 +224,7 @@ fn calc_width(c: &Conf, fields: &[&str]) -> (usize, usize) {
         }
 
         if found {
-            match *f {
-                "done" | "pri" => before += 2,
-                "created" | "finished" => before += dt_width + 1,
-                "due" | "thr" => before += rel_dt_width + 1,
-                _ => {}
-            }
+            before += field_width(*f, c) + 1;
         }
     }
 
@@ -182,10 +232,7 @@ fn calc_width(c: &Conf, fields: &[&str]) -> (usize, usize) {
 }
 
 fn print_header_line(c: &Conf, fields: &[&str]) {
-    let id_width = number_of_digits(c.max);
-    let dt_width = "2018-12-12".len();
-    let rel_dt_width = rel_date_width(c);
-    print!("{:>wid$} ", "#", wid = id_width);
+    print!("{:>wid$} ", "#", wid = field_width("id", c));
 
     for f in FIELDS.iter() {
         let mut found = false;
@@ -197,17 +244,18 @@ fn print_header_line(c: &Conf, fields: &[&str]) {
         }
 
         if found {
+            let width = field_width(*f, c);
             match *f {
                 "done" => print!("D "),
                 "pri" => print!("P "),
-                "created" => print!("{:wid$} ", "Created", wid = dt_width),
-                "finished" => print!("{:wid$} ", "Finished", wid = dt_width),
-                "due" => print!("{:wid$} ", "Due", wid = rel_dt_width),
+                "created" => print!("{:wid$} ", "Created", wid = width),
+                "finished" => print!("{:wid$} ", "Finished", wid = width),
+                "due" => print!("{:wid$} ", "Due", wid = width),
                 "thr" => {
-                    if c.human && c.compact {
-                        print!("{:wid$} ", "Thr", wid = rel_dt_width);
+                    if c.is_human(*f) && c.compact {
+                        print!("{:wid$} ", "Thr", wid = width);
                     } else {
-                        print!("{:wid$} ", "Threshold", wid = rel_dt_width);
+                        print!("{:wid$} ", "Threshold", wid = width);
                     }
                 }
                 _ => {}
@@ -306,9 +354,7 @@ fn priority_str(task: &todo_txt::task::Extended) -> String {
 }
 
 fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf, fields: &[&str]) {
-    let id_width = number_of_digits(c.max);
-    let dt_width = "2018-12-12".len();
-    let rel_dt_width = rel_date_width(c);
+    let id_width = field_width("id", c);
     let fg = if task.finished {
         c.colors.done.clone()
     } else {
@@ -327,6 +373,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
         }
 
         if found {
+            let width = field_width(*f, c);
             match *f {
                 "done" => {
                     print_with_color(stdout, &done_str(task), &fg);
@@ -336,46 +383,56 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 }
                 "created" => {
                     let st = if let Some(d) = task.create_date.as_ref() {
-                        format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = dt_width)
+                        if c.is_human(*f) {
+                            let (s, _) = format_relative_date(*d, c.compact);
+                            format!("{:wid$} ", s, wid = width)
+                        } else {
+                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                        }
                     } else {
-                        format!("{:wid$} ", " ", wid = dt_width)
+                        format!("{:wid$} ", " ", wid = width)
                     };
                     print_with_color(stdout, &st, &fg);
                 }
                 "finished" => {
                     let st = if let Some(d) = task.finish_date.as_ref() {
-                        format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = dt_width)
+                        if c.is_human(*f) {
+                            let (s, _) = format_relative_date(*d, c.compact);
+                            format!("{:wid$} ", s, wid = width)
+                        } else {
+                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                        }
                     } else {
-                        format!("{:wid$} ", " ", wid = dt_width)
+                        format!("{:wid$} ", " ", wid = width)
                     };
                     print_with_color(stdout, &st, &fg);
                 }
                 "due" => {
                     if let Some(d) = task.due_date.as_ref() {
-                        let (s, days) = format_relative_date(*d, c.compact);
+                        let (s, days) = format_relative_due_date(*d, c.compact);
                         let dfg = color_for_due_date(task, days, c);
-                        let st = if c.human {
+                        let st = if c.is_human(*f) {
                             s.to_string()
                         } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = rel_dt_width)
+                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
                         };
-                        print_with_color(stdout, &st, &dfg);
+                        print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
                     } else {
-                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = rel_dt_width), &fg);
+                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = width), &fg);
                     };
                 }
                 "thr" => {
                     if let Some(d) = task.threshold_date.as_ref() {
-                        let (s, days) = format_relative_date(*d, c.compact);
+                        let (s, days) = format_relative_due_date(*d, c.compact);
                         let dfg = color_for_threshold_date(task, days, c);
-                        let st = if c.human {
+                        let st = if c.is_human(*f) {
                             s.to_string()
                         } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = rel_dt_width)
+                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
                         };
-                        print_with_color(stdout, &st, &dfg);
+                        print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
                     } else {
-                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = rel_dt_width), &fg);
+                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = width), &fg);
                     };
                 }
                 _ => {}
@@ -425,13 +482,11 @@ fn format_days(num: i64, compact: bool) -> String {
     }
 }
 
-fn format_relative_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
+fn format_relative_due_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
     let today = chrono::Local::now().date().naive_local();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, compact);
-    let mut width = REL_WIDTH;
     let v = if compact {
-        width = REL_COMPACT_WIDTH;
         dstr
     } else if diff < 0 {
         format!("{} overdue", dstr)
@@ -440,7 +495,25 @@ fn format_relative_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
     } else {
         format!("in {}", dstr)
     };
-    (format!("{:wid$} ", v, wid = width), diff)
+    (v, diff)
+}
+
+fn format_relative_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
+    let today = chrono::Local::now().date().naive_local();
+    let diff = (dt - today).num_days();
+    let dstr = format_days(diff, false);
+    if compact {
+        return (dstr, diff);
+    }
+
+    let v = if diff < 0 {
+        format!("{} ago", dstr)
+    } else if diff == 0 {
+        dstr
+    } else {
+        format!("in {}", dstr)
+    };
+    (v, diff)
 }
 
 fn field_list(c: &Conf) -> Vec<&str> {

@@ -6,6 +6,9 @@ ttdl (0.3.3) unstable; urgency=medium
 
   * Two new commands: append and prepend
 
+  * Option '--human' supports list of field to show in relative format. Empty
+    list means show all dates as relative ones
+
  -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 10 Jan 2019 22:28:14 -0800
 
 ttdl (0.3.2) unstable; urgency=medium

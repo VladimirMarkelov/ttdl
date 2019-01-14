@@ -480,6 +480,13 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
         c.long = fmt::LongLine::WordWrap;
     }
     c.human = matches.opt_present("human");
+    if let Some(s) = matches.opt_str("human") {
+        if s != "" {
+            for f in s.split(',') {
+                c.human_fields.push(f.to_lowercase());
+            }
+        }
+    }
     c.atty = atty::is(Stream::Stdout);
 
     if matches.opt_present("no-colors") || !c.atty {
@@ -733,10 +740,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     opts.optflag("", "short", "Show only ID, priority and subject for todos");
     opts.optflag("", "wrap", "Word wrap a long subject within subject column");
     opts.optopt("w", "width", "Set terminal width. The application detects terminal width automatically but it is possible to limit the output width manually", "WIDTH");
-    opts.optflag(
+    opts.optflagopt(
         "",
         "human",
         "Show relative date(for due and thresold dates) instead of default YYYY-MM-DD. Examples: 'today', '4d overdue', or 'in 2m'",
+        "empty value or FIELD1,FIELD2",
     );
     opts.optflag("", "compact", "Show relative date in compact mode: without 'in' or 'overdue', overdue and future dates are distinguished by their colors");
     opts.optopt(
