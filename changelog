@@ -1,4 +1,4 @@
-ttdl (0.3.3) unstable; urgency=medium
+ttdl (0.4.0) unstable; urgency=medium
 
   * A list of IDs can be set in command line: "ttdl list 2,3,4"
 
@@ -9,7 +9,7 @@ ttdl (0.3.3) unstable; urgency=medium
   * Option '--human' supports list of field to show in relative format. Empty
     list means show all dates as relative ones
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 10 Jan 2019 22:28:14 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 13 Jan 2019 21:17:51 -0800
 
 ttdl (0.3.2) unstable; urgency=medium
 
