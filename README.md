@@ -8,6 +8,27 @@ A CLI tool to manage todo lists in (todo.txt format)[http://todotxt.org/]. A sho
 
 <img src="./images/ttdl_demo.gif" alt="TTDL in action">
 
+## Installation
+
+The application can be compiled from source, or installed using cargo:
+
+```shell
+$ cargo install ttdl
+```
+
+You need Rust compiler that supports Rust 2018 edition (Rust 1.31 or newer) to do it. If you want to upgrade existing ttdl execute the following command:
+
+```shell
+$ cargo install ttdl --force
+```
+
+### Precompiled binaries
+
+For Windows and Ubuntu you can download precompiled binaries from (Release page)[https://github.com/VladimirMarkelov/ttdl/releases].
+
+* Windows binary works on Windows 7 or newer Windows.
+* Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
+
 ## Known issues
 
 **Adding a new todo, append or prepend a text to existing todo results in error:**
