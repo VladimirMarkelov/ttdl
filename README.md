@@ -4,7 +4,7 @@
 [![](https://img.shields.io/crates/v/ttdl.svg)](https://crates.io/crates/ttdl)
 [![Downloads](https://img.shields.io/crates/d/ttdl.svg)](https://crates.io/crates/ttdl)
 
-A CLI tool to manage todo lists in (todo.txt format)[http://todotxt.org/]. A short demo of TTDL in action:
+A CLI tool to manage todo lists in [todo.txt format](http://todotxt.org/). A short demo of TTDL in action:
 
 <img src="./images/ttdl_demo.gif" alt="TTDL in action">
 
@@ -24,7 +24,7 @@ $ cargo install ttdl --force
 
 ### Precompiled binaries
 
-For Windows and Ubuntu you can download precompiled binaries from (Release page)[https://github.com/VladimirMarkelov/ttdl/releases].
+For Windows and Ubuntu you can download precompiled binaries from [Release page](https://github.com/VladimirMarkelov/ttdl/releases).
 
 * Windows binary works on Windows 7 or newer Windows.
 * Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
@@ -55,9 +55,9 @@ Added todo:
 TTDL is a standalone binary and it does not create any files in user's directory. But at start, it checks for a configuration file - please see example configuration (ttdl.toml)[./ttdl.toml] in user's configuration directory and loads it. Local configuration files are supported as well. Locations where TTDL looks for a configuration file:
 
 * current working directory
-* Linux:  ~/.config/ttdl.toml
-* Windows: c:\Users\{username}\AppData\Roaming\ttdl.toml
-* OSX: /Users/{username}/Library/Preferences/ttdl.toml
+* Linux:  `~/.config/ttdl.toml`
+* Windows: `c:\Users\{username}\AppData\Roaming\ttdl.toml`
+* OSX: `/Users/{username}/Library/Preferences/ttdl.toml`
 
 First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory.
 
