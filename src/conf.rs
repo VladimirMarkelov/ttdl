@@ -890,6 +890,13 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
 fn color_from_str(s: &str) -> ColorSpec {
     let mut spc = ColorSpec::new();
 
+    if s.find(' ').is_none() {
+        if let Ok(c) = Color::from_str(s) {
+            spc.set_fg(Some(c));
+        }
+        return spc;
+    }
+
     let lows = s.to_lowercase();
     for clr in lows.split_whitespace() {
         match clr {

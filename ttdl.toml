@@ -14,6 +14,16 @@
 # the first two modifiers works only in ANSI-compatible terminal.
 # To make them work on Windows, use ConEmu or Cmder instead
 #   of standard cmd or PowerShell.
+# For Cmder/ConEmu and Linux terminals indexed 256-color terminal and
+#   RGB colors are supported as well. Format for indexed colors is the index
+#   of the color(enclosed in double quotes):
+#   overdue="140"
+#   Format for RGB is enclosed in double quotes a comma separated list of 3
+#   numbers (order of colors is R,G,B) :
+#   overdue="220,0,0"
+#   For both indexed and RGB colors the number can be either decimal between
+#   0 and 255 or hexadecimal in range 0x0 - 0xFF. In latter case, it must start
+#   with  "0x".
 # If a color value cannot be parsed it defaults to 'white'
 [colors]
 # color_term: terminal color support
