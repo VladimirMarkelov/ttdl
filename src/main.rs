@@ -257,10 +257,16 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
 
         for t in clones.iter_mut() {
             if to_end {
-                t.subject.push_str(" ");
+                if !subj.starts_with(' ') {
+                    t.subject.push_str(" ");
+                }
                 t.subject.push_str(subj);
             } else {
-                t.subject = format!("{} {}", subj, t.subject);
+                if subj.ends_with(' ') {
+                    t.subject = format!("{}{}", subj, t.subject);
+                } else {
+                    t.subject = format!("{} {}", subj, t.subject);
+                }
             }
         }
 

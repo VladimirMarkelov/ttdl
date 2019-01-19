@@ -1,6 +1,3 @@
-// use serde_derive::{Deserialize};
-use toml;
-
 #[derive(Deserialize)]
 pub struct Colors {
     pub color_term: Option<String>,
