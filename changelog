@@ -1,3 +1,14 @@
+ttdl (0.5.0) unstable; urgency=medium
+
+  * Added 256-indexed and RGB colors support in config
+
+  * Added time tracking support:
+  - new commands 'start' and 'stop' to start and stop timer
+  - new column 'spent' - time spent for a todo
+  - new symbol in 'Done' column 'T' - marking a todo active(running)
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 19 Jan 2019 23:57:48 -0800
+
 ttdl (0.4.0) unstable; urgency=medium
 
   * A list of IDs can be set in command line: "ttdl list 2,3,4"

@@ -303,6 +303,53 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
     }
 }
 
+fn task_start_stop(tasks: &mut todo::TaskVec, conf: &conf::Conf, start: bool) {
+    let todos = tfilter::filter(tasks, &conf.flt);
+    let action = if start { "started" } else { "stopped" };
+    if todos.is_empty() {
+        println!("No todo {}", action)
+    } else if conf.dry {
+        let mut clones = todo::clone_tasks(tasks, &todos);
+        let updated = if start {
+            todo::start(&mut clones, None)
+        } else {
+            todo::stop(&mut clones, None)
+        };
+        let updated_cnt = calculate_updated(&updated);
+
+        if updated_cnt == 0 {
+            println!("No todo was {}", action);
+        } else {
+            println!("Todos to be {}:", action);
+            fmt::print_header(&conf.fmt);
+            fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+            println!("\nNew todos:");
+            fmt::print_todos(&clones, &todos, &updated, &conf.fmt, true);
+            fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+        }
+    } else {
+        let updated = if start {
+            todo::start(tasks, Some(&todos))
+        } else {
+            todo::stop(tasks, Some(&todos))
+        };
+        let updated_cnt = calculate_updated(&updated);
+
+        if updated_cnt == 0 {
+            println!("No todo was {}", action);
+        } else {
+            println!("Changed todos:");
+            fmt::print_header(&conf.fmt);
+            fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+            fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+            if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+                println!("Failed to save to '{:?}': {}", &conf.todo_file, e);
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -358,6 +405,8 @@ fn main() {
         conf::RunMode::Edit => task_edit(&mut tasks, &conf),
         conf::RunMode::Append => task_add_text(&mut tasks, &conf, true),
         conf::RunMode::Prepend => task_add_text(&mut tasks, &conf, false),
+        conf::RunMode::Start => task_start_stop(&mut tasks, &conf, true),
+        conf::RunMode::Stop => task_start_stop(&mut tasks, &conf, false),
         _ => {}
     }
 }

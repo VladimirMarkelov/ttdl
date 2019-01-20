@@ -2,15 +2,17 @@ use caseless::default_caseless_match_str;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use textwrap;
+use todo_lib::timer;
 use todo_lib::todo;
 use todo_txt;
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
+const SPENT_WIDTH: usize = 6;
 
 lazy_static! {
-    static ref FIELDS: [&'static str; 6] = ["done", "pri", "created", "finished", "due", "thr"];
+    static ref FIELDS: [&'static str; 7] = ["done", "pri", "created", "finished", "due", "thr", "spent"];
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -207,6 +209,7 @@ fn field_width(field: &str, c: &Conf) -> usize {
                 dt_width
             }
         }
+        "spent" => SPENT_WIDTH,
         _ => 0,
     }
 }
@@ -258,6 +261,7 @@ fn print_header_line(c: &Conf, fields: &[&str]) {
                         print!("{:wid$} ", "Threshold", wid = width);
                     }
                 }
+                "spent" => print!("{:wid$} ", "Spent", wid = SPENT_WIDTH),
                 _ => {}
             }
         }
@@ -336,7 +340,9 @@ fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) {
 }
 
 fn done_str(task: &todo_txt::task::Extended) -> String {
-    if task.finished {
+    if timer::is_timer_on(task) {
+        "T ".to_string()
+    } else if task.finished {
         "x ".to_string()
     } else if task.recurrence.is_some() {
         "R ".to_string()
@@ -350,6 +356,27 @@ fn priority_str(task: &todo_txt::task::Extended) -> String {
         format!("{} ", (b'A' + task.priority) as char)
     } else {
         "  ".to_string()
+    }
+}
+
+fn duration_str(d: chrono::Duration) -> String {
+    let s = d.num_seconds();
+    if s <= 0 {
+        return String::new();
+    }
+
+    if s < 60 {
+        format!("{}s", s)
+    } else if s < 60 * 60 {
+        format!("{:.1}m", (s as f64) / 60.0)
+    } else if s < 60 * 60 * 24 {
+        format!("{:.1}h", (s as f64) / 60.0 / 60.0)
+    } else if s < 60 * 60 * 24 * 30 {
+        format!("{:.1}d", (s as f64) / 60.0 / 60.0 / 24.0)
+    } else if s < 60 * 60 * 24 * 30 * 12 {
+        format!("{:.1}m", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0)
+    } else {
+        format!("{:.1}y", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0 / 12.0)
     }
 }
 
@@ -434,6 +461,13 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                     } else {
                         print_with_color(stdout, &format!("{:wid$} ", " ", wid = width), &fg);
                     };
+                }
+                "spent" => {
+                    print_with_color(
+                        stdout,
+                        &format!("{:wid$} ", &duration_str(timer::spent_time(&task)), wid = SPENT_WIDTH),
+                        &fg,
+                    );
                 }
                 _ => {}
             }
@@ -520,7 +554,7 @@ fn field_list(c: &Conf) -> Vec<&str> {
     match c.fmt {
         Format::Full => {
             if c.fields.is_empty() {
-                vec!["done", "pri", "created", "finished", "due", "thr"]
+                vec!["done", "pri", "created", "finished", "due", "thr", "spent"]
             } else {
                 let fields: Vec<&str> = c.fields.iter().map(|s| s.as_str()).collect();
                 fields

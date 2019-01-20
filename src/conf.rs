@@ -32,8 +32,8 @@ pub enum RunMode {
     Edit,
     Append,
     Prepend,
-    // Start,
-    // Stop,
+    Start,
+    Stop,
 }
 
 #[derive(Debug, Clone)]
@@ -149,8 +149,8 @@ fn str_to_mode(s: &str) -> RunMode {
         "rm" | "remove" => RunMode::Remove,
         "app" | "append" => RunMode::Append,
         "prep" | "prepend" => RunMode::Prepend,
-        // "start" => RunMode::Start,
-        // "stop" => RunMode::Stop,
+        "start" => RunMode::Start,
+        "stop" => RunMode::Stop,
         _ => RunMode::None,
     }
 }
@@ -175,9 +175,12 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
     if matches.opt_present("e") {
         c.use_regex = true;
     }
-    // if matches.opt_present("t") {
-    //     c.active = true;
-    // }
+    if matches.opt_present("t") {
+        c.tmr = Some(tfilter::Timer {
+            span: tfilter::ValueSpan::Active,
+            value: 0,
+        });
+    }
     if matches.opt_present("pri") {
         let s = match matches.opt_str("pri") {
             None => String::new(),
@@ -240,7 +243,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                     value: rstr,
                     name: "recurrence".to_string(),
-                }))
+                }));
             }
         }
     }
@@ -290,7 +293,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                     value: dstr,
                     name: "date range".to_string(),
-                }))
+                }));
             }
         }
     }
@@ -316,7 +319,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                     value: dstr,
                     name: "date range".to_string(),
-                }))
+                }));
             }
         }
     }
@@ -366,7 +369,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                     return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                         value: s,
                         name: "recurrence".to_string(),
-                    }))
+                    }));
                 }
             },
         }
@@ -386,7 +389,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                     return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                         value: s,
                         name: "date".to_string(),
-                    }))
+                    }));
                 }
             },
         }
@@ -406,7 +409,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                     return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                         value: s,
                         name: "date".to_string(),
-                    }))
+                    }));
                 }
             },
         }
@@ -655,7 +658,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     opts.optflag("h", "help", "Show this help");
     opts.optflag("a", "all", "Select all todos including completed ones");
     opts.optflag("A", "completed", "Select only completed todos");
-    // opts.optflag("t", "active", "Only active records");
+    opts.optflag("t", "active", "Only active records");
     opts.optflag(
         "",
         "dry-run",
