@@ -359,7 +359,7 @@ fn priority_str(task: &todo_txt::task::Extended) -> String {
     }
 }
 
-fn duration_str(d: chrono::Duration) -> String {
+pub fn duration_str(d: chrono::Duration) -> String {
     let s = d.num_seconds();
     if s <= 0 {
         return String::new();
@@ -372,11 +372,11 @@ fn duration_str(d: chrono::Duration) -> String {
     } else if s < 60 * 60 * 24 {
         format!("{:.1}h", (s as f64) / 60.0 / 60.0)
     } else if s < 60 * 60 * 24 * 30 {
-        format!("{:.1}d", (s as f64) / 60.0 / 60.0 / 24.0)
+        format!("{:.1}D", (s as f64) / 60.0 / 60.0 / 24.0)
     } else if s < 60 * 60 * 24 * 30 * 12 {
-        format!("{:.1}m", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0)
+        format!("{:.1}M", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0)
     } else {
-        format!("{:.1}y", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0 / 12.0)
+        format!("{:.1}Y", (s as f64) / 60.0 / 60.0 / 24.0 / 30.0 / 12.0)
     }
 }
 
@@ -441,7 +441,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                         let st = if c.is_human(*f) {
                             s.to_string()
                         } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                            format!("{}", (*d).format("%Y-%m-%d"))
                         };
                         print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
                     } else {
@@ -455,7 +455,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                         let st = if c.is_human(*f) {
                             s.to_string()
                         } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                            format!("{}", (*d).format("%Y-%m-%d"))
                         };
                         print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
                     } else {

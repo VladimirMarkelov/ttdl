@@ -34,6 +34,7 @@ pub enum RunMode {
     Prepend,
     Start,
     Stop,
+    Stats,
 }
 
 #[derive(Debug, Clone)]
@@ -151,6 +152,7 @@ fn str_to_mode(s: &str) -> RunMode {
         "prep" | "prepend" => RunMode::Prepend,
         "start" => RunMode::Start,
         "stop" => RunMode::Stop,
+        "stats" => RunMode::Stats,
         _ => RunMode::None,
     }
 }
@@ -512,7 +514,7 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
         // TODO: sane limit?
         if c.width > 2000 || c.width < 20 {
             if let Some((w, _)) = term_size::dimensions() {
-                c.width = (w % 65536) as u16;
+                c.width = (w % 65536) as u16 - 1;
             }
         }
     }

@@ -33,7 +33,7 @@ For Windows and Ubuntu you can download precompiled binaries from [Release page]
 
 **Adding a new todo, append or prepend a text to existing todo results in error:**
 
-It may happend if the text starts with(or contains only) a project or a context:
+It may happen if the text starts with(or contains only) a project or a context:
 
 ```shell
 $ ttdl add "+myproject"
@@ -90,7 +90,7 @@ The second non-option(or the first one if ID range is not defined) is a subject.
 
 NOTES:
 1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits)
-2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(;et's assume it is 10 of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
+2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
 
 ### Output example
@@ -110,6 +110,7 @@ Columns:
 * `#` - order number of a todo
 * `D` - 'Done', it is empty for an incomplete regular todo, 'x' for a completed todo, and 'R' for recurrent todo
 * `P` - priority (from A to Z, empty value means no priority)
+* `T` - marks an active todo - a todo which has its timer running to track time spent on it
 
 ### Archive
 
@@ -138,7 +139,10 @@ Commands:
 * clean  - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
 * edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped;
 * append - adds a text to the end of the selected todos (space between old text and new one is added automatically);
-* prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically).
+* prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically);
+* start - activate todo's timer;
+* stop - stop todo's timer and update time spent on the todo;
+* stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
@@ -146,19 +150,63 @@ NOTE: `done` moves a recurrent todo's due date to the next one, but it does not 
 
 ### Tags
 
-The orginal todo.txt format describes a user-defined tags that can be used by any application for special needs. The format of a tag is `tag_name:tag_value`. The original format does not specify any tag - all are considered custom ones.
+The original todo.txt format describes a user-defined tags that can be used by any application for special needs. The format of a tag is `tag_name:tag_value`. The original format does not specify any tag - all are considered custom ones.
 
 TTDL supports a few custom tags (as of version 0.3):
 
 * `due` - a todo's due date. The tag value is in format YYYY-MM-DD;
-* `t` - a todo's theshold date. The tag value is in format YYYY-MM-DD;
+* `t` - a todo's threshold date. The tag value is in format YYYY-MM-DD;
 * `rec` - makes a todo recurrent. It makes sense only when using along with `due` tag. The tag value is the number of time intervals and one-character time interval name: `d` - every few days, `w` every few weeks, `m` - every few months, `y` - every few years. Examples: `1w` - a weekly todo, `5d` - every 5 days.
+
+### Time tracking
+
+TTDL version 0.5.0 introduced time tracking feature. It consists of two new commands `start` to activate time tracking for a given todo, and `stop` to stop time tracking and update todo's time taken.
+
+The `list` command adds an extra column `Spent` that displays total time the todo has taken by the current time.
+
+### Statistics
+
+Command `stats` displays general statistics followed by detailed one. If you need only general one use option `--short`.
+
+General statistics includes the total numbers of all todos, completed, overdue, recurrent todos, and todos that missed threshold date. For the all numbers, except the total number of all todos, the percentage of all todos is displayed in parentheses. Example:
+
+```
+Total todos:          8
+Done:                 1 (12%)
+Missed theshold:      1 (12%)
+Overdue:              2 (25%)
+Recurrent:            1
+```
+
+Detailed statistics groups all todos by projects and contexts and prints the subtotals for all of them. Note: because of todos can have no project or have more than one project or context, the total number of all todos is usually not equal to sum of all subgroups. Example:
+
+```
+Project         Context    Total      Done       Overdue    Spent
+                              8(100%)    1( 12%)    2( 25%) 3.1m
+-----------------------------------------------------------------
+chapelshelving                2( 25%)    1( 50%)
+                chapel        1( 50%)    1(100%)
+                shelve        1( 50%)
+-----------------------------------------------------------------
+myproj                        1( 12%)               1(100%)
+                bug           1(100%)               1(100%)
+                ui            1(100%)               1(100%)
+```
+
+
+Notes:
+
+1. The first line with number is a grand total for the entire todo list
+2. In the example above, there are total 8 todos, but only 3 of them have project tags. And `myproject` project has only one todo with 2 context tags
+3. For project headers (lines which have some project and empty context) the percentage is calculated from all todos, for context totals the percentage is calculated from project total todos
+4. Done and overdue percentage is always calculated from the total of the current line
+5. Spent time adds low-cased letters for time spans less than a day (s - seconds, m - minutes, h - hours), and upper-cased letter for longer spans (D - days, M - months, Y - years).
 
 ### Extra features
 
 Each command that modifies todo list supports dry run mode. The mode is enabled with an option `--dry-run`. When executing `ttdl` with the option, it finds out which todos would be changed after the command completes, then displays existing todos and their new values.
 
-By default TTDL outputs the todo list in long mode and uses colors. To disable colors, use an option `--no-colors`. To make the output shorter, use an option `--short` to show only a few the most important fields(ID, comlpetion mark, priority, and subject), or choose which fields to display with an option `--fields`: a comma-separated list of fields. 
+By default TTDL outputs the todo list in long mode and uses colors. To disable colors, use an option `--no-colors`. To make the output shorter, use an option `--short` to show only a few the most important fields(ID, completion mark, priority, and subject), or choose which fields to display with an option `--fields`: a comma-separated list of fields. 
 **NOTE**: the option `--fields` defines only a field visibility, but not its order. So, `--fields=pri,due` and `--fields=due,pri` result in the same output.
 
 For easier reading due date, there is an option `--human` that turns dates into relative dates. So, due date 2018-11-11 can turn into `in 3d` (if the current date is 2018-11-08) or into `3d overdue`(if the current date is 2018-11-14). Using an option `--compact` makes the output even shorter: it removes all `in`s and `overdue`s. To understand whether a todo is overdue or not, just check its color: overdue ones are drawn in red color(unless you used the option `--no-colors` or modified color in TTDL config). Option `--human` supports a list of fields to show as relative ones: `ttdl l --human="due"`.

@@ -5,6 +5,7 @@ extern crate serde_derive;
 
 mod conf;
 mod fmt;
+mod stats;
 mod tml;
 
 use std::env;
@@ -261,12 +262,10 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
                     t.subject.push_str(" ");
                 }
                 t.subject.push_str(subj);
+            } else if subj.ends_with(' ') {
+                t.subject = format!("{}{}", subj, t.subject);
             } else {
-                if subj.ends_with(' ') {
-                    t.subject = format!("{}{}", subj, t.subject);
-                } else {
-                    t.subject = format!("{} {}", subj, t.subject);
-                }
+                t.subject = format!("{} {}", subj, t.subject);
             }
         }
 
@@ -407,6 +406,7 @@ fn main() {
         conf::RunMode::Prepend => task_add_text(&mut tasks, &conf, false),
         conf::RunMode::Start => task_start_stop(&mut tasks, &conf, true),
         conf::RunMode::Stop => task_start_stop(&mut tasks, &conf, false),
+        conf::RunMode::Stats => stats::show_stats(&tasks, &conf.fmt),
         _ => {}
     }
 }

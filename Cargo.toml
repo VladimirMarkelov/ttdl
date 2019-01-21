@@ -13,7 +13,7 @@ repository = "https://github.com/VladimirMarkelov/ttdl"
 lto = true
 
 [dependencies]
-todo_lib = "0.3.0"
+todo_lib = "0.3.1"
 getopts = "0.2"
 chrono = "^0.4"
 textwrap = "0.11"

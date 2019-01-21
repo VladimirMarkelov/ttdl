@@ -7,7 +7,13 @@ ttdl (0.5.0) unstable; urgency=medium
   - new column 'spent' - time spent for a todo
   - new symbol in 'Done' column 'T' - marking a todo active(running)
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 19 Jan 2019 23:57:48 -0800
+  * New command 'stats' to display short and detailed statistics:
+  - short includes minimal information: total number of all, done, overdue,
+  and missed threshold todos
+  - detailed shows totals grouped by project and contexts. Detailed includes
+  total time spent for a given project or context
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 20 Jan 2019 21:39:57 -0800
 
 ttdl (0.4.0) unstable; urgency=medium
 
