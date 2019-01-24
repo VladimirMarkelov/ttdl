@@ -35,6 +35,7 @@ pub enum RunMode {
     Start,
     Stop,
     Stats,
+    Postpone,
 }
 
 #[derive(Debug, Clone)]
@@ -153,6 +154,7 @@ fn str_to_mode(s: &str) -> RunMode {
         "start" => RunMode::Start,
         "stop" => RunMode::Stop,
         "stats" => RunMode::Stats,
+        "postpone" => RunMode::Postpone,
         _ => RunMode::None,
     }
 }
@@ -870,7 +872,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         || conf.mode == RunMode::Edit
         || conf.mode == RunMode::None
         || conf.mode == RunMode::Append
-        || conf.mode == RunMode::Prepend;
+        || conf.mode == RunMode::Prepend
+        || conf.mode == RunMode::Postpone;
 
     while idx < matches.free.len() {
         if matches.free[idx].starts_with('@') && matches.free[idx].find(' ').is_none() {

@@ -349,6 +349,77 @@ fn task_start_stop(tasks: &mut todo::TaskVec, conf: &conf::Conf, start: bool) {
     }
 }
 
+fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
+    let subj = match conf.todo.subject {
+        Some(ref s) => s,
+        None => {
+            println!("Postpone range is not defined");
+            return;
+        }
+    };
+    let rec = match todo_txt::task::Recurrence::from_str(subj) {
+        Ok(r) => r,
+        Err(e) => {
+            println!("Invalid recurrence format: {:?}", e);
+            return;
+        }
+    };
+    let todos = tfilter::filter(tasks, &conf.flt);
+    if todos.is_empty() {
+        println!("No todo postponed")
+    } else if conf.dry {
+        let mut clones = todo::clone_tasks(tasks, &todos);
+        let mut updated: Vec<bool> = Vec::new();
+        for clone in clones.iter_mut() {
+            if clone.finished {
+                updated.push(false);
+            } else if let Some(dt) = clone.due_date {
+                clone.due_date = Some(rec.clone() + dt);
+                updated.push(true);
+            } else {
+                updated.push(false);
+            }
+        }
+        let updated_cnt = calculate_updated(&updated);
+
+        if updated_cnt == 0 {
+            println!("No todo was postponed");
+        } else {
+            println!("Todos to be postponed:");
+            fmt::print_header(&conf.fmt);
+            fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+            println!("\nNew todos:");
+            fmt::print_todos(&clones, &todos, &updated, &conf.fmt, true);
+            fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+        }
+    } else {
+        let mut updated: Vec<bool> = Vec::new();
+        for idx in todos.iter() {
+            if *idx >= tasks.len() || tasks[*idx].finished {
+                updated.push(false);
+            } else if let Some(dt) = tasks[*idx].due_date {
+                tasks[*idx].due_date = Some(rec.clone() + dt);
+                updated.push(true);
+            } else {
+                updated.push(false);
+            }
+        }
+        let updated_cnt = calculate_updated(&updated);
+        if updated_cnt == 0 {
+            println!("No todo was postponed");
+        } else {
+            println!("Changed todos:");
+            fmt::print_header(&conf.fmt);
+            fmt::print_todos(&tasks, &todos, &updated, &conf.fmt, false);
+            fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
+            if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+                println!("Failed to save to '{:?}': {}", &conf.todo_file, e);
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -407,6 +478,7 @@ fn main() {
         conf::RunMode::Start => task_start_stop(&mut tasks, &conf, true),
         conf::RunMode::Stop => task_start_stop(&mut tasks, &conf, false),
         conf::RunMode::Stats => stats::show_stats(&tasks, &conf.fmt),
+        conf::RunMode::Postpone => task_postpone(&mut tasks, &conf),
         _ => {}
     }
 }

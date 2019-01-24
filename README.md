@@ -143,6 +143,7 @@ Commands:
 * start - activate todo's timer;
 * stop - stop todo's timer and update time spent on the todo;
 * stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
+* postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
@@ -268,3 +269,4 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl e @customer_acme --set-due=none` | remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context |
 | `ttdl e --pri=none --set-pri=z` | set the lowest priority for all incomplete todos which do not have a priority set |
 | `ttdl e @bug1000 --set-pri=+` | increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z` |
+| `ttdl postpone 3 5d` | push back due date of task #3 by 5 days |
