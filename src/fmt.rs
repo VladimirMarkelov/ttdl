@@ -37,9 +37,11 @@ pub struct Colors {
     pub today: ColorSpec,
     pub soon: ColorSpec,
     pub done: ColorSpec,
+    pub old: ColorSpec,
 
     pub important_limit: u8,
     pub soon_days: u8,
+    pub old_period: Option<todo_txt::task::Recurrence>,
 }
 fn default_done_color() -> ColorSpec {
     let mut spc = ColorSpec::new();
@@ -85,9 +87,11 @@ impl Default for Colors {
             today: default_today_color(),
             soon: default_color(),
             done: default_done_color(),
+            old: default_done_color(),
 
             important_limit: todo::NO_PRIORITY,
             soon_days: 0u8,
+            old_period: None,
         }
     }
 }
@@ -287,6 +291,30 @@ fn color_for_priority(task: &todo_txt::task::Extended, c: &Conf) -> ColorSpec {
     default_color()
 }
 
+fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSpec {
+    let spc = default_color();
+    if task.finished {
+        return c.colors.done.clone();
+    }
+    if task.recurrence.is_some() {
+        return spc;
+    }
+    let rec = match &c.colors.old_period {
+        None => { return spc; },
+        Some(r) => r.clone(),
+    };
+
+    if let Some(ref cd) = task.create_date {
+        let today = chrono::Local::now().date().naive_local();
+        let mcreate = rec + *cd;
+        if mcreate < today {
+            return c.colors.old.clone();
+        }
+    }
+
+    spc
+}
+
 fn color_for_due_date(task: &todo_txt::task::Extended, days: i64, c: &Conf) -> ColorSpec {
     let spc = default_color();
     if task.finished {
@@ -409,6 +437,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                     print_with_color(stdout, &priority_str(task), &color_for_priority(task, c));
                 }
                 "created" => {
+                    let dfg = color_for_creation_date(task, c);
                     let st = if let Some(d) = task.create_date.as_ref() {
                         if c.is_human(*f) {
                             let (s, _) = format_relative_date(*d, c.compact);
@@ -419,7 +448,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                     } else {
                         format!("{:wid$} ", " ", wid = width)
                     };
-                    print_with_color(stdout, &st, &fg);
+                    print_with_color(stdout, &st, &dfg);
                 }
                 "finished" => {
                     let st = if let Some(d) = task.finish_date.as_ref() {

@@ -46,6 +46,8 @@ done = "bright black"
 today = "bright yellow"
 # todos that are due in and less in `ranges.soon` days
 soon = "white"
+# todos that old (color for creation date)
+old = "bright black"
 
 [ranges]
 # TTDL filter `soon` selects todos that are due in and less than in `soon` days
@@ -56,6 +58,9 @@ soon = 0
 # Priority is a character from 'a'(highest priority) through 'z'. Setting
 #   `important` to any other value disables the feature
 important = ""
+# creation date of todos that are older than `old` is displayed in `old` color.
+# Format: single digit and modifier 'd'(day), 'w'(week), 'm'(month), 'y'(year)
+old = "1y"
 
 [global]
 # set global todo.txt filename. It works as environment variable TTDL_FILENAME,

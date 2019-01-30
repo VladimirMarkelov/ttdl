@@ -566,6 +566,7 @@ fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     conf.fmt.colors.soon = read_color(&tc.colors.soon);
     conf.fmt.colors.done = read_color(&tc.colors.done);
     conf.fmt.colors.threshold = read_color(&tc.colors.threshold);
+    conf.fmt.colors.old = read_color(&tc.colors.old);
 
     if conf.fmt.color_term == fmt::TermColorType::Auto {
         if let Some(cs) = &tc.colors.color_term {
@@ -592,6 +593,13 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(soon) = tc.ranges.soon {
         if soon > 0 && soon < 256 {
             conf.fmt.colors.soon_days = soon as u8;
+        }
+    }
+
+    if let Some(ref old) = tc.ranges.old {
+        match todo_txt::task::Recurrence::from_str(old) {
+            Ok(r) => { conf.fmt.colors.old_period = Some(r);},
+            Err(_) => {},
         }
     }
 }

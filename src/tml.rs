@@ -8,12 +8,14 @@ pub struct Colors {
     pub done: Option<String>,
     pub today: Option<String>,
     pub soon: Option<String>,
+    pub old: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct Ranges {
     pub soon: Option<i32>,
     pub important: Option<String>,
+    pub old: Option<String>,
 }
 
 #[derive(Deserialize)]
