@@ -1,3 +1,10 @@
+ttdl (0.7.0) unstable; urgency=medium
+
+  * Breaking change: now configuration must be in application subdirectory
+    "ttdl" instead of old way - in the root of user configuration folder
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 17 Feb 2019 00:13:58 -0800
+
 ttdl (0.6.0) unstable; urgency=medium
 
   * New command 'postpone' to push task's due date

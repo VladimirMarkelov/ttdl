@@ -16,6 +16,7 @@ use todo_lib::{terr, tfilter, todo, tsort};
 use toml;
 
 const TODOFILE_VAR: &str = "TTDL_FILENAME";
+const APP_DIR: &str = "ttdl";
 const CONF_FILE: &str = "ttdl.toml";
 const TODO_FILE: &str = "todo.txt";
 const DONE_FILE: &str = "done.txt";
@@ -629,6 +630,7 @@ fn load_from_config(conf: &mut Conf) {
             None => return,
             Some(s) => s.to_owned(),
         };
+        path.push(APP_DIR);
         path.push(CONF_FILE);
         if !path.exists() {
             return;

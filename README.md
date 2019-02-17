@@ -55,9 +55,9 @@ Added todo:
 TTDL is a standalone binary and it does not create any files in user's directory. But at start, it checks for a configuration file - please see example configuration (ttdl.toml)[./ttdl.toml] in user's configuration directory and loads it. Local configuration files are supported as well. Locations where TTDL looks for a configuration file:
 
 * current working directory
-* Linux:  `~/.config/ttdl.toml`
-* Windows: `c:\Users\{username}\AppData\Roaming\ttdl.toml`
-* OSX: `/Users/{username}/Library/Preferences/ttdl.toml`
+* Linux:  `~/.config/ttdl/ttdl.toml`
+* Windows: `c:\Users\{username}\AppData\Roaming\ttdl\ttdl.toml`
+* OSX: `/Users/{username}/Library/Preferences/ttdl/ttdl.toml`
 
 First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory.
 
