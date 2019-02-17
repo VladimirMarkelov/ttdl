@@ -300,7 +300,9 @@ fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSp
         return spc;
     }
     let rec = match &c.colors.old_period {
-        None => { return spc; },
+        None => {
+            return spc;
+        }
         Some(r) => r.clone(),
     };
 

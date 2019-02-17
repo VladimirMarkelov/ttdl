@@ -599,8 +599,10 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
 
     if let Some(ref old) = tc.ranges.old {
         match todo_txt::task::Recurrence::from_str(old) {
-            Ok(r) => { conf.fmt.colors.old_period = Some(r);},
-            Err(_) => {},
+            Ok(r) => {
+                conf.fmt.colors.old_period = Some(r);
+            }
+            Err(_) => {}
         }
     }
 }
@@ -623,22 +625,34 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 }
 
-fn load_from_config(conf: &mut Conf) {
-    let mut path: PathBuf = PathBuf::from(CONF_FILE);
-    if !path.exists() {
-        path = match dirs::config_dir() {
-            None => return,
-            Some(s) => s.to_owned(),
-        };
-        path.push(APP_DIR);
-        path.push(CONF_FILE);
-        if !path.exists() {
-            return;
-        }
+fn detect_conf_file_path() -> PathBuf {
+    let loc_path = PathBuf::from(CONF_FILE);
+    if loc_path.exists() {
+        return loc_path;
     }
+
+    let path = match dirs::config_dir() {
+        Some(mut d) => {
+            d.push(APP_DIR);
+            d.push(CONF_FILE);
+            d
+        }
+        None => loc_path,
+    };
+    path
+}
+
+fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
+    let path: PathBuf = match conf_path {
+        Some(p) => p,
+        None => detect_conf_file_path(),
+    };
 
     if conf.verbose {
         println!("Loading configuration from: {:?}", path);
+    }
+    if !path.exists() {
+        return;
     }
 
     let inp = match File::open(path) {
@@ -778,6 +792,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "Use file of completed todos - done.txt. In this mode the only available command is 'list'",
     );
     opts.optflag("", "version", "Show TTDL version");
+    opts.optopt("c", "config", "path to configuration file", "CONF FILE PATH");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -797,6 +812,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         print_usage(&program, &opts);
         exit(0);
     }
+    let conf_file = if matches.opt_present("config") {
+        matches.opt_str("config").map(|s| PathBuf::from(s))
+    } else {
+        None
+    };
 
     parse_filter(&matches, &mut conf.flt)?;
     parse_todo(&matches, &mut conf.todo)?;
@@ -811,7 +831,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         conf.flt.all = tfilter::TodoStatus::Done;
     }
 
-    load_from_config(&mut conf);
+    load_from_config(&mut conf, conf_file);
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
         println!(

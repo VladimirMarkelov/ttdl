@@ -59,7 +59,7 @@ TTDL is a standalone binary and it does not create any files in user's directory
 * Windows: `c:\Users\{username}\AppData\Roaming\ttdl\ttdl.toml`
 * OSX: `/Users/{username}/Library/Preferences/ttdl/ttdl.toml`
 
-First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory.
+First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory. Automatic configuration path detection can be overridden with command line option `-c` or `--config`. If the option is set in command line TTDL disables automatic detection of the configuration file path.
 
 The configuration file contains options that cannot be set in command line:
 
