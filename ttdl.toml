@@ -1,8 +1,8 @@
 # A TTDL config. It can be in the current working directory - to support
 #   ttdl settings on per project basis. Global user config must be in:
-# * Linux: ~/.config/ttdl.toml
-# * Windows: c:\Users\<username>\AppData\Roaming\ttdl.toml
-# * MacOS: /Users/<username>/Library/Preferences/ttdl.toml
+# * Linux: ~/.config/ttdl/ttdl.toml
+# * Windows: c:\Users\<username>\AppData\Roaming\ttdl\ttdl.toml
+# * MacOS: /Users/<username>/Library/Preferences/ttdl/ttdl.toml
 #
 # All section must exists in the custom configuration file, but all options
 #   inside every section are optional.
