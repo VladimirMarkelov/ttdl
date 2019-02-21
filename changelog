@@ -1,3 +1,15 @@
+ttdl (0.7.1) unstable; urgency=medium
+
+  * New command line option --todo-file to pass a path to file contains todo
+    list. If the path is a directory, "todo.txt" is added automatically
+
+  * New command line option --done-file to pass a path to file contains
+    archived todos. If the path is a directory, "done.txt" is added
+    automatically. If the path contains only file name, it inherits directory
+    from the path to todo list.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 20 Feb 2019 22:32:54 -0800
+
 ttdl (0.7.0) unstable; urgency=medium
 
   * Breaking change: now configuration must be in application subdirectory

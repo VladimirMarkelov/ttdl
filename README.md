@@ -68,6 +68,23 @@ The configuration file contains options that cannot be set in command line:
 - `filename` - the path to global todo file (can point to directory, TTDL adds `todo.txt` automatically if `filename` is a directory). To override the option, you can set environment variable `TTDL_FILENAME` or use command line option `--local` if you need to load todo list from current working directory
 - `creation_date_auto` The option defines TTDL behavior when a new todo is added. By default, TTDL adds a todo as is - a user must set manually creation date in the subject. Setting `creation_date_auto` to `true` makes TTDL to set today as creation date for all new todos if their subject does not include creation date.
 
+### Extra ways to set filenames of active and archived todos
+
+Rules to choose a file which is loaded as todo list at startup (from lowest to highest priority):
+
+1. Default is a file "todo.txt" in the current working directory
+2. Configuration file option `filename` in section `global`
+3. Value of environment variable `TTDL_FILENAME`
+4. Command line option `--todo-file`
+5. If option `--local` is set it overrides all options above and loads "todo.txt" from the current working directory
+
+If any path at steps 2-5 points to a directory then "todo.txt" is added automatically.
+
+Rules to choose a file which is used to store archived todos (from lowest to highest priority):
+
+1. "done.txt" in the same directory with "todo.txt" 
+2. Command line option `--done-file`. If any path set in command line points to a directory then "done.txt" is added automatically. If the value is only a filename without directory then the directory is inherited from todo list file
+
 ## How to use
 
 Run TTDL with the command line:

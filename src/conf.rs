@@ -64,7 +64,7 @@ impl Default for Conf {
             wipe: false,
             use_done: false,
             todo_file: PathBuf::from(TODO_FILE),
-            done_file: PathBuf::from(DONE_FILE),
+            done_file: PathBuf::from(""),
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -539,15 +539,34 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
             conf.todo_file = PathBuf::from(val);
         }
     }
+
     if matches.opt_present("local") {
         conf.todo_file = PathBuf::from(TODO_FILE);
+    } else if let Some(val) = matches.opt_str("todo-file") {
+        if !val.is_empty() {
+            conf.todo_file = PathBuf::from(val);
+        }
     }
-
     if conf.todo_file.is_dir() {
         conf.todo_file.push(TODO_FILE);
     }
 
-    conf.done_file = conf.todo_file.with_file_name(DONE_FILE);
+    if let Some(val) = matches.opt_str("done-file") {
+        if !val.is_empty() {
+            let pb = PathBuf::from(val.clone());
+            if pb.parent() == Some(&PathBuf::from("")) {
+                conf.done_file = conf.todo_file.with_file_name(val);
+            } else {
+                conf.done_file = pb;
+            }
+        }
+    }
+    if conf.done_file == PathBuf::from("") {
+        conf.done_file = conf.todo_file.with_file_name(DONE_FILE);
+    }
+    if conf.done_file.is_dir() {
+        conf.done_file.push(DONE_FILE);
+    }
 }
 
 fn read_color(clr: &Option<String>) -> ColorSpec {
@@ -598,11 +617,8 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 
     if let Some(ref old) = tc.ranges.old {
-        match todo_txt::task::Recurrence::from_str(old) {
-            Ok(r) => {
-                conf.fmt.colors.old_period = Some(r);
-            }
-            Err(_) => {}
+        if let Ok(r) = todo_txt::task::Recurrence::from_str(old) {
+            conf.fmt.colors.old_period = Some(r);
         }
     }
 }
@@ -631,15 +647,14 @@ fn detect_conf_file_path() -> PathBuf {
         return loc_path;
     }
 
-    let path = match dirs::config_dir() {
+    match dirs::config_dir() {
         Some(mut d) => {
             d.push(APP_DIR);
             d.push(CONF_FILE);
             d
         }
         None => loc_path,
-    };
-    path
+    }
 }
 
 fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
@@ -793,6 +808,13 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     );
     opts.optflag("", "version", "Show TTDL version");
     opts.optopt("c", "config", "path to configuration file", "CONF FILE PATH");
+    opts.optopt(
+        "",
+        "todo-file",
+        "path to file with todos (if it is directory 'todo.txt' is added automatically) ",
+        "TODO FILE PATH",
+    );
+    opts.optopt("", "done-file", "path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -813,7 +835,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         exit(0);
     }
     let conf_file = if matches.opt_present("config") {
-        matches.opt_str("config").map(|s| PathBuf::from(s))
+        matches.opt_str("config").map(PathBuf::from)
     } else {
         None
     };
