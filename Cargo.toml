@@ -8,6 +8,7 @@ license = "MIT"
 description = "TTDL - Terminal ToDo List manager"
 readme = "README.md"
 repository = "https://github.com/VladimirMarkelov/ttdl"
+categories = ["command-line-utilities"]
 
 [profile.release]
 lto = true
