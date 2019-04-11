@@ -1,12 +1,12 @@
 [package]
 name = "ttdl"
-version = "0.7.2"
+version = "0.7.3"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2018"
 keywords = ["todotxt", "terminal", "cli", "todo"]
 license = "MIT"
 description = "TTDL - Terminal ToDo List manager"
-readme = "README.md"
+readme = "intro.md"
 repository = "https://github.com/VladimirMarkelov/ttdl"
 categories = ["command-line-utilities"]
 

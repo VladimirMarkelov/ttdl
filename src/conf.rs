@@ -334,7 +334,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
 
 fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoError> {
     if let Some(s) = matches.opt_str("set-pri") {
-        let s = s.to_lowercase();
+        let s = if s == "" { "none".to_owned() } else { s.to_lowercase() };
         match s.as_str() {
             "-" => {
                 c.priority_act = todo::Action::Decrease;

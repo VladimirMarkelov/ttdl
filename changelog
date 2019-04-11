@@ -1,3 +1,11 @@
+ttdl (0.7.3) unstable; urgency=medium
+
+  * Fixed crash when option --set-pri is used without a value: '--set-pri='
+
+  * Option '--set-pri=' equals '--set-pri=none'
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 10 Apr 2019 20:17:23 -0700
+
 ttdl (0.7.1) unstable; urgency=medium
 
   * New command line option --todo-file to pass a path to file contains todo
