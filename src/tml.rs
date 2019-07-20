@@ -23,6 +23,7 @@ pub struct Global {
     pub filename: Option<String>,
     pub creation_date_auto: Option<bool>,
     pub fields: Option<String>,
+    pub sort: Option<String>,
 }
 
 #[derive(Deserialize)]

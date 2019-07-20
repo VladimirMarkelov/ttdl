@@ -4,3 +4,6 @@
 *.swp
 todo.txt
 done.txt
+*.zip
+*.deb
+*.tar

@@ -73,3 +73,6 @@ old = "1y"
 # fields that are displayed by default. Available fields:
 #   pri, done, due, created, finished, thr
 # fields = "pri,due,done"
+
+# default sorting
+# sort = "pri"

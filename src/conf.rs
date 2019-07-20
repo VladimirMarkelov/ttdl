@@ -639,6 +639,12 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
             conf.fmt.fields = fs.split(':').map(|s| s.to_string()).collect();
         }
     }
+
+    if let Some(sort_fields) = &tc.global.sort {
+        if conf.sort.fields.is_none() {
+            conf.sort.fields = Some(sort_fields.to_owned());
+        }
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
