@@ -162,10 +162,10 @@ impl Conf {
 
 fn number_of_digits(val: usize) -> usize {
     match val {
-        0...9 => 1,
-        10...99 => 2,
-        100...999 => 3,
-        1000...9999 => 4,
+        0..=9 => 1,
+        10..=99 => 2,
+        100..=999 => 3,
+        1000..=9999 => 4,
         _ => 5,
     }
 }
@@ -540,9 +540,9 @@ fn format_days(num: i64, compact: bool) -> String {
                 "today".to_string()
             }
         }
-        days @ 1...6 => format!("{}d", days),
-        days @ 7...29 => format!("{}w", days / 7),
-        days @ 30...364 => format!("{}m", days / 30),
+        days @ 1..=6 => format!("{}d", days),
+        days @ 7..=29 => format!("{}w", days / 7),
+        days @ 30..=364 => format!("{}m", days / 30),
         days => format!("{}y", days / 365),
     }
 }
