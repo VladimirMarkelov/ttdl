@@ -1,15 +1,21 @@
-use caseless::default_caseless_match_str;
 use std::io::Write;
+use std::process::Command;
+
+use caseless::default_caseless_match_str;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use textwrap;
 use todo_lib::timer;
 use todo_lib::todo;
 use todo_txt;
+use json;
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
 const SPENT_WIDTH: usize = 6;
+const JSON_DESC: &'static str = "description";
+const JSON_SPEC: &'static str = "specialTags";
+const PLUG_PREFIX: &'static str = "ttdl-";
 
 lazy_static! {
     static ref FIELDS: [&'static str; 7] = ["done", "pri", "created", "finished", "due", "thr", "spent"];
@@ -118,10 +124,15 @@ pub struct Conf {
     pub max: usize,
     pub colors: Colors,
     pub atty: bool,
+    pub shell: Vec<String>,
 }
 
 impl Default for Conf {
     fn default() -> Conf {
+        #[cfg(windows)]
+        let shell = vec!["cmd".to_string(), "/c".to_string()];
+        #[cfg(not(windows))]
+        let shell = vec!["sh".to_string(), "-cu".to_string()];
         Conf {
             fmt: Format::Full,
             width: 0,
@@ -136,6 +147,7 @@ impl Default for Conf {
             compact: false,
             colors: Default::default(),
             atty: true,
+            shell,
         }
     }
 }
@@ -509,6 +521,9 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     if let Some(r) = task.recurrence.as_ref() {
         subj.push_str(&format!(" rec:{}", *r));
     }
+    if let Some(s) = external_reconstruct(task, c) {
+        subj = s;
+    }
     if c.width != 0 && c.long != LongLine::Simple {
         let (skip, subj_w) = calc_width(c, fields);
         let lines = textwrap::wrap(&subj, subj_w);
@@ -528,6 +543,123 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     if let Err(e) = stdout.set_color(&default_color()) {
         eprintln!("Failed to set color: {:?}", e);
     }
+}
+
+fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<String> {
+    let mut ext_cmds: Vec<String> = Vec::new();
+    for (key, _val) in task.tags.iter() {
+        if key.starts_with('!') {
+            ext_cmds.push(key.to_string());
+        }
+    }
+    if ext_cmds.is_empty() {
+        return None;
+    }
+
+    let mut arg = build_ext_arg(task);
+    let orig_subj = task.subject.clone();
+    for cmd in ext_cmds {
+        if !command_in_json(&arg, &cmd) {
+            continue;
+        }
+        let bin_name = format!("{}{}", PLUG_PREFIX, cmd.trim_start_matches('!'));
+        let args = json::stringify(arg);
+        let output = exec_plugin(c, &bin_name, &args);
+        match output {
+            Err(e) => {
+                eprintln!("Failed to execute plugin '{}': {}", bin_name, e);
+                return None;
+            },
+            Ok(s) => {
+                match json::parse(&s) {
+                    Ok(j) => arg = j,
+                    Err(e) => {
+                        eprintln!("Failed to parse output of plugin {}: {}\nOutput: {}", bin_name, e, s);
+                        return None;
+                    },
+                }
+            }
+        }
+    }
+
+    // TODO: last arg -> desc + arg
+    let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
+        s.to_string()
+    } else {
+        orig_subj
+    };
+    let tags = &arg[JSON_SPEC];
+    if !tags.is_array() || tags.is_empty() {
+        return Some(res);
+    }
+    for m in tags.members() {
+        if !m.is_object() {
+            continue;
+        }
+        for e in m.entries() {
+            let (key, val) = e;
+            if let Some(st) = val.as_str() {
+                res += &(format!(" {}:{}", key, st));
+            }
+        }
+    }
+
+    Some(res)
+}
+
+fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
+    let mut cmd = Command::new(&c.shell[0]);
+    for shell_arg in c.shell[1..].iter() {
+        cmd.arg(shell_arg);
+    }
+    cmd.arg(&plugin);
+    cmd.arg(&args);
+    let out = match cmd.output() {
+        Ok(o) => o,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if !out.status.success() {
+        if let Ok(s) = String::from_utf8(out.stderr) {
+            return Err(s.trim_end().to_string());
+        }
+        return Err(format!("failed to execute plugin '{}'", plugin));
+    }
+
+    if let Ok(s) = String::from_utf8(out.stdout) {
+        Ok(s.trim_end().to_string())
+    } else {
+        Err(format!("Non-UTF-8 Output from '{}'", plugin))
+    }
+}
+
+// {"description": "This is an example", "specialTags":[{"tag1": "value"},]}
+fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
+    let mut jarr = json::JsonValue::new_array();
+    for (key, val) in task.tags.iter() {
+        let o = json::object!{ key => val.to_string() };
+        let _ = jarr.push(o);
+    }
+    json::object!{
+        JSON_DESC => task.subject.clone(),
+        JSON_SPEC => jarr,
+    }
+}
+
+fn command_in_json(val: &json::JsonValue, key: &str) -> bool {
+    let arr = &val[JSON_SPEC];
+    if !arr.is_array() {
+        return false;
+    }
+    for m in arr.members() {
+        if !m.is_object() {
+            continue;
+        }
+        if m.has_key(key) {
+            return true;
+        }
+    }
+    false
 }
 
 fn format_days(num: i64, compact: bool) -> String {
