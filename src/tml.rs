@@ -24,6 +24,9 @@ pub struct Global {
     pub creation_date_auto: Option<bool>,
     pub fields: Option<String>,
     pub sort: Option<String>,
+    pub shell: Option<Vec<String>>,
+    pub script_ext: Option<String>,
+    pub script_prefix: Option<String>,
 }
 
 #[derive(Deserialize)]

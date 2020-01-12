@@ -76,3 +76,17 @@ old = "1y"
 
 # default sorting
 # sort = "pri"
+
+# shell to execute plugins. If not set, it defaults to:
+#   ["cmd", "/c"] on Windows
+#   ["sh", "-cu"] on other OS
+# shell = ["powershell", "-c"]
+
+# add extension to plugin name when calling it.
+# if extension does not start with '.', the dot is added automatically.
+# Useful on Windows to choose between 'ps1', 'cmd', and 'bat'
+# script_ext = ".ps1"
+
+# add prefix to plugin name before calling it.
+# E.g., for powershell simple "plugin" fails but "./plugin" works fine.
+# script_prefix = "./"

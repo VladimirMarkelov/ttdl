@@ -2,8 +2,12 @@
 **/*.rs.bk
 *.~
 *.swp
-todo.txt
-done.txt
+todo*.txt
+done*.txt
 *.zip
 *.deb
 *.tar
+*.bat
+*.sh
+*.ps1
+*.cmd

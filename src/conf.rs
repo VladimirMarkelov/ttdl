@@ -645,6 +645,19 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
             conf.sort.fields = Some(sort_fields.to_owned());
         }
     }
+
+    if let Some(sh) = &tc.global.shell {
+        if !sh.is_empty() {
+            conf.fmt.shell = sh.clone();
+        }
+    }
+
+    if let Some(s) = &tc.global.script_ext {
+        conf.fmt.script_ext = s.to_string();
+    }
+    if let Some(s) = &tc.global.script_prefix {
+        conf.fmt.script_prefix = s.to_string();
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {

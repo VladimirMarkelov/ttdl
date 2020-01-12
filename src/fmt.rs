@@ -125,6 +125,8 @@ pub struct Conf {
     pub colors: Colors,
     pub atty: bool,
     pub shell: Vec<String>,
+    pub script_ext: String,
+    pub script_prefix: String,
 }
 
 impl Default for Conf {
@@ -147,6 +149,8 @@ impl Default for Conf {
             compact: false,
             colors: Default::default(),
             atty: true,
+            script_ext: String::new(),
+            script_prefix: String::new(),
             shell,
         }
     }
@@ -608,12 +612,24 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<Str
 }
 
 fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
+    let mut plugin_bin = plugin.to_string();
+    if !c.script_prefix.is_empty() {
+        plugin_bin = format!("{}{}", c.script_prefix, plugin_bin);
+    }
+    if !c.script_ext.is_empty() {
+        if c.script_ext.starts_with('.') {
+            plugin_bin += &c.script_ext;
+        } else {
+            plugin_bin += &format!(".{}", c.script_ext);
+        }
+    }
+
     let mut cmd = Command::new(&c.shell[0]);
     for shell_arg in c.shell[1..].iter() {
         cmd.arg(shell_arg);
     }
-    cmd.arg(&plugin);
-    cmd.arg(&args);
+    cmd.arg(&plugin_bin);
+    cmd.arg(&format!("'{}'", args));
     let out = match cmd.output() {
         Ok(o) => o,
         Err(e) => return Err(e.to_string()),
