@@ -1,3 +1,31 @@
+# Table of Contents
+
+- [TTDL (Terminal ToDo List)](#ttdl-terminal-todo-list)
+    - [Installation](#installation)
+        - [Precompiled binaries](#precompiled-binaries)
+    - [Known issues](#known-issues)
+    - [Configuration](#configuration)
+        - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
+    - [How to use](#how-to-use)
+        - [Output example](#output-example)
+        - [Archive](#archive)
+            - [How to show archived todos](#how-to-show-archived-todos)
+        - [Supported commands](#supported-commands)
+        - [Tags](#tags)
+        - [Time tracking](#time-tracking)
+        - [Statistics](#statistics)
+        - [Custom formatting](#custom-formatting)
+            - [How to enable custom formatting](#how-to-enable-custom-formatting)
+            - [Plugin arguments](#plugin-arguments)
+            - [Example](#example)
+        - [Extra features](#extra-features)
+    - [Command line examples](#command-line-examples)
+        - [List and filter](#list-and-filter)
+        - [Add a new todo](#add-a-new-todo)
+        - [Done (undone)](#done-undone)
+        - [Clean up the list](#clean-up-the-list)
+        - [Modify todo list](#modify-todo-list)
+
 # TTDL (Terminal ToDo List)
 
 ![](https://travis-ci.com/VladimirMarkelov/ttdl.svg?branch=master)
@@ -219,6 +247,112 @@ Notes:
 3. For project headers (lines which have some project and empty context) the percentage is calculated from all todos, for context totals the percentage is calculated from project total todos
 4. Done and overdue percentage is always calculated from the total of the current line
 5. Spent time adds low-cased letters for time spans less than a day (s - seconds, m - minutes, h - hours), and upper-cased letter for longer spans (D - days, M - months, Y - years).
+
+### Custom formatting
+
+The feature is introduced in version 0.8: when executing command `list` TTDL may call an external application
+(a "plugin") to transform the description and/or tags. If the plugin finishes successfully
+and its output is valid JSON string, `TTDL` combines values from the output and prints it instead of 
+default description. Only description can be changed by plugins, other columns like "priority" are fixed ones.
+
+A plugin is a executable shell script or binary with name that follows TTDL rules. Every plugin receives
+a single argument - JSON as a string, a plugin must print modified or original JSON to standard output.
+
+If any plugin does not exist, fails or returns invalid JSON, TTDL prints the error to standard error output
+and displays the unchanged original todo description. Otherwise, TTDL joins description and tags, and prints
+the result.
+
+A todo can contain any number of plugin "calls". They are executed in order of appearance in original
+description. The result of a current call is passed to the next plugin only if the next plugin name is
+still in the result - a plugin can remove any tags in the result to make TTDL ignore the other plugins.
+So, any plugin can disable any other plugins if it removes their tags from the result.
+
+#### How to enable custom formatting
+
+To enable custom formatting, a todo must include at least one tag which name starts with symbol `!`.
+The tag name without `!` is the plugin name(and the last part of the file name to call). By default
+The full name of the file to execute is `ttdl-` + plugin name. A configuration file contains settings
+in `global` section that affects file name:
+
+- `script_ext` - value is used as a file name extension. If the value does not start with '.', the
+  dot is added automatically. Default is empty value - no extension is added.
+  Example: for `!tagname:value` and `script_ext=sh`, the script name is `tagname.sh`;
+- `script_prefix` - its value is added before the tag name. It makes possible to, e.g., keep scripts
+  in a separate directory or create a subgroup of scripts. Another usage is for Windows
+  PowerShell: executing `tagname.ps1` may fail, because PowerShell wants a user to explicitly say
+  that the script is in the current directory, so you have to set `script_prefix="./"` to be able to
+  run PowerShell scripts from the current directory. Do not forget to add `/` at the of the prefix
+  if it is a directory name - TTDL cannot decided automatically if it is a part of filename or
+  a directory.
+
+Related configuration setting defines what shell executes the script:
+
+- `shell` - sets the shell to execute a binary/script. If not set, TTDL uses `["cmd", "/c"]` on Windows,
+  and `["sh", "-cu"]` on other OS. If you want to use PowerShell on Windows, change the value to `["powershell", "-c"]`;
+
+#### Plugin arguments
+
+Every plugin receives a single argument: JSON. The first script always gets JSON with two obligatory fields:
+
+- `description` - original todo's description that TTDL would print by default, plugins can modify it;
+- `specialTags` - an array of all tags and their values extracted from the todo. NOTE: if a currently
+  running plugin removes a tag that belongs to a plugin that have not run yet, that plugin will be
+  skipped because its tag is missing in `specialTags` at the moment when the plugin is going to run.
+
+All the next plugins receive a JSON returned by a previous plugin. A plugin must return the modified or
+original JSON by printing it to standard output. TTDL constructs and displays the modified
+description returned by the very last plugin. If the final result misses field `description`(or it is
+empty), the original description is used.
+
+A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
+requirement is that the result must include both fields above.
+
+#### Example
+
+Let's assume there is the following line in todo.txt, and TTDL config contains `script_prefix="/home/username/ttdlscripts/"`:
+
+```
+2020-01-17 sprint ends !issue-cnt:project_name !issue-pct:project_name rec:2w
+```
+
+It is a recurrent todo - every 2 weeks - that notifies about the current sprint ends. We want to display
+the number of opened issues for the sprint and how many percent of issues are still opened, so two tags
+are added `!issue-cnt:project_name` and `!issue-pct:project_name`.
+
+TTDL detects a tag with leading `!` and the plugin engine kicks in. The todo description is "sprint ends".
+The argument for the first plugin is:
+
+```
+{"description": "sprint ends", "specialTags": [ {"!issue-cnt": "project_name"}, {"!issue-high": "project_name"} ]}
+```
+
+The first tag is `!issue-cnt`. It gives script name `/home/username/ttdlscripts/issue-cnt`. On Linux
+it eventually executes:
+
+```
+sh -cu /home/username/ttdlscripts/issue-cnt \
+    '{"description": "sprint ends", \
+      "specialTags": [ {"!issue-cnt": "project_name"}, \
+                       {"!issue-high": "project_name"} ]}'
+```
+
+This sprint was very good and we have no opened issues. It means that we do not need to execute the
+second plugin `issue-pct` to show percentage, so the first plugin removes redundant tag from the
+`specialTags` and replaces its own tag with some nice message. The plugin `issue-cnt` prints to
+stdout its result:
+
+```
+{"description": "sprint ends - well done!", \
+   "specialTags": [ {"issues:ALL-DONE": "project_name"} ]}
+```
+
+TTDL gets intermediate result, and before calling the next plugin `issue-pct`, it checks if plugin
+name is still in the list. It is not found, and as it is the last plugin to call, TTDL builds
+the description from the last collected output. It joins description with all tags and prints:
+
+```
+2020-01-17 sprint ends - well done! issues:ALL-DONE
+```
 
 ### Extra features
 
