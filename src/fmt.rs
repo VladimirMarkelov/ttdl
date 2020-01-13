@@ -586,7 +586,6 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<Str
         }
     }
 
-    // TODO: last arg -> desc + arg
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
         s.to_string()
     } else {
