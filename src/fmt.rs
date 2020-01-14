@@ -2,12 +2,12 @@ use std::io::Write;
 use std::process::Command;
 
 use caseless::default_caseless_match_str;
+use json;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use textwrap;
 use todo_lib::timer;
 use todo_lib::todo;
 use todo_txt;
-use json;
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -488,7 +488,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_OPT];
                     if let Some(v) = arg_field_as_str(tags, "done") {
-                        s = format!("{:wid$.wid$}", v, wid=2);
+                        s = format!("{:wid$.wid$}", v, wid = 2);
                     }
                 };
                 print_with_color(stdout, &s, &fg);
@@ -498,7 +498,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_OPT];
                     if let Some(v) = arg_field_as_str(tags, "pri") {
-                        s = format!("{:wid$.wid$}", v, wid=2);
+                        s = format!("{:wid$.wid$}", v, wid = 2);
                     }
                 }
                 print_with_color(stdout, &s, &color_for_priority(task, c));
@@ -518,7 +518,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_OPT];
                     if let Some(v) = arg_field_as_str(tags, "created") {
-                        st = format!("{:wid$.wid$}", v, wid=width);
+                        st = format!("{:wid$.wid$}", v, wid = width);
                     }
                 }
                 print_with_color(stdout, &st, &dfg);
@@ -537,7 +537,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_OPT];
                     if let Some(v) = arg_field_as_str(tags, "finished") {
-                        st = format!("{:wid$.wid$}", v, wid=width);
+                        st = format!("{:wid$.wid$}", v, wid = width);
                     }
                 }
                 print_with_color(stdout, &st, &fg);
@@ -563,7 +563,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_SPEC];
                     if let Some(v) = arg_field_as_str(tags, "due") {
-                        dstr = format!("{:wid$.wid$}", v, wid=width);
+                        dstr = format!("{:wid$.wid$}", v, wid = width);
                     }
                 }
                 print_with_color(stdout, &dstr, &dfg);
@@ -589,7 +589,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
                 if custom {
                     let tags = &arg[JSON_SPEC];
                     if let Some(v) = arg_field_as_str(tags, "thr") {
-                        dstr = format!("{:wid$.wid$}", v, wid=width);
+                        dstr = format!("{:wid$.wid$}", v, wid = width);
                     }
                 }
                 print_with_color(stdout, &dstr, &dfg);
@@ -654,16 +654,14 @@ fn customize(task: &todo_txt::task::Extended, c: &Conf) -> Option<json::JsonValu
             Err(e) => {
                 eprintln!("Failed to execute plugin '{}': {}", bin_name, e);
                 return None;
-            },
-            Ok(s) => {
-                match json::parse(&s) {
-                    Ok(j) => arg = j,
-                    Err(e) => {
-                        eprintln!("Failed to parse output of plugin {}: {}\nOutput: {}", bin_name, e, s);
-                        return None;
-                    },
-                }
             }
+            Ok(s) => match json::parse(&s) {
+                Ok(j) => arg = j,
+                Err(e) => {
+                    eprintln!("Failed to parse output of plugin {}: {}\nOutput: {}", bin_name, e, s);
+                    return None;
+                }
+            },
         }
     }
     Some(arg)
@@ -737,33 +735,28 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
 fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
     let mut jarr = json::JsonValue::new_array();
     for (key, val) in task.tags.iter() {
-        let o = json::object!{ key => val.to_string() };
-        let _ = jarr.push(o);
+        let _ = jarr.push(json::object! { key => val.to_string() });
     }
     if let Some(d) = task.due_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let o = json::object!{ "due" => s };
-        let _ = jarr.push(o);
+        let _ = jarr.push(json::object! { "due" => s });
     }
     if let Some(d) = task.threshold_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let o = json::object!{ "thr" => s };
-        let _ = jarr.push(o);
+        let _ = jarr.push(json::object! { "thr" => s });
     }
     let mut optional = json::JsonValue::new_array();
-    let _ = optional.push(json::object!{ "done" => done_str(task) });
-    let _ = optional.push(json::object!{ "pri" => priority_str(task) });
+    let _ = optional.push(json::object! { "done" => done_str(task) });
+    let _ = optional.push(json::object! { "pri" => priority_str(task) });
     if let Some(d) = task.create_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let o = json::object!{ "created" => s };
-        let _ = jarr.push(o);
+        let _ = jarr.push(json::object! { "created" => s });
     }
     if let Some(d) = task.finish_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let o = json::object!{ "finished" => s };
-        let _ = jarr.push(o);
+        let _ = jarr.push(json::object! { "finished" => s });
     }
-    json::object!{
+    json::object! {
         JSON_DESC => task.subject.clone(),
         JSON_SPEC => jarr,
         JSON_OPT => optional,
