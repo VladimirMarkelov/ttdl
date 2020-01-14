@@ -14,6 +14,7 @@ const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &'static str = "description";
+const JSON_OPT: &'static str = "optional";
 const JSON_SPEC: &'static str = "specialTags";
 const PLUG_PREFIX: &'static str = "ttdl-";
 
@@ -426,6 +427,27 @@ pub fn duration_str(d: chrono::Duration) -> String {
     }
 }
 
+fn arg_field_as_str(arg: &json::JsonValue, field: &str) -> Option<String> {
+    if arg == &json::JsonValue::Null || !arg.is_array() {
+        return None;
+    }
+    for m in arg.members() {
+        if !m.is_object() {
+            continue;
+        }
+        for e in m.entries() {
+            let (key, val) = e;
+            if key != field {
+                continue;
+            }
+            if let Some(st) = val.as_str() {
+                return Some(st.to_string());
+            }
+        }
+    }
+    None
+}
+
 fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf, fields: &[&str]) {
     let id_width = field_width("id", c);
     let fg = if task.finished {
@@ -433,6 +455,16 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     } else {
         default_color()
     };
+
+    let (mut desc, arg) = if let Some(tpl) = external_reconstruct(task, c) {
+        tpl
+    } else {
+        (String::new(), json::JsonValue::Null)
+    };
+    let custom = arg != json::JsonValue::Null;
+    if custom && desc.is_empty() {
+        desc = task.subject.clone();
+    }
 
     print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg);
 
@@ -445,92 +477,142 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
             }
         }
 
-        if found {
-            let width = field_width(*f, c);
-            match *f {
-                "done" => {
-                    print_with_color(stdout, &done_str(task), &fg);
-                }
-                "pri" => {
-                    print_with_color(stdout, &priority_str(task), &color_for_priority(task, c));
-                }
-                "created" => {
-                    let dfg = color_for_creation_date(task, c);
-                    let st = if let Some(d) = task.create_date.as_ref() {
-                        if c.is_human(*f) {
-                            let (s, _) = format_relative_date(*d, c.compact);
-                            format!("{:wid$} ", s, wid = width)
-                        } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
-                        }
-                    } else {
-                        format!("{:wid$} ", " ", wid = width)
-                    };
-                    print_with_color(stdout, &st, &dfg);
-                }
-                "finished" => {
-                    let st = if let Some(d) = task.finish_date.as_ref() {
-                        if c.is_human(*f) {
-                            let (s, _) = format_relative_date(*d, c.compact);
-                            format!("{:wid$} ", s, wid = width)
-                        } else {
-                            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
-                        }
-                    } else {
-                        format!("{:wid$} ", " ", wid = width)
-                    };
-                    print_with_color(stdout, &st, &fg);
-                }
-                "due" => {
-                    if let Some(d) = task.due_date.as_ref() {
-                        let (s, days) = format_relative_due_date(*d, c.compact);
-                        let dfg = color_for_due_date(task, days, c);
-                        let st = if c.is_human(*f) {
-                            s.to_string()
-                        } else {
-                            format!("{}", (*d).format("%Y-%m-%d"))
-                        };
-                        print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
-                    } else {
-                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = width), &fg);
-                    };
-                }
-                "thr" => {
-                    if let Some(d) = task.threshold_date.as_ref() {
-                        let (s, days) = format_relative_due_date(*d, c.compact);
-                        let dfg = color_for_threshold_date(task, days, c);
-                        let st = if c.is_human(*f) {
-                            s.to_string()
-                        } else {
-                            format!("{}", (*d).format("%Y-%m-%d"))
-                        };
-                        print_with_color(stdout, &format!("{:wid$} ", &st, wid = width), &dfg);
-                    } else {
-                        print_with_color(stdout, &format!("{:wid$} ", " ", wid = width), &fg);
-                    };
-                }
-                "spent" => {
-                    print_with_color(
-                        stdout,
-                        &format!("{:wid$} ", &duration_str(timer::spent_time(&task)), wid = SPENT_WIDTH),
-                        &fg,
-                    );
-                }
-                _ => {}
+        if !found {
+            continue;
+        }
+
+        let width = field_width(*f, c);
+        match *f {
+            "done" => {
+                let mut s = done_str(task);
+                if custom {
+                    let tags = &arg[JSON_OPT];
+                    if let Some(v) = arg_field_as_str(tags, "done") {
+                        s = format!("{:wid$.wid$}", v, wid=2);
+                    }
+                };
+                print_with_color(stdout, &s, &fg);
             }
+            "pri" => {
+                let mut s = priority_str(task);
+                if custom {
+                    let tags = &arg[JSON_OPT];
+                    if let Some(v) = arg_field_as_str(tags, "pri") {
+                        s = format!("{:wid$.wid$}", v, wid=2);
+                    }
+                }
+                print_with_color(stdout, &s, &color_for_priority(task, c));
+            }
+            "created" => {
+                let dfg = color_for_creation_date(task, c);
+                let mut st = if let Some(d) = task.create_date.as_ref() {
+                    if c.is_human(*f) {
+                        let (s, _) = format_relative_date(*d, c.compact);
+                        format!("{:wid$} ", s, wid = width)
+                    } else {
+                        format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                    }
+                } else {
+                    format!("{:wid$} ", " ", wid = width)
+                };
+                if custom {
+                    let tags = &arg[JSON_OPT];
+                    if let Some(v) = arg_field_as_str(tags, "created") {
+                        st = format!("{:wid$.wid$}", v, wid=width);
+                    }
+                }
+                print_with_color(stdout, &st, &dfg);
+            }
+            "finished" => {
+                let mut st = if let Some(d) = task.finish_date.as_ref() {
+                    if c.is_human(*f) {
+                        let (s, _) = format_relative_date(*d, c.compact);
+                        format!("{:wid$} ", s, wid = width)
+                    } else {
+                        format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
+                    }
+                } else {
+                    format!("{:wid$} ", " ", wid = width)
+                };
+                if custom {
+                    let tags = &arg[JSON_OPT];
+                    if let Some(v) = arg_field_as_str(tags, "finished") {
+                        st = format!("{:wid$.wid$}", v, wid=width);
+                    }
+                }
+                print_with_color(stdout, &st, &fg);
+            }
+            "due" => {
+                let mut dfg = if task.finished {
+                    c.colors.done.clone()
+                } else {
+                    default_color()
+                };
+                let mut dstr = if let Some(d) = task.due_date.as_ref() {
+                    let (s, days) = format_relative_due_date(*d, c.compact);
+                    dfg = color_for_due_date(task, days, c);
+                    let st = if c.is_human(*f) {
+                        s.to_string()
+                    } else {
+                        format!("{}", (*d).format("%Y-%m-%d"))
+                    };
+                    format!("{:wid$} ", &st, wid = width)
+                } else {
+                    format!("{:wid$} ", " ", wid = width)
+                };
+                if custom {
+                    let tags = &arg[JSON_SPEC];
+                    if let Some(v) = arg_field_as_str(tags, "due") {
+                        dstr = format!("{:wid$.wid$}", v, wid=width);
+                    }
+                }
+                print_with_color(stdout, &dstr, &dfg);
+            }
+            "thr" => {
+                let mut dfg = if task.finished {
+                    c.colors.done.clone()
+                } else {
+                    default_color()
+                };
+                let mut dstr = if let Some(d) = task.threshold_date.as_ref() {
+                    let (s, days) = format_relative_due_date(*d, c.compact);
+                    dfg = color_for_threshold_date(task, days, c);
+                    let st = if c.is_human(*f) {
+                        s.to_string()
+                    } else {
+                        format!("{}", (*d).format("%Y-%m-%d"))
+                    };
+                    format!("{:wid$} ", &st, wid = width)
+                } else {
+                    format!("{:wid$} ", " ", wid = width)
+                };
+                if custom {
+                    let tags = &arg[JSON_SPEC];
+                    if let Some(v) = arg_field_as_str(tags, "thr") {
+                        dstr = format!("{:wid$.wid$}", v, wid=width);
+                    }
+                }
+                print_with_color(stdout, &dstr, &dfg);
+            }
+            "spent" => {
+                print_with_color(
+                    stdout,
+                    &format!("{:wid$} ", &duration_str(timer::spent_time(&task)), wid = SPENT_WIDTH),
+                    &fg,
+                );
+            }
+            _ => {}
         }
     }
 
-    let mut subj = task.subject.clone();
-    if let Some(r) = task.recurrence.as_ref() {
-        subj.push_str(&format!(" rec:{}", *r));
-    }
-    if let Some(s) = external_reconstruct(task, c) {
-        subj = s;
+    if !custom {
+        if let Some(r) = task.recurrence.as_ref() {
+            desc.push_str(&format!(" rec:{}", *r));
+        }
     }
     if c.width != 0 && c.long != LongLine::Simple {
         let (skip, subj_w) = calc_width(c, fields);
-        let lines = textwrap::wrap(&subj, subj_w);
+        let lines = textwrap::wrap(&desc, subj_w);
         if c.long == LongLine::Cut || lines.len() == 1 {
             print_with_color(stdout, &format!("{}\n", lines[0]), &fg);
         } else {
@@ -542,14 +624,14 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
             }
         }
     } else {
-        print_with_color(stdout, &format!("{}\n", &subj), &fg);
+        print_with_color(stdout, &format!("{}\n", &desc), &fg);
     }
     if let Err(e) = stdout.set_color(&default_color()) {
         eprintln!("Failed to set color: {:?}", e);
     }
 }
 
-fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<String> {
+fn customize(task: &todo_txt::task::Extended, c: &Conf) -> Option<json::JsonValue> {
     let mut ext_cmds: Vec<String> = Vec::new();
     for (key, _val) in task.tags.iter() {
         if key.starts_with('!') {
@@ -561,7 +643,6 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<Str
     }
 
     let mut arg = build_ext_arg(task);
-    let orig_subj = task.subject.clone();
     for cmd in ext_cmds {
         if !command_in_json(&arg, &cmd) {
             continue;
@@ -585,15 +666,19 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<Str
             }
         }
     }
+    Some(arg)
+}
 
+fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(String, json::JsonValue)> {
+    let arg = customize(task, c)?;
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
         s.to_string()
     } else {
-        orig_subj
+        return None;
     };
     let tags = &arg[JSON_SPEC];
     if !tags.is_array() || tags.is_empty() {
-        return Some(res);
+        return None;
     }
     for m in tags.members() {
         if !m.is_object() {
@@ -607,7 +692,7 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<Str
         }
     }
 
-    Some(res)
+    Some((res, arg))
 }
 
 fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
@@ -655,9 +740,33 @@ fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
         let o = json::object!{ key => val.to_string() };
         let _ = jarr.push(o);
     }
+    if let Some(d) = task.due_date.as_ref() {
+        let s = format!("{}", (*d).format("%Y-%m-%d"));
+        let o = json::object!{ "due" => s };
+        let _ = jarr.push(o);
+    }
+    if let Some(d) = task.threshold_date.as_ref() {
+        let s = format!("{}", (*d).format("%Y-%m-%d"));
+        let o = json::object!{ "thr" => s };
+        let _ = jarr.push(o);
+    }
+    let mut optional = json::JsonValue::new_array();
+    let _ = optional.push(json::object!{ "done" => done_str(task) });
+    let _ = optional.push(json::object!{ "pri" => priority_str(task) });
+    if let Some(d) = task.create_date.as_ref() {
+        let s = format!("{}", (*d).format("%Y-%m-%d"));
+        let o = json::object!{ "created" => s };
+        let _ = jarr.push(o);
+    }
+    if let Some(d) = task.finish_date.as_ref() {
+        let s = format!("{}", (*d).format("%Y-%m-%d"));
+        let o = json::object!{ "finished" => s };
+        let _ = jarr.push(o);
+    }
     json::object!{
         JSON_DESC => task.subject.clone(),
         JSON_SPEC => jarr,
+        JSON_OPT => optional,
     }
 }
 
