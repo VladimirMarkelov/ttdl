@@ -13,10 +13,10 @@ const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
 const SPENT_WIDTH: usize = 6;
-const JSON_DESC: &'static str = "description";
-const JSON_OPT: &'static str = "optional";
-const JSON_SPEC: &'static str = "specialTags";
-const PLUG_PREFIX: &'static str = "ttdl-";
+const JSON_DESC: &str = "description";
+const JSON_OPT: &str = "optional";
+const JSON_SPEC: &str = "specialTags";
+const PLUG_PREFIX: &str = "ttdl-";
 
 lazy_static! {
     static ref FIELDS: [&'static str; 7] = ["done", "pri", "created", "finished", "due", "thr", "spent"];
