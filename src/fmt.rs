@@ -483,9 +483,13 @@ fn print_date_val(stdout: &mut StandardStream, arg: &json::JsonValue, c: &Conf, 
         format!("{:wid$} ", " ", wid = width)
     };
     if !arg.is_empty() {
-        let tags = &arg[JSON_OPT];
-        if let Some(v) = arg_field_as_str(tags, "created") {
-            st = format!("{:wid$.wid$}", v, wid = width);
+        let tags = if field == "created" || field == "finished" {
+            &arg[JSON_OPT]
+        } else {
+            &arg[JSON_SPEC]
+        };
+        if let Some(v) = arg_field_as_str(tags, field) {
+            st = format!("{:wid$.wid$} ", v, wid = width);
         }
     }
     print_with_color(stdout, &st, &def_color);
