@@ -509,7 +509,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
         (String::new(), json::JsonValue::Null)
     };
     let custom = arg != json::JsonValue::Null;
-    if custom && desc.is_empty() {
+    if desc.is_empty() {
         desc = task.subject.clone();
     }
 
@@ -655,7 +655,7 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(St
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
         s.to_string()
     } else {
-        return None;
+        task.subject.clone()
     };
     let tags = &arg[JSON_SPEC];
     if !tags.is_array() || tags.is_empty() {
