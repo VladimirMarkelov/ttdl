@@ -667,6 +667,12 @@ fn customize(task: &todo_txt::task::Extended, c: &Conf) -> Option<json::JsonValu
     Some(arg)
 }
 
+// Returns true if a special tag is common one and processed by todo_txt library internally.
+// So, the tag should not be displayed in the final description.
+fn is_common_special_tag(tag: &str) -> bool {
+    tag == "due" || tag == "thr"
+}
+
 fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(String, json::JsonValue)> {
     let arg = customize(task, c)?;
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
@@ -684,6 +690,9 @@ fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(St
         }
         for e in m.entries() {
             let (key, val) = e;
+            if is_common_special_tag(key) {
+                continue;
+            }
             if let Some(st) = val.as_str() {
                 res += &(format!(" {}:{}", key, st));
             }
@@ -731,7 +740,7 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     }
 }
 
-// {"description": "This is an example", "specialTags":[{"tag1": "value"},]}
+// {"description": "Desc", "specialTags":[{"tag1": "val"},], "optional":[{"pri": "A"}]}
 fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
     let mut jarr = json::JsonValue::new_array();
     for (key, val) in task.tags.iter() {
