@@ -1,3 +1,9 @@
+ttdl (0.8.0) unstable; urgency=medium
+
+  * New feature: custom formatting a todo with external apps(plugins)
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 16 Jan 2020 22:59:17 -0800
+
 ttdl (0.7.4) unstable; urgency=medium
 
   * Default sorting mode can be set in application config file. Section
