@@ -696,8 +696,9 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     for shell_arg in c.shell[1..].iter() {
         cmd.arg(shell_arg);
     }
-    cmd.arg(&plugin_bin);
-    cmd.arg(&format!("'{}'", args));
+    let args = args.replace('#', "\\#");
+    let args = args.replace('"', "\\\"");
+    cmd.arg(&format!("{} \"{}\"", plugin_bin, args));
     let out = match cmd.output() {
         Ok(o) => o,
         Err(e) => return Err(e.to_string()),
@@ -736,11 +737,11 @@ fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
     let _ = optional.push(json::object! { "pri" => priority_str(task) });
     if let Some(d) = task.create_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let _ = jarr.push(json::object! { "created" => s });
+        let _ = optional.push(json::object! { "created" => s });
     }
     if let Some(d) = task.finish_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let _ = jarr.push(json::object! { "finished" => s });
+        let _ =optional.push(json::object! { "finished" => s });
     }
     json::object! {
         JSON_DESC => task.subject.clone(),
