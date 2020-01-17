@@ -292,20 +292,62 @@ Related configuration setting defines what shell executes the script:
 
 #### Plugin arguments
 
-Every plugin receives a single argument: JSON. The first script always gets JSON with two obligatory fields:
+Every plugin receives a single argument: JSON. The first script always gets JSON with three obligatory fields:
 
 - `description` - original todo's description that TTDL would print by default, plugins can modify it;
+- `optional` - original todo's optional elements (`done`, `pri`, `created`, and `finished`);
 - `specialTags` - an array of all tags and their values extracted from the todo. NOTE: if a currently
   running plugin removes a tag that belongs to a plugin that have not run yet, that plugin will be
   skipped because its tag is missing in `specialTags` at the moment when the plugin is going to run.
 
 All the next plugins receive a JSON returned by a previous plugin. A plugin must return the modified or
 original JSON by printing it to standard output. TTDL constructs and displays the modified
-description returned by the very last plugin. If the final result misses field `description`(or it is
-empty), the original description is used.
+description returned by the very last plugin. If the final result includes any field it is displayed
+as is from the JSON, otherwise the original value is printed with default formatting. That makes it
+possible to, e.g., change "done" mark and replace default `x` with `√`, or you can format dates using
+your native language(e.g., display `10 Sep` instead of `2020-09-10`).
 
 A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
-requirement is that the result must include both fields above.
+requirement is that the result should include all fields above.
+
+**Notes**
+
+1. While it is OK to set any value to an existing field, the output is limited with the current
+   column width (only `description` is displayed in full). E.g., if a plugin changes value of
+   `created` to `12 December 2019`, in terminal TTDL prints either first 10 (default settings)
+   or 8 characters(when relative dates are enabled).
+2. All dates passed to the first plugin in JSON are always in format `YYYY-MM-DD` for easy
+   parsing. So, even if relative dates are enabled, a plugin gets in default format.
+3. All values presented in result JSON are printed as is, while all missing values are printed
+   with current format settings. It results in that there is difference between: a plugin does
+   not touch a standard field, and a plugin removes the standard field from the result. If a plugin
+   removed non-standard field from result JSON, the field won't be printed.
+   Standard fields are: "done", "pri", "created", "finished", "description", "thr", "due".
+
+Quick example for #3. Today's date is 2020-01-18, a todo contains `2020-01-17 Test line !plug:2020 !plug2:01`,
+and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, and relative it 
+prints with default formatting:
+
+```
+Created  Description
+1d ago   Test line !plug:2020 !plug2:01
+```
+
+If the plugin exists, it gets argument `{ "description": "Test line", "optional: [{"created": "2020-01-17"}], "specialTags: [{"!plug": "2020"}, {"plug2": "01"]}`.
+Case A: the plugin returns the original JSON untouched. All values are taken from JSON:
+
+```
+Created  Description
+2020-01- Test line !plug:2020 !plug2:01
+```
+
+Case B: the plugin removes `created` and `!plug2` from original JSON and returns `{ "description": "Test line", "optional: [], "specialTags: [{"!plug": "2020"}]}`.
+Now the current formatting setting are applied to standard `created`, non-standard `!plug2` is ignored and it prints:
+
+```
+Created  Description
+1d ago   Test line !plug:2020
+```
 
 #### Example
 
@@ -323,7 +365,9 @@ TTDL detects a tag with leading `!` and the plugin engine kicks in. The todo des
 The argument for the first plugin is:
 
 ```
-{"description": "sprint ends", "specialTags": [ {"!issue-cnt": "project_name"}, {"!issue-high": "project_name"} ]}
+{"description": "sprint ends", \
+    "optional": [ {"created": "2020-01-17" ], \
+    "specialTags": [ {"!issue-cnt": "project_name"}, {"!issue-high": "project_name"} ]}
 ```
 
 The first tag is `!issue-cnt`. It gives script name `/home/username/ttdlscripts/issue-cnt`. On Linux
@@ -338,7 +382,8 @@ sh -cu /home/username/ttdlscripts/issue-cnt \
 
 This sprint was very good and we have no opened issues. It means that we do not need to execute the
 second plugin `issue-pct` to show percentage, so the first plugin removes redundant tag from the
-`specialTags` and replaces its own tag with some nice message. The plugin `issue-cnt` prints to
+`specialTags` and replaces its own tag with some nice message. Also the plugin deletes `optional`
+field to make it printed with default settings and original values. The plugin `issue-cnt` prints to
 stdout its result:
 
 ```
