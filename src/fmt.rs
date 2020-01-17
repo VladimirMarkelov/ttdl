@@ -448,7 +448,12 @@ fn arg_field_as_str(arg: &json::JsonValue, field: &str) -> Option<String> {
     None
 }
 
-fn print_done_val(stdout: &mut StandardStream, task: &todo_txt::task::Extended, arg: &json::JsonValue, def_color: &termcolor::ColorSpec) {
+fn print_done_val(
+    stdout: &mut StandardStream,
+    task: &todo_txt::task::Extended,
+    arg: &json::JsonValue,
+    def_color: &termcolor::ColorSpec,
+) {
     let mut s = done_str(task);
     if !arg.is_empty() {
         let tags = &arg[JSON_OPT];
@@ -470,7 +475,14 @@ fn print_priority_val(stdout: &mut StandardStream, task: &todo_txt::task::Extend
     print_with_color(stdout, &s, &color_for_priority(task, c));
 }
 
-fn print_date_val(stdout: &mut StandardStream, arg: &json::JsonValue, c: &Conf, field: &str, dt: Option<&todo_txt::Date>, def_color: termcolor::ColorSpec) {
+fn print_date_val(
+    stdout: &mut StandardStream,
+    arg: &json::JsonValue,
+    c: &Conf,
+    field: &str,
+    dt: Option<&todo_txt::Date>,
+    def_color: termcolor::ColorSpec,
+) {
     let width = field_width(field, c);
     let mut st = if let Some(d) = dt {
         if c.is_human(field) {
@@ -696,7 +708,6 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     for shell_arg in c.shell[1..].iter() {
         cmd.arg(shell_arg);
     }
-    let args = args.replace('#', "\\#");
     let args = args.replace('"', "\\\"");
     cmd.arg(&format!("{} \"{}\"", plugin_bin, args));
     let out = match cmd.output() {
@@ -741,7 +752,7 @@ fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
     }
     if let Some(d) = task.finish_date.as_ref() {
         let s = format!("{}", (*d).format("%Y-%m-%d"));
-        let _ =optional.push(json::object! { "finished" => s });
+        let _ = optional.push(json::object! { "finished" => s });
     }
     json::object! {
         JSON_DESC => task.subject.clone(),
