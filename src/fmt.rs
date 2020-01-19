@@ -1,5 +1,5 @@
-use std::io::Write;
-use std::process::Command;
+use std::io::{Write};
+use std::process::{Command, Stdio};
 
 use caseless::default_caseless_match_str;
 use json;
@@ -708,25 +708,30 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     for shell_arg in c.shell[1..].iter() {
         cmd.arg(shell_arg);
     }
-    let args = args.replace('"', "\\\"");
-    cmd.arg(&format!("{} \"{}\"", plugin_bin, args));
-    let out = match cmd.output() {
-        Ok(o) => o,
-        Err(e) => return Err(e.to_string()),
+
+    cmd.arg(plugin_bin);
+    cmd.stdin(Stdio::piped());
+    cmd.stdout(Stdio::piped());
+
+    let mut proc = match cmd.spawn() {
+        Ok(p) => p,
+        Err(e) => return Err(format!("Failed to execute {}: {}", plugin, e)),
     };
-
-    if !out.status.success() {
-        if let Ok(s) = String::from_utf8(out.stderr) {
-            return Err(s.trim_end().to_string());
+    {
+        let stdin = match proc.stdin.as_mut() {
+            Some(si) => si,
+            None => return Err(format!("Failed to open stdin for {}", plugin)),
+        };
+        if let Err(e) = stdin.write_all(args.as_bytes()) {
+            return Err(format!("Failed to write to {} stdin: {}", plugin, e));
         }
-        return Err(format!("failed to execute plugin '{}'", plugin));
     }
 
-    if let Ok(s) = String::from_utf8(out.stdout) {
-        Ok(s.trim_end().to_string())
-    } else {
-        Err(format!("Non-UTF-8 Output from '{}'", plugin))
-    }
+    let out = match proc.wait_with_output() {
+        Ok(o) => o,
+        Err(e) => return Err(format!("Failed to read {} stdout: {}", plugin, e)),
+    };
+    Ok(String::from_utf8_lossy(&out.stdout).to_string())
 }
 
 // {"description": "Desc", "specialTags":[{"tag1": "val"},], "optional":[{"pri": "A"}]}
