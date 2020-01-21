@@ -16,7 +16,7 @@
         - [Statistics](#statistics)
         - [Custom formatting](#custom-formatting)
             - [How to enable custom formatting](#how-to-enable-custom-formatting)
-            - [Plugin arguments](#plugin-arguments)
+            - [Plugin interaction](#plugin-interaction)
             - [Example](#example)
         - [Extra features](#extra-features)
     - [Command line examples](#command-line-examples)
@@ -110,7 +110,7 @@ If any path at steps 2-5 points to a directory then "todo.txt" is added automati
 
 Rules to choose a file which is used to store archived todos (from lowest to highest priority):
 
-1. "done.txt" in the same directory with "todo.txt" 
+1. "done.txt" in the same directory with "todo.txt"
 2. Command line option `--done-file`. If any path set in command line points to a directory then "done.txt" is added automatically. If the value is only a filename without directory then the directory is inherited from todo list file
 
 ## How to use
@@ -252,7 +252,7 @@ Notes:
 
 The feature is introduced in version 0.8: when executing command `list` TTDL may call an external application
 (a "plugin") to transform the description and/or tags. If the plugin finishes successfully
-and its output is valid JSON string, `TTDL` combines values from the output and prints it instead of 
+and its output is valid JSON string, `TTDL` combines values from the output and prints it instead of
 default description. Only description can be changed by plugins, other columns like "priority" are fixed ones.
 
 A plugin is a executable shell script or binary with name that follows TTDL rules. Every plugin receives
@@ -290,9 +290,16 @@ Related configuration setting defines what shell executes the script:
 - `shell` - sets the shell to execute a binary/script. If not set, TTDL uses `["cmd", "/c"]` on Windows,
   and `["sh", "-cu"]` on other OS. If you want to use PowerShell on Windows, change the value to `["powershell", "-c"]`;
 
-#### Plugin arguments
+#### Plugin interaction
 
-Every plugin receives a single argument: JSON. The first script always gets JSON with three obligatory fields:
+TTDL pipes a JSON with tags and optional items of a todo that is going to be displayed to a
+plugin's standard input. A plugin must read stdin and after processing the JSON, the plugin
+must print the result to stdout in the same JSON format. If a plugin does not need to change anything,
+it must print it as is. If any plugin fails to execute or produces invalid JSON, the error is
+printed to standard error and the original todo text is displayed.
+
+The first script always gets JSON with all todo's tags and optional fields.
+Three obligatory fields in the first request(a plugin may remove any of those fields):
 
 - `description` - original todo's description that TTDL would print by default, plugins can modify it;
 - `optional` - original todo's optional elements (`done`, `pri`, `created`, and `finished`);
@@ -325,7 +332,7 @@ requirement is that the result should include all fields above.
    Standard fields are: "done", "pri", "created", "finished", "description", "thr", "due".
 
 Quick example for #3. Today's date is 2020-01-18, a todo contains `2020-01-17 Test line !plug:2020 !plug2:01`,
-and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, and relative it 
+and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, and relative it
 prints with default formatting:
 
 ```
@@ -403,7 +410,7 @@ the description from the last collected output. It joins description with all ta
 
 Each command that modifies todo list supports dry run mode. The mode is enabled with an option `--dry-run`. When executing `ttdl` with the option, it finds out which todos would be changed after the command completes, then displays existing todos and their new values.
 
-By default TTDL outputs the todo list in long mode and uses colors. To disable colors, use an option `--no-colors`. To make the output shorter, use an option `--short` to show only a few the most important fields(ID, completion mark, priority, and subject), or choose which fields to display with an option `--fields`: a comma-separated list of fields. 
+By default TTDL outputs the todo list in long mode and uses colors. To disable colors, use an option `--no-colors`. To make the output shorter, use an option `--short` to show only a few the most important fields(ID, completion mark, priority, and subject), or choose which fields to display with an option `--fields`: a comma-separated list of fields.
 **NOTE**: the option `--fields` defines only a field visibility, but not its order. So, `--fields=pri,due` and `--fields=due,pri` result in the same output.
 
 For easier reading due date, there is an option `--human` that turns dates into relative dates. So, due date 2018-11-11 can turn into `in 3d` (if the current date is 2018-11-08) or into `3d overdue`(if the current date is 2018-11-14). Using an option `--compact` makes the output even shorter: it removes all `in`s and `overdue`s. To understand whether a todo is overdue or not, just check its color: overdue ones are drawn in red color(unless you used the option `--no-colors` or modified color in TTDL config). Option `--human` supports a list of fields to show as relative ones: `ttdl l --human="due"`.
