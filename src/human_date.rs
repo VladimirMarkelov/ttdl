@@ -215,6 +215,10 @@ mod humandate_test {
         let dt = NaiveDate::from_ymd(2020, 2, 4);
         let nm = human_to_date(dt, "31");
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
+        let dt = NaiveDate::from_ymd(2020, 2, 29);
+        let nm = human_to_date(dt, "29");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
+
         let nm = human_to_date(dt, "32");
         assert!(nm.is_err());
         let nm = human_to_date(dt, "0");
