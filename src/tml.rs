@@ -27,6 +27,7 @@ pub struct Global {
     pub shell: Option<Vec<String>>,
     pub script_ext: Option<String>,
     pub script_prefix: Option<String>,
+    pub first_sunday: Option<bool>,
 }
 
 #[derive(Deserialize)]

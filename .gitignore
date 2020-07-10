@@ -5,6 +5,8 @@
 todo*.txt
 done*.txt
 *.zip
+*.rar
+*.7z
 *.deb
 *.tar
 *.bat

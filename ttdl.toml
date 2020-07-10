@@ -90,3 +90,8 @@ old = "1y"
 # add prefix to plugin name before calling it.
 # E.g., for powershell simple "plugin" fails but "./plugin" works fine.
 # script_prefix = "./"
+
+# deternine first day of the week
+#    true - first day of week is Sunday
+#    false - first day of week is Monday
+# first_sunday = true

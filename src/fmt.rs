@@ -8,6 +8,7 @@ use textwrap;
 use todo_lib::timer;
 use todo_lib::todo;
 use todo_txt;
+use chrono::{Local, Duration, NaiveDate, Datelike, Weekday};
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -324,7 +325,7 @@ fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSp
     };
 
     if let Some(ref cd) = task.create_date {
-        let today = chrono::Local::now().date().naive_local();
+        let today = Local::now().date().naive_local();
         let mcreate = rec + *cd;
         if mcreate < today {
             return c.colors.old.clone();
@@ -406,7 +407,7 @@ fn priority_str(task: &todo_txt::task::Extended) -> String {
     }
 }
 
-pub fn duration_str(d: chrono::Duration) -> String {
+pub fn duration_str(d: Duration) -> String {
     let s = d.num_seconds();
     if s <= 0 {
         return String::new();
@@ -799,8 +800,8 @@ fn format_days(num: i64, compact: bool) -> String {
     }
 }
 
-fn format_relative_due_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
-    let today = chrono::Local::now().date().naive_local();
+fn format_relative_due_date(dt: NaiveDate, compact: bool) -> (String, i64) {
+    let today = Local::now().date().naive_local();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, compact);
     let v = if compact {
@@ -815,8 +816,8 @@ fn format_relative_due_date(dt: chrono::NaiveDate, compact: bool) -> (String, i6
     (v, diff)
 }
 
-fn format_relative_date(dt: chrono::NaiveDate, compact: bool) -> (String, i64) {
-    let today = chrono::Local::now().date().naive_local();
+fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
+    let today = Local::now().date().naive_local();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, false);
     if compact {

@@ -7,6 +7,7 @@ mod conf;
 mod fmt;
 mod stats;
 mod tml;
+mod human_date;
 
 use std::env;
 use std::path::Path;

@@ -46,6 +46,7 @@ pub struct Conf {
     pub dry: bool,
     pub wipe: bool,
     pub use_done: bool,
+    pub first_sunday: bool,
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
 
@@ -63,6 +64,7 @@ impl Default for Conf {
             verbose: false,
             wipe: false,
             use_done: false,
+            first_sunday: true,
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
 
@@ -657,6 +659,9 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
     if let Some(s) = &tc.global.script_prefix {
         conf.fmt.script_prefix = s.to_string();
+    }
+    if let Some(b) = &tc.global.first_sunday {
+        conf.first_sunday = *b;
     }
 }
 
