@@ -116,9 +116,11 @@ fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
                     m += 1;
                 }
             }
-            if n >= days_in_month(y, m) || n >= bdays {
-                d = days_in_month(y, m);
-            }
+            d = if n >= days_in_month(y, m) || n >= bdays {
+                days_in_month(y, m)
+            } else {
+                n
+            };
             Ok(NaiveDate::from_ymd(y, m, d))
         }
     }
@@ -141,8 +143,8 @@ fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
             Ok(NaiveDate::from_ymd(y, m, 1))
         },
         "last" => {
-            let mut y = base.year();
-            let mut m = base.month();
+            let y = base.year();
+            let m = base.month();
             let d = days_in_month(y, m);
             Ok(NaiveDate::from_ymd(y, m, d))
         },
@@ -167,12 +169,15 @@ fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
 // Converts human-readable date to an absolute date in todo-txt format. If the date is already an
 // absolute value, the function returns None. In case of any error None is returned as well.
 pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
-    // let dt = Local::now().date().naive_local();
     if human.is_empty() {
         return Err("empty date".to_string());
     }
     if human.find(|c: char| c < '0' || c > '9').is_none() {
         return day_of_first_month(base, human);
+    }
+    if human.find(|c: char| (c < '0' || c > '9') && c != '-').is_none() {
+        // normal date, nothing to fix
+        return Err("no change".to_string());
     }
     if human.find(|c: char| c < '0' || (c > '9' && c != 'd' && c != 'm' && c != 'w' && c != 'y')).is_none() {
         return abs_time_diff(base, human);
@@ -181,3 +186,47 @@ pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
     // some "special" word like "tomorrow", "tue"
     special_time_point(base, human)
 }
+
+#[cfg(test)]
+mod humandate_test {
+    use super::*;
+
+    #[test]
+    fn no_change() {
+        let dt = Local::now().date().naive_local();
+        let res = human_to_date(dt, "2010-10-10");
+        let must = Err("no change".to_string());
+        assert_eq!(res, must)
+    }
+
+    #[test]
+    fn month_day() {
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let nm = human_to_date(dt, "7");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 7)));
+        let nm = human_to_date(dt, "11");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
+        let nm = human_to_date(dt, "31");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 31)));
+
+        let dt = NaiveDate::from_ymd(2020, 6, 9);
+        let nm = human_to_date(dt, "31");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 6, 30)));
+        let dt = NaiveDate::from_ymd(2020, 2, 4);
+        let nm = human_to_date(dt, "31");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
+        let nm = human_to_date(dt, "32");
+        assert!(nm.is_err());
+        let nm = human_to_date(dt, "0");
+        assert!(nm.is_err());
+    }
+
+    #[test]
+    fn absolute() {
+    }
+
+    #[test]
+    fn special() {
+    }
+}
+
