@@ -5,9 +5,9 @@ extern crate serde_derive;
 
 mod conf;
 mod fmt;
+mod human_date;
 mod stats;
 mod tml;
-mod human_date;
 
 use std::env;
 use std::path::Path;

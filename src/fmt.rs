@@ -1,14 +1,14 @@
-use std::io::{Write};
+use std::io::Write;
 use std::process::{Command, Stdio};
 
 use caseless::default_caseless_match_str;
+use chrono::{Duration, Local, NaiveDate};
 use json;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use textwrap;
 use todo_lib::timer;
 use todo_lib::todo;
 use todo_txt;
-use chrono::{Local, Duration, NaiveDate};
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest

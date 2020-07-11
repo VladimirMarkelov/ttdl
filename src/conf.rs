@@ -1,4 +1,5 @@
 use atty::Stream;
+use chrono::Local;
 use getopts::{Matches, Options};
 use std::env;
 use std::fs::File;
@@ -9,6 +10,7 @@ use std::str::FromStr;
 use termcolor::{Color, ColorSpec};
 
 use crate::fmt;
+use crate::human_date;
 use crate::tml;
 use dirs;
 use term_size;
@@ -387,18 +389,26 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             "-" | "none" => {
                 c.due_act = todo::Action::Delete;
             }
-            _ => match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
-                Ok(d) => {
-                    c.due = Some(d);
+            _ => {
+                let dt = Local::now().date().naive_local();
+                if let Ok(new_date) = human_date::human_to_date(dt, &s) {
+                    c.due = Some(new_date);
                     c.due_act = todo::Action::Set;
+                } else {
+                    match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
+                        Ok(d) => {
+                            c.due = Some(d);
+                            c.due_act = todo::Action::Set;
+                        }
+                        Err(_) => {
+                            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                                value: s,
+                                name: "date".to_string(),
+                            }));
+                        }
+                    }
                 }
-                Err(_) => {
-                    return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                        value: s,
-                        name: "date".to_string(),
-                    }));
-                }
-            },
+            }
         }
     }
 
@@ -407,18 +417,26 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             "-" | "none" => {
                 c.recurrence_act = todo::Action::Delete;
             }
-            _ => match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
-                Ok(d) => {
-                    c.thr = Some(d);
+            _ => {
+                let dt = Local::now().date().naive_local();
+                if let Ok(new_date) = human_date::human_to_date(dt, &s) {
+                    c.thr = Some(new_date);
                     c.thr_act = todo::Action::Set;
+                } else {
+                    match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
+                        Ok(d) => {
+                            c.thr = Some(d);
+                            c.thr_act = todo::Action::Set;
+                        }
+                        Err(_) => {
+                            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                                value: s,
+                                name: "date".to_string(),
+                            }));
+                        }
+                    }
                 }
-                Err(_) => {
-                    return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                        value: s,
-                        name: "date".to_string(),
-                    }));
-                }
-            },
+            }
         }
     }
 
@@ -959,7 +977,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             let project = matches.free[idx].trim_start_matches('+');
             conf.flt.projects.push(project.to_owned().to_lowercase());
         } else if edit_mode {
-            conf.todo.subject = Some(matches.free[idx].clone());
+            let dt = Local::now().date().naive_local();
+            let subj = match human_date::fix_date(dt, &matches.free[idx], "due:") {
+                None => matches.free[idx].clone(),
+                Some(s) => s,
+            };
+            conf.todo.subject = Some(subj);
         } else {
             conf.flt.regex = Some(matches.free[idx].clone());
         }
