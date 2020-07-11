@@ -457,7 +457,7 @@ The list of supported abbreviations (more can be added in the future if needed):
 3. `#m` and `#y` does not add a constant number of days to the current date. They increase the month and year respectively with one extra rule: 
    if current date is the last day of the month, the new date is the end of the month as well. E.g., `due:1m` when current date is `2020-02-29` sets due date to `2020-03-31`.
 4. `#` always sets the date in the future. So, if `#` is equal to or less than the current day of month, the resulting date is in the next, otherwise it is in the current month. The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
-5. `#` accepts values in a range `[1..31]`, bigger numbers causes errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Example: `due:31` for date `2020-02-5` sets the due date to `2020-02-29`.
+5. `#` accepts values in a range `[1..31]`, bigger numbers cause errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Example: `due:31` for date `2020-02-05` sets the due date to `2020-02-29`.
 
 ## Command line examples
 
@@ -522,6 +522,9 @@ By default todos from a given range are processed only if they are incomplete. T
 
 All examples are for the current date `2020-07-11`
 
+| Command | Description |
 |---|---|
-|`ttdl "fix by monday due:mon"` | Adds a new todo with a content `fix by monday due:2020-07-13` |
-|`ttdl "update docs t:1m d:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25` |
+| `ttdl "fix by monday due:mon"` | Adds a new todo with a content `fix by monday due:2020-07-13` |
+| `ttdl "update docs t:1m d:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25` |
+| `ttdl e 3 --set-due 1m` | Updates the third todo with new due date `2020-08-11` |
+| `ttdl e 3 --set-due 1m` | For the current date `2020-02-29` it sets due date to the end of the next month `2020-03-31` |
