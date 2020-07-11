@@ -982,6 +982,10 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
                 None => matches.free[idx].clone(),
                 Some(s) => s,
             };
+            let subj = match human_date::fix_date(dt, &subj, "t:") {
+                None => subj,
+                Some(s) => s,
+            };
             conf.todo.subject = Some(subj);
         } else {
             conf.flt.regex = Some(matches.free[idx].clone());
