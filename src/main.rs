@@ -421,6 +421,50 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
     }
 }
 
+// helper function to collect list of unique project tags / context tags
+fn collect_unique_items<F>(tasks: &todo::TaskSlice, selected: &todo::IDSlice, get_items: F) -> Vec<String>
+where
+    F: Fn(&todo_txt::task::Extended) -> &Vec<String>,
+{
+    let mut items: Vec<String> = Vec::new();
+
+    for idx in selected {
+        if *idx >= tasks.len() {
+            continue;
+        }
+
+        // get items from closure function
+        for item in get_items(&tasks[*idx]).iter() {
+            if !item.is_empty() && !items.contains(item) {
+                items.push(item.clone());
+            }
+        }
+    }
+    items.sort();
+
+    items
+}
+
+fn task_list_projects(tasks: &todo::TaskSlice, conf: &conf::Conf) {
+    let todos = tfilter::filter(tasks, &conf.flt);
+    // no tsort::sort() here since multiple projects in one task
+    // would mess up the alphabetical output sort
+
+    for item in collect_unique_items(&tasks, &todos, |task| &task.projects) {
+        println!("{}", item);
+    }
+}
+
+fn task_list_contexts(tasks: &todo::TaskSlice, conf: &conf::Conf) {
+    let todos = tfilter::filter(tasks, &conf.flt);
+    // no tsort::sort() here since multiple contexts in one task
+    // would mess up the alphabetical output sort
+
+    for item in collect_unique_items(&tasks, &todos, |task| &task.contexts) {
+        println!("{}", item);
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -480,6 +524,8 @@ fn main() {
         conf::RunMode::Stop => task_start_stop(&mut tasks, &conf, false),
         conf::RunMode::Stats => stats::show_stats(&tasks, &conf.fmt),
         conf::RunMode::Postpone => task_postpone(&mut tasks, &conf),
+        conf::RunMode::ListProjects => task_list_projects(&tasks, &conf),
+        conf::RunMode::ListContexts => task_list_contexts(&tasks, &conf),
         _ => {}
     }
 }
