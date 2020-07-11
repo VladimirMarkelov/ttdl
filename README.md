@@ -19,12 +19,14 @@
             - [Plugin interaction](#plugin-interaction)
             - [Example](#example)
         - [Extra features](#extra-features)
+        - [Human-readable dates](#human-readable-dates)
     - [Command line examples](#command-line-examples)
         - [List and filter](#list-and-filter)
         - [Add a new todo](#add-a-new-todo)
         - [Done (undone)](#done-undone)
         - [Clean up the list](#clean-up-the-list)
         - [Modify todo list](#modify-todo-list)
+        - [Use human-readable dates](#use-human-readable-dates)
 
 # TTDL (Terminal ToDo List)
 
@@ -415,6 +417,48 @@ By default TTDL outputs the todo list in long mode and uses colors. To disable c
 
 For easier reading due date, there is an option `--human` that turns dates into relative dates. So, due date 2018-11-11 can turn into `in 3d` (if the current date is 2018-11-08) or into `3d overdue`(if the current date is 2018-11-14). Using an option `--compact` makes the output even shorter: it removes all `in`s and `overdue`s. To understand whether a todo is overdue or not, just check its color: overdue ones are drawn in red color(unless you used the option `--no-colors` or modified color in TTDL config). Option `--human` supports a list of fields to show as relative ones: `ttdl l --human="due"`.
 
+### Human-readable dates
+
+In addition to human-readable output, TTDL supports setting due and threshold dates in human-readable format.
+Both ways work: setting them in a string with `due:` and `t:` and in subcommands `--set-due` and `set-threshold`.
+Because due and threshold dates cannot be set in the past, rules for setting and displaying dates differs.
+Please note, that human-readable dates are replaced with absolute dates when saving to todo file.
+In the beginning you can play with human-readable dates without worrying about damaging existing todos by adding `--dry-run` to commands.
+This way only displays the content but does modify anything.
+
+The list of supported abbreviations:
+
+| Abbreviation | Date |
+| --- | --- |
+| `today` | Today's date |
+| `#` | `#` stands for a positive number - sets date to `#` day of the current or next month |
+| `tm`, `tmr`, `tomorrow` | Tomorrow's date |
+| `#d` | `#` is a positive number: in `#` days |
+| `#w` | `#` is a positive number: in `#` weeks |
+| `#m` | `#` is a positive number: in `#` months |
+| `#y` | `#` is a positive number: in `#` years |
+| `mo`, `mon` | nearest Monday in the future |
+| `tu`, `tue` | nearest Tuesday in the future |
+| `we`, `wed` | nearest Wednesday in the future |
+| `th`, `thu` | nearest Thursday in the future |
+| `fr`, `fri` | nearest Friday in the future |
+| `sa`, `say` | nearest Saturday in the future |
+| `su`, `sun` | nearest Sunday in the future |
+| `next-mon` | the second closest Monday in the future |
+| `next-tue` | the second closest Tuesday in the future |
+| `next-wed` | the second closest Wednesday in the future |
+| `next-thu` | the second closest Thursday in the future |
+| `next-fri` | the second closest Friday in the future |
+| `next-say` | the second closest Saturday in the future |
+| `next-sun` | the second closest Sunday in the future |
+
+1. All day of week abbreviations never set today's date. So, if the current date is Monday, `due:mon` sets the due date to the next Monday.
+2. `#d`, `#w`, `#m`, and `#y` are addictive and can be grouped. Moreover, you can use the same abbreviation as many times as you want. Examples: `due:3d4d` is the same as `due:1w`; and `due:1w1d` is the same as `due:11d`
+3. `#m` and `#y` does not add a constant number of days to the current date. They increase the month and year respectively with one extra rule: 
+   if current date is the last day of the month, the new date is the end of the month as well. E.g., `due:1m` when current date is `2020-02-29` sets due date to `2020-03-31`.
+4. `#` always sets the date in the future. So, if `#` is equal to or less than the current day of month, the resulting date is in the next, otherwise it is in the current month. The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
+5. `#` accepts values in a range `[1..31]`, bigger numbers causes errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Example: `due:31` for date `2020-02-5` sets the due date to `2020-02-29`.
+
 ## Command line examples
 
 By default todos from a given range are processed only if they are incomplete. To process all(both done and incomplete), add an option `--all` or `-a`. To process only done todos, add an option `-A`. NOTE: the only exception is the command `clean`|`archive`, it enables option `-A` automatically if `--all` is not present in command line.
@@ -473,3 +517,11 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl e --pri=none --set-pri=z` | set the lowest priority for all incomplete todos which do not have a priority set |
 | `ttdl e @bug1000 --set-pri=+` | increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z` |
 | `ttdl postpone 3 5d` | push back due date of task #3 by 5 days |
+
+### Use human-readable dates
+
+All examples are for the current date `2020-07-11`
+
+|---|---|
+|`ttdl "fix by monday due:mon"` | Adds a new todo with a content `fix by monday due:2020-07-13` |
+|`ttdl "update docs t:1m d:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25` |
