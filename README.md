@@ -426,7 +426,7 @@ Please note, that human-readable dates are replaced with absolute dates when sav
 In the beginning you can play with human-readable dates without worrying about damaging existing todos by adding `--dry-run` to commands.
 This way only displays the content but does modify anything.
 
-The list of supported abbreviations:
+The list of supported abbreviations (more can be added in the future if needed):
 
 | Abbreviation | Date |
 | --- | --- |
