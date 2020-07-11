@@ -43,8 +43,8 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
                         }
                         let new_mxd = days_in_month(y, m);
                         if mxd > d || d == mxd {
-                            if new_mxd < d {
-                                d = new_mxd;
+                            if d == mxd || new_mxd < d {
+                                d = new_mxd
                             }
                             dt = NaiveDate::from_ymd(y as i32, m as u32, d as u32);
                         } else {
@@ -59,7 +59,7 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
                         y += num as i32;
                         let new_mxd = days_in_month(y, m);
                         if mxd > d || d == mxd {
-                            if new_mxd < d{
+                            if new_mxd < d || d == mxd{
                                 d = new_mxd;
                             }
                             dt = NaiveDate::from_ymd(y as i32, m as u32, d as u32);
@@ -227,6 +227,24 @@ mod humandate_test {
 
     #[test]
     fn absolute() {
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let nm = human_to_date(dt, "1w");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 16)));
+        let nm2 = human_to_date(dt, "3d4d");
+        assert_eq!(nm, nm2);
+        let nm = human_to_date(dt, "1y");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 7, 9)));
+        let nm = human_to_date(dt, "2w2d1m");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 25)));
+
+        let dt = NaiveDate::from_ymd(2020, 2, 29);
+        let nm = human_to_date(dt, "1m");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
+        let nm = human_to_date(dt, "1y");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 2, 28)));
+        let dt = NaiveDate::from_ymd(2021, 2, 28);
+        let nm = human_to_date(dt, "3y");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2024, 2, 29)));
     }
 
     #[test]
