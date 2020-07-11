@@ -249,6 +249,54 @@ mod humandate_test {
 
     #[test]
     fn special() {
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let nm = human_to_date(dt, "tmr");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
+        let nm = human_to_date(dt, "tm");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
+        let nm = human_to_date(dt, "tomorrow");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
+        let nm = human_to_date(dt, "today");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 9)));
+
+        let nm = human_to_date(dt, "first");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 1)));
+        let nm = human_to_date(dt, "last");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 31)));
+        let dt = NaiveDate::from_ymd(2020, 2, 29);
+        let nm = human_to_date(dt, "last");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
+
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let nm = human_to_date(dt, "mon");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 13)));
+        let nm = human_to_date(dt, "tue");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 14)));
+        let nm = human_to_date(dt, "wed");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 15)));
+        let nm = human_to_date(dt, "thu");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 16)));
+        let nm = human_to_date(dt, "fri");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
+        let nm = human_to_date(dt, "sat");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
+        let nm = human_to_date(dt, "sun");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 12)));
+
+        let nm = human_to_date(dt, "nextmon");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 20)));
+        let nm = human_to_date(dt, "next-tue");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 21)));
+        let nm = human_to_date(dt, "next_wed");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 22)));
+        let nm = human_to_date(dt, "nextthu");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 23)));
+        let nm = human_to_date(dt, "next-fri");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 17)));
+        let nm = human_to_date(dt, "next_sat");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 18)));
+        let nm = human_to_date(dt, "next-sun");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 19)));
     }
 }
 
