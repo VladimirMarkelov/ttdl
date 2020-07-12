@@ -36,6 +36,8 @@ pub enum RunMode {
     Stop,
     Stats,
     Postpone,
+    ListProjects,
+    ListContexts,
 }
 
 #[derive(Debug, Clone)]
@@ -138,6 +140,12 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl e @bug1000 --set-pri=+` - increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z`
     append | app - adds a text to the end of todos
     prepend | prep - inserts a text at the beginning of todos
+    listprojects [FILTER] | listproj | lp - list all projects
+        `ttdl lp ` - show alphabetically sorted list of all projects
+        `ttdl lp +un*` - show projects starting with 'un'
+    listcontexts [FILTER] | listcon | lc - list all contexts
+        `ttdl lc ` - show alphabetically sorted list of all contexts
+        `ttdl lc @phon*` - show contexts starting with 'phon'
     "#;
     println!("{}\n\n{}\n\n{}\n\n{}", commands, filter, newones, extras);
 }
@@ -157,6 +165,8 @@ fn str_to_mode(s: &str) -> RunMode {
         "stop" => RunMode::Stop,
         "stats" => RunMode::Stats,
         "postpone" => RunMode::Postpone,
+        "lp" | "listproj" | "listprojects" => RunMode::ListProjects,
+        "lc" | "listcon" | "listcontexts" => RunMode::ListContexts,
         _ => RunMode::None,
     }
 }

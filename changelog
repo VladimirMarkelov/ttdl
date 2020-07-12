@@ -5,6 +5,9 @@ ttdl (0.9.0) unstable; urgency=medium
     commands. Since this version it is possible to, e.g., write "due:1w"
     to set the due date in a week from the current date.
 
+  * New commands 'listprojects' and 'listcontexts' to list all
+    project/context tags. Supports the same filters as the "list" command.
+
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 11 Jul 2020 12:43:11 -0700
 
 ttdl (0.8.0) unstable; urgency=medium

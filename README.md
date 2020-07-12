@@ -27,6 +27,7 @@
         - [Clean up the list](#clean-up-the-list)
         - [Modify todo list](#modify-todo-list)
         - [Use human-readable dates](#use-human-readable-dates)
+        - [Show all project or context tags](#show-all-project-or-context-tags)
 
 # TTDL (Terminal ToDo List)
 
@@ -191,6 +192,8 @@ Commands:
 * stop - stop todo's timer and update time spent on the todo;
 * stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
 * postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them
+* listprojects - show list of all project tags. Filters used by "list" are supported;
+* listcontexts - show list of all context tags. Filters used by "list" are supported;
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
@@ -528,3 +531,14 @@ All examples are for the current date `2020-07-11`
 | `ttdl "update docs t:1m due:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25` |
 | `ttdl e 3 --set-due 1m` | Updates the third todo with new due date `2020-08-11` |
 | `ttdl e 3 --set-due 1m` | For the current date `2020-02-29` it sets due date to the end of the next month `2020-03-31` |
+
+### Show all project or context tags
+
+| Command | Description |
+|---|---|
+| `ttdl lc ` | show all context tags |
+| `ttdl listcon @phone*` | show all context tags starting with phone |
+| `ttdl lp ` | show all project tags |
+| `ttdl listproj +*car*` | show all project tags containg *car* |
+
+These commands could be used to implement tag completion in your editor / shell.
