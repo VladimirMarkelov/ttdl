@@ -12,10 +12,7 @@ use termcolor::{Color, ColorSpec};
 use crate::fmt;
 use crate::human_date;
 use crate::tml;
-use dirs;
-use term_size;
 use todo_lib::{terr, tfilter, todo, tsort};
-use toml;
 
 const TODOFILE_VAR: &str = "TTDL_FILENAME";
 const APP_DIR: &str = "ttdl";
