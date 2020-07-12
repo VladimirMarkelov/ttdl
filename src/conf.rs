@@ -146,6 +146,11 @@ fn print_usage(program: &str, opts: &Options) {
     listcontexts [FILTER] | listcon | lc - list all contexts
         `ttdl lc ` - show alphabetically sorted list of all contexts
         `ttdl lc @phon*` - show contexts starting with 'phon'
+    start TODO_ID - activates todo's timer
+    stop TODO_ID - stops the timer for a todo and updates time spent for it
+    stats [--short] - shows todo list summary
+        `ttdl stats --short` - displays only the number of total, active, done, overdue, and recurrent todos
+        `ttdl stats` - detailed view with additional grouping by project and displaying total time spent on each group
     "#;
     println!("{}\n\n{}\n\n{}\n\n{}", commands, filter, newones, extras);
 }
