@@ -91,7 +91,7 @@ old = "1y"
 # E.g., for powershell simple "plugin" fails but "./plugin" works fine.
 # script_prefix = "./"
 
-# deternine first day of the week
+# determine first day of the week
 #    true - first day of week is Sunday
 #    false - first day of week is Monday
 # Note: The option is unused yet
