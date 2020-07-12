@@ -24,7 +24,7 @@ fn days_in_month(y: i32, m: u32) -> u32 {
 
 fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
     let mut num = 0u32;
-    let mut dt = base.clone();
+    let mut dt = base;
 
     for c in human.chars() {
         match c.to_digit(10) {
