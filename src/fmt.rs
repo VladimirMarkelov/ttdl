@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -821,12 +822,10 @@ fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
         return (dstr, diff);
     }
 
-    let v = if diff < 0 {
-        format!("{} ago", dstr)
-    } else if diff == 0 {
-        dstr
-    } else {
-        format!("in {}", dstr)
+    let v = match diff.cmp(&0) {
+        Ordering::Less => format!("{} ago", dstr),
+        Ordering::Equal => dstr,
+        Ordering::Greater => format!("in {}", dstr),
     };
     (v, diff)
 }
