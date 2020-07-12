@@ -435,6 +435,7 @@ The list of supported abbreviations (more can be added in the future if needed):
 | --- | --- |
 | `today` | Today's date |
 | `#` | `#` stands for a positive number - sets date to `#` day of the current or next month |
+| `#-#` | `#-#` stands for a "month-day" - if this day of the current year is in the past it sets due date to the "next_year-month-day" and "current_year-month-day" otherwise |
 | `tm`, `tmr`, `tomorrow` | Tomorrow's date |
 | `#d` | `#` is a positive number: in `#` days |
 | `#w` | `#` is a positive number: in `#` weeks |
@@ -459,8 +460,8 @@ The list of supported abbreviations (more can be added in the future if needed):
 2. `#d`, `#w`, `#m`, and `#y` are addictive and can be grouped. Moreover, you can use the same abbreviation as many times as you want. Examples: `due:3d4d` is the same as `due:1w`; and `due:1w1d` is the same as `due:11d`
 3. `#m` and `#y` does not add a constant number of days to the current date. They increase the month and year respectively with one extra rule: 
    if current date is the last day of the month, the new date is the end of the month as well. E.g., `due:1m` when current date is `2020-02-29` sets due date to `2020-03-31`.
-4. `#` always sets the date in the future. So, if `#` is equal to or less than the current day of month, the resulting date is in the next, otherwise it is in the current month. The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
-5. `#` accepts values in a range `[1..31]`, bigger numbers cause errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Example: `due:31` for date `2020-02-05` sets the due date to `2020-02-29`.
+4. `#` and `#-#` never sets the date in the past. So, if `#` is less than the current day of month, the resulting date is in the next, otherwise it is in the current period(month for `#`, year for `#-#`). The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
+5. `#` and `#-#` accept values for a day in a range `[1..31]`, bigger numbers cause errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Examples: `due:31` for date `2020-02-05` sets the due date to `2020-02-29`, and `due:02-31` sets due date to `2020-02-29`.
 
 ## Command line examples
 

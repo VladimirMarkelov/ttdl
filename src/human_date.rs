@@ -138,6 +138,46 @@ fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
     }
 }
 
+fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
+    let parts: Vec<_> = human.split('-').collect();
+    if parts.len() != 2 {
+        return Err("expected date in format MONTH-DAY".to_string());
+    }
+    let y = base.year();
+    let m = match parts[0].parse::<u32>() {
+        Err(_) => return Err(format!("invalid month number: {}", parts[0])),
+        Ok(n) => {
+            if n < 1 || n > 12 {
+                return Err(format!("month number must be between 1 and 12 ({})", n));
+            }
+            n
+        }
+    };
+    let d = match parts[1].parse::<u32>() {
+        Err(_) => return Err(format!("invalid day number: {}", parts[1])),
+        Ok(n) => {
+            if n < 1 || n > 31 {
+                return Err(format!("day number must be between 1 and 31 ({})", n));
+            }
+            let mx = days_in_month(y, m);
+            if n > mx {
+                mx
+            } else {
+                n
+            }
+        }
+    };
+    let dt = NaiveDate::from_ymd(y, m, d);
+    if dt < base {
+        let y = y + 1;
+        let mx = days_in_month(y, m);
+        let d = if mx < d { mx } else { d };
+        Ok(NaiveDate::from_ymd(y, m, d))
+    } else {
+        Ok(dt)
+    }
+}
+
 fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
     let s = human.replace(&['-', '_'][..], "");
     match s.as_str() {
@@ -188,6 +228,10 @@ pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
         return day_of_first_month(base, human);
     }
     if human.find(|c: char| (c < '0' || c > '9') && c != '-').is_none() {
+        if human.matches('-').count() == 1 {
+            // month-day case
+            return no_year_date(base, human);
+        }
         // normal date, nothing to fix
         return Err(NO_CHANGE.to_string());
     }
@@ -272,6 +316,17 @@ mod humandate_test {
         assert!(nm.is_err());
         let nm = human_to_date(dt, "0");
         assert!(nm.is_err());
+    }
+
+    #[test]
+    fn month_and_day() {
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let nm = human_to_date(dt, "07-08");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 7, 8)));
+        let nm = human_to_date(dt, "07-11");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
+        let nm = human_to_date(dt, "02-31");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 2, 28)));
     }
 
     #[test]
