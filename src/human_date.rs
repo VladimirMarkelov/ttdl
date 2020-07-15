@@ -1,6 +1,7 @@
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
 
 const NO_CHANGE: &str = "no change";
+const DAYS_PER_WEEK: u32 = 7;
 
 type HumanResult = Result<NaiveDate, String>;
 
@@ -91,21 +92,16 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
     Ok(dt)
 }
 
-fn closest_weekday(base: NaiveDate, wd: Weekday, weeks: u32) -> HumanResult {
+fn next_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
     let base_wd = base.weekday();
     let (bn, wn) = (base_wd.number_from_monday(), wd.number_from_monday());
-    let shift = weeks * 7;
     if bn < wn {
         // this week
-        Ok(base + Duration::days((shift + wn - bn) as i64))
+        Ok(base + Duration::days((wn - bn) as i64))
     } else {
         // next week
-        Ok(base + Duration::days((shift + 7 + wn - bn) as i64))
+        Ok(base + Duration::days((DAYS_PER_WEEK + wn - bn) as i64))
     }
-}
-
-fn next_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
-    closest_weekday(base, wd, 1)
 }
 
 fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
@@ -179,10 +175,10 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
 }
 
 fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
-    let s = human.replace(&['-', '_'][..], "");
+    let s = human.replace(&['-', '_'][..], "").to_lowercase();
     match s.as_str() {
         "today" => Ok(base),
-        "tm" | "tomorrow" | "tmr" => Ok(base.succ()),
+        "tomorrow" | "tmr" | "tm" => Ok(base.succ()),
         "first" => {
             let mut y = base.year();
             let mut m = base.month();
@@ -200,20 +196,13 @@ fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
             let d = days_in_month(y, m);
             Ok(NaiveDate::from_ymd(y, m, d))
         }
-        "mon" | "mo" => closest_weekday(base, Weekday::Mon, 0),
-        "tue" | "tu" => closest_weekday(base, Weekday::Tue, 0),
-        "wed" | "we" => closest_weekday(base, Weekday::Wed, 0),
-        "thu" | "th" => closest_weekday(base, Weekday::Thu, 0),
-        "fri" | "fr" => closest_weekday(base, Weekday::Fri, 0),
-        "sat" | "sa" => closest_weekday(base, Weekday::Sat, 0),
-        "sun" | "su" => closest_weekday(base, Weekday::Sun, 0),
-        "nextmon" | "nextmo" => next_weekday(base, Weekday::Mon),
-        "nexttue" | "nexttu" => next_weekday(base, Weekday::Tue),
-        "nextwed" | "nextwe" => next_weekday(base, Weekday::Wed),
-        "nextthu" | "nextth" => next_weekday(base, Weekday::Thu),
-        "nextfri" | "nextfr" => next_weekday(base, Weekday::Fri),
-        "nextsat" | "nextsa" => next_weekday(base, Weekday::Sat),
-        "nextsun" | "nextsu" => next_weekday(base, Weekday::Sun),
+        "monday" | "mon" | "mo" => next_weekday(base, Weekday::Mon),
+        "tuesday" | "tue" | "tu" => next_weekday(base, Weekday::Tue),
+        "wednesday" | "wed" | "we" => next_weekday(base, Weekday::Wed),
+        "thursday" | "thu" | "th" => next_weekday(base, Weekday::Thu),
+        "friday" | "fri" | "fr" => next_weekday(base, Weekday::Fri),
+        "saturday" | "sat" | "sa" => next_weekday(base, Weekday::Sat),
+        "sunday" | "sun" | "su" => next_weekday(base, Weekday::Sun),
         _ => Err(format!("invalid date '{}'", human)),
     }
 }

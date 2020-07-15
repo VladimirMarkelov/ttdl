@@ -441,20 +441,13 @@ The list of supported abbreviations (more can be added in the future if needed):
 | `#w` | `#` is a positive number: in `#` weeks |
 | `#m` | `#` is a positive number: in `#` months |
 | `#y` | `#` is a positive number: in `#` years |
-| `mo`, `mon` | nearest Monday in the future |
-| `tu`, `tue` | nearest Tuesday in the future |
-| `we`, `wed` | nearest Wednesday in the future |
-| `th`, `thu` | nearest Thursday in the future |
-| `fr`, `fri` | nearest Friday in the future |
-| `sa`, `say` | nearest Saturday in the future |
-| `su`, `sun` | nearest Sunday in the future |
-| `next-mon` | the second closest Monday in the future |
-| `next-tue` | the second closest Tuesday in the future |
-| `next-wed` | the second closest Wednesday in the future |
-| `next-thu` | the second closest Thursday in the future |
-| `next-fri` | the second closest Friday in the future |
-| `next-say` | the second closest Saturday in the future |
-| `next-sun` | the second closest Sunday in the future |
+| `mo`, `mon`, `monday` | nearest Monday in the future |
+| `tu`, `tue`, `tuesday` | nearest Tuesday in the future |
+| `we`, `wed`, `wednesday` | nearest Wednesday in the future |
+| `th`, `thu`, `thursday` | nearest Thursday in the future |
+| `fr`, `fri`, `friday` | nearest Friday in the future |
+| `sa`, `sat`, `saturday` | nearest Saturday in the future |
+| `su`, `sun`, `sunday` | nearest Sunday in the future |
 
 1. All day of week abbreviations never set today's date. So, if the current date is Monday, `due:mon` sets the due date to the next Monday.
 2. `#d`, `#w`, `#m`, and `#y` are addictive and can be grouped. Moreover, you can use the same abbreviation as many times as you want. Examples: `due:3d4d` is the same as `due:1w`; and `due:1w1d` is the same as `due:11d`
