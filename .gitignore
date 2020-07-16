@@ -13,3 +13,4 @@ done*.txt
 *.sh
 *.ps1
 *.cmd
+*.gz
