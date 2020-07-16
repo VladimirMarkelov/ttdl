@@ -834,7 +834,7 @@ fn field_list(c: &Conf) -> Vec<&str> {
     match c.fmt {
         Format::Full => {
             if c.fields.is_empty() {
-                vec!["done", "pri", "created", "finished", "due", "thr", "spent"]
+                vec!["done", "pri", "created", "finished", "due"]
             } else {
                 let fields: Vec<&str> = c.fields.iter().map(|s| s.as_str()).collect();
                 fields

@@ -476,8 +476,6 @@ fn main() {
         }
     };
 
-    // println!("{:#?}", conf);
-
     let mut tasks: todo::TaskVec = if conf.use_done {
         match todo::load(Path::new(&conf.done_file)) {
             Ok(tlist) => tlist,
