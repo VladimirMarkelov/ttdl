@@ -8,6 +8,8 @@ ttdl (0.9.0) unstable; urgency=medium
   * New commands 'listprojects' and 'listcontexts' to list all
     project/context tags. Supports the same filters as the "list" command.
 
+  * Remove 'Threshold' and 'Spent' columns from default output.
+
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 11 Jul 2020 12:43:11 -0700
 
 ttdl (0.8.0) unstable; urgency=medium
