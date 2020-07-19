@@ -288,7 +288,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
             }
             "over" | "overdue" => {
                 c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange { low: -1, high: 0 },
+                    days: tfilter::ValueRange { low: 0, high: 0 },
                     span: tfilter::ValueSpan::Lower,
                 });
             }
