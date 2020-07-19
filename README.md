@@ -478,6 +478,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl l --due=tomorrow` | show todos that are due tomorrow |
 | `ttdl l --due=soon` | show todos which are due are due in less a few days, including overdue ones (the range is configurable and default value is 7 days) |
 | `ttdl l --due=overdue` | show overdue todos |
+| `ttdl l --due=none` | show todos that does not have due date |
 | `ttdl l --due=today` | show todos that are due today |
 | `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context |
 
