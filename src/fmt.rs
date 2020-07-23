@@ -521,6 +521,9 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     };
     if desc.is_empty() {
         desc = task.subject.clone();
+        for (key, value) in &task.tags {
+            desc += &format!(" {}:{}", key, value);
+        }
     }
 
     print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg);
