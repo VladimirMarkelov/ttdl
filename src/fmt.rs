@@ -519,7 +519,6 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     } else {
         (String::new(), json::JsonValue::Null)
     };
-    let custom = arg != json::JsonValue::Null;
     if desc.is_empty() {
         desc = task.subject.clone();
     }
@@ -593,10 +592,8 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
         }
     }
 
-    if !custom {
-        if let Some(r) = task.recurrence.as_ref() {
-            desc.push_str(&format!(" rec:{}", *r));
-        }
+    if let Some(r) = task.recurrence.as_ref() {
+        desc.push_str(&format!(" rec:{}", *r));
     }
     if c.width != 0 && c.long != LongLine::Simple {
         let (skip, subj_w) = calc_width(c, fields);
@@ -658,7 +655,7 @@ fn customize(task: &todo_txt::task::Extended, c: &Conf) -> Option<json::JsonValu
 // Returns true if a special tag is common one and processed by todo_txt library internally.
 // So, the tag should not be displayed in the final description.
 fn is_common_special_tag(tag: &str) -> bool {
-    tag == "due" || tag == "thr"
+    tag == "due" || tag == "thr" || tag == "rec"
 }
 
 fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(String, json::JsonValue)> {
