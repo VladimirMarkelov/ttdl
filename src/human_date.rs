@@ -273,6 +273,11 @@ mod humandate_test {
     use super::*;
     use chrono::Local;
 
+    struct Test {
+        txt: &'static str,
+        val: NaiveDate,
+    }
+
     #[test]
     fn no_change() {
         let dt = Local::now().date().naive_local();
@@ -284,12 +289,15 @@ mod humandate_test {
     #[test]
     fn month_day() {
         let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let nm = human_to_date(dt, "7");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 7)));
-        let nm = human_to_date(dt, "11");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
-        let nm = human_to_date(dt, "31");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 31)));
+        let tests: Vec<Test> = vec![
+            Test{txt: "7", val: NaiveDate::from_ymd(2020, 8, 7)},
+            Test{txt: "11", val: NaiveDate::from_ymd(2020, 7, 11)},
+            Test{txt: "31", val: NaiveDate::from_ymd(2020, 7, 31)},
+        ];
+        for test in tests.iter() {
+            let nm = human_to_date(dt, test.txt);
+            assert_eq!(nm, Ok(test.val), "{}", test.txt);
+        }
 
         let dt = NaiveDate::from_ymd(2020, 6, 9);
         let nm = human_to_date(dt, "31");
@@ -342,39 +350,30 @@ mod humandate_test {
 
     #[test]
     fn special() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let nm = human_to_date(dt, "tmr");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
-        let nm = human_to_date(dt, "tm");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
-        let nm = human_to_date(dt, "tomorrow");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
-        let nm = human_to_date(dt, "today");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 9)));
-
-        let nm = human_to_date(dt, "first");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 1)));
-        let nm = human_to_date(dt, "last");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 31)));
         let dt = NaiveDate::from_ymd(2020, 2, 29);
         let nm = human_to_date(dt, "last");
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
 
         let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let nm = human_to_date(dt, "mon");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 13)));
-        let nm = human_to_date(dt, "tu");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 14)));
-        let nm = human_to_date(dt, "wed");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 15)));
-        let nm = human_to_date(dt, "thursday");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 16)));
-        let nm = human_to_date(dt, "fri");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 10)));
-        let nm = human_to_date(dt, "sa");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
-        let nm = human_to_date(dt, "sunday");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 12)));
+        let tests: Vec<Test> = vec![
+            Test{txt: "tmr", val: NaiveDate::from_ymd(2020, 7, 10)},
+            Test{txt: "tm", val: NaiveDate::from_ymd(2020, 7, 10)},
+            Test{txt: "tomorrow", val: NaiveDate::from_ymd(2020, 7, 10)},
+            Test{txt: "today", val: NaiveDate::from_ymd(2020, 7, 9)},
+            Test{txt: "first", val: NaiveDate::from_ymd(2020, 8, 1)},
+            Test{txt: "last", val: NaiveDate::from_ymd(2020, 7, 31)},
+            Test{txt: "mon", val: NaiveDate::from_ymd(2020, 7, 13)},
+            Test{txt: "tu", val: NaiveDate::from_ymd(2020, 7, 14)},
+            Test{txt: "wed", val: NaiveDate::from_ymd(2020, 7, 15)},
+            Test{txt: "thursday", val: NaiveDate::from_ymd(2020, 7, 16)},
+            Test{txt: "fri", val: NaiveDate::from_ymd(2020, 7, 10)},
+            Test{txt: "sa", val: NaiveDate::from_ymd(2020, 7, 11)},
+            Test{txt: "sunday", val: NaiveDate::from_ymd(2020, 7, 12)},
+        ];
+        for test in tests.iter() {
+            let nm = human_to_date(dt, test.txt);
+            assert_eq!(nm, Ok(test.val), "{}", test.txt);
+        }
     }
 
     #[test]
