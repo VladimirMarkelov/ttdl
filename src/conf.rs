@@ -186,7 +186,7 @@ fn split_filter(orig: &str) -> (String, tfilter::ValueSpan) {
     (orig.to_string(), tfilter::ValueSpan::Equal)
 }
 
-fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
+fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
     if matches.opt_present("a") {
         c.all = tfilter::TodoStatus::All;
     }
@@ -294,7 +294,13 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf) -> Result<(), terr::To
             }
             "soon" => {
                 c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange { low: 0, high: 7 },
+                    days: tfilter::ValueRange {
+                        low: 0,
+                        high: match soon_days {
+                            0 => 7, // default to 7 days if "soon" is not configured
+                            _ => soon_days as i64,
+                        },
+                    },
                     span: tfilter::ValueSpan::Range,
                 });
             }
@@ -894,7 +900,6 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         None
     };
 
-    parse_filter(&matches, &mut conf.flt)?;
     parse_todo(&matches, &mut conf.todo)?;
     parse_sort(&matches, &mut conf.sort)?;
     parse_fmt(&matches, &mut conf.fmt)?;
@@ -915,6 +920,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             conf.todo_file, conf.done_file
         );
     }
+
+    parse_filter(&matches, &mut conf.flt, conf.fmt.colors.soon_days)?;
 
     // TODO: check validity before return
     let mut idx: usize = 0;
