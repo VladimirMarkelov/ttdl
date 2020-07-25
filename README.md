@@ -476,7 +476,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl l +car +train` | show todos which related either to `car` or to `train` projects |
 | `ttdl l +my* @*tax` | show todos that have a project tag starts with `my` and a context ends with `tax` |
 | `ttdl l --due=tomorrow` | show todos that are due tomorrow |
-| `ttdl l --due=soon` | show todos which are due are due in less a few days, including overdue ones (the range is configurable and default value is 7 days) |
+| `ttdl l --due=soon` | show todos which are due in less than a few days, including overdue ones (the range is configurable and default value is 7 days) |
 | `ttdl l --due=overdue` | show overdue todos |
 | `ttdl l --due=none` | show todos that does not have due date |
 | `ttdl l --due=today` | show todos that are due today |
