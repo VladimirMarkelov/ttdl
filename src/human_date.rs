@@ -23,7 +23,7 @@ fn days_in_month(y: i32, m: u32) -> u32 {
     }
 }
 
-fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
+fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
     let mut num = 0u32;
     let mut dt = base;
 
@@ -33,11 +33,11 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
                 if num != 0 {
                     match c {
                         'd' => {
-                            let dur = Duration::days(num as i64);
+                            let dur = if back { Duration::days(-(num as i64)) } else { Duration::days(num as i64) };
                             dt += dur;
                         }
                         'w' => {
-                            let dur = Duration::weeks(num as i64);
+                            let dur = if back { Duration::weeks(-(num as i64)) } else { Duration::weeks(num as i64) };
                             dt += dur;
                         }
                         'm' => {
@@ -45,11 +45,23 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
                             let mut m = dt.month();
                             let mut d = dt.day();
                             let mxd = days_in_month(y, m);
-                            m += num;
-                            if m > 12 {
-                                m -= 1;
-                                y += (m / 12) as i32;
-                                m = (m % 12) + 1;
+                            if back {
+                                let full_years = num / 12;
+                                let num = num % 12;
+                                y -= full_years as i32;
+                                m = if m > num {
+                                    m - num
+                                } else {
+                                    y -= 1;
+                                    m + 12 - num
+                                };
+                            } else {
+                                m += num;
+                                if m > 12 {
+                                    m -= 1;
+                                    y += (m / 12) as i32;
+                                    m = (m % 12) + 1;
+                                }
                             }
                             let new_mxd = days_in_month(y, m);
                             if mxd > d || d == mxd {
@@ -66,7 +78,11 @@ fn abs_time_diff(base: NaiveDate, human: &str) -> HumanResult {
                             let m = dt.month();
                             let mut d = dt.day();
                             let mxd = days_in_month(y, m);
-                            y += num as i32;
+                            if back {
+                                y -= num as i32;
+                            } else {
+                                y += num as i32;
+                            };
                             let new_mxd = days_in_month(y, m);
                             if mxd > d || d == mxd {
                                 if new_mxd < d || d == mxd {
@@ -104,6 +120,18 @@ fn next_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
     }
 }
 
+fn prev_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
+    let base_wd = base.weekday();
+    let (bn, wn) = (base_wd.number_from_monday(), wd.number_from_monday());
+    if bn > wn {
+        // this week
+        Ok(base - Duration::days(bn as i64 - wn as i64))
+    } else {
+        // week before
+        Ok(base + Duration::days(wn as i64 - bn as i64 - DAYS_PER_WEEK as i64))
+    }
+}
+
 fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
     match human.parse::<u32>() {
         Err(e) => Err(format!("invalid day of month: {:?}", e)),
@@ -123,11 +151,7 @@ fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
                         m += 1;
                     }
                 }
-                d = if n >= days_in_month(y, m) || n >= bdays {
-                    days_in_month(y, m)
-                } else {
-                    n
-                };
+                d = if n >= days_in_month(y, m) || n >= bdays { days_in_month(y, m) } else { n };
                 Ok(NaiveDate::from_ymd(y, m, d))
             }
         }
@@ -174,11 +198,24 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
     }
 }
 
-fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
+// Returns if a special day is always either in the future or in the past. E.g., `today` cannot be in
+// the past and `yesterday` cannot be in the future, so the function returns `true` for both.
+fn is_absolute(name: &str) -> bool {
+    match name {
+        "today" | "tomorrow" | "tmr" | "tm" | "yesterday" => true,
+        _ => false,
+    }
+}
+
+fn special_time_point(base: NaiveDate, human: &str, back: bool) -> HumanResult {
     let s = human.replace(&['-', '_'][..], "").to_lowercase();
+    if back && is_absolute(human) {
+        return Err(format!("'{}' cannot be back", human));
+    }
     match s.as_str() {
         "today" => Ok(base),
         "tomorrow" | "tmr" | "tm" => Ok(base.succ()),
+        "yesterday" => Ok(base.pred()),
         "first" => {
             let mut y = base.year();
             let mut m = base.month();
@@ -196,13 +233,55 @@ fn special_time_point(base: NaiveDate, human: &str) -> HumanResult {
             let d = days_in_month(y, m);
             Ok(NaiveDate::from_ymd(y, m, d))
         }
-        "monday" | "mon" | "mo" => next_weekday(base, Weekday::Mon),
-        "tuesday" | "tue" | "tu" => next_weekday(base, Weekday::Tue),
-        "wednesday" | "wed" | "we" => next_weekday(base, Weekday::Wed),
-        "thursday" | "thu" | "th" => next_weekday(base, Weekday::Thu),
-        "friday" | "fri" | "fr" => next_weekday(base, Weekday::Fri),
-        "saturday" | "sat" | "sa" => next_weekday(base, Weekday::Sat),
-        "sunday" | "sun" | "su" => next_weekday(base, Weekday::Sun),
+        "monday" | "mon" | "mo" => {
+            if back {
+                prev_weekday(base, Weekday::Mon)
+            } else {
+                next_weekday(base, Weekday::Mon)
+            }
+        }
+        "tuesday" | "tue" | "tu" => {
+            if back {
+                prev_weekday(base, Weekday::Tue)
+            } else {
+                next_weekday(base, Weekday::Tue)
+            }
+        }
+        "wednesday" | "wed" | "we" => {
+            if back {
+                prev_weekday(base, Weekday::Wed)
+            } else {
+                next_weekday(base, Weekday::Wed)
+            }
+        }
+        "thursday" | "thu" | "th" => {
+            if back {
+                prev_weekday(base, Weekday::Thu)
+            } else {
+                next_weekday(base, Weekday::Thu)
+            }
+        }
+        "friday" | "fri" | "fr" => {
+            if back {
+                prev_weekday(base, Weekday::Fri)
+            } else {
+                next_weekday(base, Weekday::Fri)
+            }
+        }
+        "saturday" | "sat" | "sa" => {
+            if back {
+                prev_weekday(base, Weekday::Sat)
+            } else {
+                next_weekday(base, Weekday::Sat)
+            }
+        }
+        "sunday" | "sun" | "su" => {
+            if back {
+                prev_weekday(base, Weekday::Sun)
+            } else {
+                next_weekday(base, Weekday::Sun)
+            }
+        }
         _ => Err(format!("invalid date '{}'", human)),
     }
 }
@@ -213,10 +292,19 @@ pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
     if human.is_empty() {
         return Err("empty date".to_string());
     }
+    let back = human.starts_with('-');
+    let human = if back { &human[1..] } else { human };
+
     if human.find(|c: char| c < '0' || c > '9').is_none() {
+        if back {
+            return Err("negative day of month".to_string());
+        }
         return day_of_first_month(base, human);
     }
     if human.find(|c: char| (c < '0' || c > '9') && c != '-').is_none() {
+        if back {
+            return Err("negative absolute date".to_string());
+        }
         if human.matches('-').count() == 1 {
             // month-day case
             return no_year_date(base, human);
@@ -224,15 +312,12 @@ pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
         // normal date, nothing to fix
         return Err(NO_CHANGE.to_string());
     }
-    if human
-        .find(|c: char| c < '0' || (c > '9' && c != 'd' && c != 'm' && c != 'w' && c != 'y'))
-        .is_none()
-    {
-        return abs_time_diff(base, human);
+    if human.find(|c: char| c < '0' || (c > '9' && c != 'd' && c != 'm' && c != 'w' && c != 'y')).is_none() {
+        return abs_time_diff(base, human, back);
     }
 
     // some "special" word like "tomorrow", "tue"
-    special_time_point(base, human)
+    special_time_point(base, human, back)
 }
 
 pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str) -> Option<String> {
@@ -248,11 +333,7 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str) -> Option<String> {
         return None;
     };
     let substr = &orig[start + look_for.len()..];
-    let human = if let Some(p) = substr.find(' ') {
-        &substr[..p]
-    } else {
-        &substr
-    };
+    let human = if let Some(p) = substr.find(' ') { &substr[..p] } else { &substr };
     match human_to_date(base, human) {
         Err(e) => {
             if e != NO_CHANGE {
@@ -290,9 +371,9 @@ mod humandate_test {
     fn month_day() {
         let dt = NaiveDate::from_ymd(2020, 7, 9);
         let tests: Vec<Test> = vec![
-            Test{txt: "7", val: NaiveDate::from_ymd(2020, 8, 7)},
-            Test{txt: "11", val: NaiveDate::from_ymd(2020, 7, 11)},
-            Test{txt: "31", val: NaiveDate::from_ymd(2020, 7, 31)},
+            Test { txt: "7", val: NaiveDate::from_ymd(2020, 8, 7) },
+            Test { txt: "11", val: NaiveDate::from_ymd(2020, 7, 11) },
+            Test { txt: "31", val: NaiveDate::from_ymd(2020, 7, 31) },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt);
@@ -329,23 +410,34 @@ mod humandate_test {
     #[test]
     fn absolute() {
         let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let nm = human_to_date(dt, "1w");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 16)));
-        let nm2 = human_to_date(dt, "3d4d");
-        assert_eq!(nm, nm2);
-        let nm = human_to_date(dt, "1y");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 7, 9)));
-        let nm = human_to_date(dt, "2w2d1m");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 8, 25)));
+        let tests: Vec<Test> = vec![
+            Test { txt: "1w", val: NaiveDate::from_ymd(2020, 7, 16) },
+            Test { txt: "3d4d", val: NaiveDate::from_ymd(2020, 7, 16) },
+            Test { txt: "1y", val: NaiveDate::from_ymd(2021, 7, 9) },
+            Test { txt: "2w2d1m", val: NaiveDate::from_ymd(2020, 8, 25) },
+            Test { txt: "-1w", val: NaiveDate::from_ymd(2020, 7, 2) },
+            Test { txt: "-3d4d", val: NaiveDate::from_ymd(2020, 7, 2) },
+            Test { txt: "-1y", val: NaiveDate::from_ymd(2019, 7, 9) },
+            Test { txt: "-2w2d1m", val: NaiveDate::from_ymd(2020, 5, 23) },
+        ];
+        for test in tests.iter() {
+            let nm = human_to_date(dt, test.txt);
+            assert_eq!(nm, Ok(test.val), "{}", test.txt);
+        }
 
-        let dt = NaiveDate::from_ymd(2020, 2, 29);
-        let nm = human_to_date(dt, "1m");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
-        let nm = human_to_date(dt, "1y");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 2, 28)));
         let dt = NaiveDate::from_ymd(2021, 2, 28);
-        let nm = human_to_date(dt, "3y");
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2024, 2, 29)));
+        let tests: Vec<Test> = vec![
+            Test { txt: "1m", val: NaiveDate::from_ymd(2021, 3, 31) },
+            Test { txt: "1y", val: NaiveDate::from_ymd(2022, 2, 28) },
+            Test { txt: "3y", val: NaiveDate::from_ymd(2024, 2, 29) },
+            Test { txt: "-1m", val: NaiveDate::from_ymd(2021, 1, 31) },
+            Test { txt: "-1y", val: NaiveDate::from_ymd(2020, 2, 29) },
+            Test { txt: "-3y", val: NaiveDate::from_ymd(2018, 2, 28) },
+        ];
+        for test in tests.iter() {
+            let nm = human_to_date(dt, test.txt);
+            assert_eq!(nm, Ok(test.val), "{}", test.txt);
+        }
     }
 
     #[test]
@@ -354,21 +446,29 @@ mod humandate_test {
         let nm = human_to_date(dt, "last");
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
 
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd(2020, 7, 9); // thursday
         let tests: Vec<Test> = vec![
-            Test{txt: "tmr", val: NaiveDate::from_ymd(2020, 7, 10)},
-            Test{txt: "tm", val: NaiveDate::from_ymd(2020, 7, 10)},
-            Test{txt: "tomorrow", val: NaiveDate::from_ymd(2020, 7, 10)},
-            Test{txt: "today", val: NaiveDate::from_ymd(2020, 7, 9)},
-            Test{txt: "first", val: NaiveDate::from_ymd(2020, 8, 1)},
-            Test{txt: "last", val: NaiveDate::from_ymd(2020, 7, 31)},
-            Test{txt: "mon", val: NaiveDate::from_ymd(2020, 7, 13)},
-            Test{txt: "tu", val: NaiveDate::from_ymd(2020, 7, 14)},
-            Test{txt: "wed", val: NaiveDate::from_ymd(2020, 7, 15)},
-            Test{txt: "thursday", val: NaiveDate::from_ymd(2020, 7, 16)},
-            Test{txt: "fri", val: NaiveDate::from_ymd(2020, 7, 10)},
-            Test{txt: "sa", val: NaiveDate::from_ymd(2020, 7, 11)},
-            Test{txt: "sunday", val: NaiveDate::from_ymd(2020, 7, 12)},
+            Test { txt: "tmr", val: NaiveDate::from_ymd(2020, 7, 10) },
+            Test { txt: "tm", val: NaiveDate::from_ymd(2020, 7, 10) },
+            Test { txt: "tomorrow", val: NaiveDate::from_ymd(2020, 7, 10) },
+            Test { txt: "today", val: NaiveDate::from_ymd(2020, 7, 9) },
+            Test { txt: "first", val: NaiveDate::from_ymd(2020, 8, 1) },
+            Test { txt: "last", val: NaiveDate::from_ymd(2020, 7, 31) },
+            Test { txt: "mon", val: NaiveDate::from_ymd(2020, 7, 13) },
+            Test { txt: "tu", val: NaiveDate::from_ymd(2020, 7, 14) },
+            Test { txt: "wed", val: NaiveDate::from_ymd(2020, 7, 15) },
+            Test { txt: "thursday", val: NaiveDate::from_ymd(2020, 7, 16) },
+            Test { txt: "fri", val: NaiveDate::from_ymd(2020, 7, 10) },
+            Test { txt: "sa", val: NaiveDate::from_ymd(2020, 7, 11) },
+            Test { txt: "sunday", val: NaiveDate::from_ymd(2020, 7, 12) },
+            Test { txt: "yesterday", val: NaiveDate::from_ymd(2020, 7, 8) },
+            Test { txt: "-mon", val: NaiveDate::from_ymd(2020, 7, 6) },
+            Test { txt: "-tu", val: NaiveDate::from_ymd(2020, 7, 7) },
+            Test { txt: "-wed", val: NaiveDate::from_ymd(2020, 7, 8) },
+            Test { txt: "-thursday", val: NaiveDate::from_ymd(2020, 7, 2) },
+            Test { txt: "-fri", val: NaiveDate::from_ymd(2020, 7, 3) },
+            Test { txt: "-sa", val: NaiveDate::from_ymd(2020, 7, 4) },
+            Test { txt: "-sunday", val: NaiveDate::from_ymd(2020, 7, 5) },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt);

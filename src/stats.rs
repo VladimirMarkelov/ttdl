@@ -50,22 +50,10 @@ fn show_short_stats(tasks: &todo::TaskSlice) {
         println!("{:wid$}{:>4} ({}%)", "Done:", done, done * 100 / length, wid = width);
     }
     if threshold > 0 {
-        println!(
-            "{:wid$}{:4} ({}%)",
-            "Missed theshold:",
-            threshold,
-            threshold * 100 / length,
-            wid = width
-        );
+        println!("{:wid$}{:4} ({}%)", "Missed theshold:", threshold, threshold * 100 / length, wid = width);
     }
     if overdue > 0 {
-        println!(
-            "{:wid$}{:4} ({}%)",
-            "Overdue:",
-            overdue,
-            overdue * 100 / length,
-            wid = width
-        );
+        println!("{:wid$}{:4} ({}%)", "Overdue:", overdue, overdue * 100 / length, wid = width);
     }
     if recurrent > 0 {
         println!("{:wid$}{:4}", "Recurrent:", recurrent, wid = width);
@@ -141,11 +129,7 @@ fn show_full_stats(tasks: &todo::TaskSlice) {
 
     for t in tasks.iter() {
         let done = t.finished;
-        let overdue = if let Some(d) = t.due_date {
-            d < chrono::Utc::now().naive_utc().date()
-        } else {
-            false
-        };
+        let overdue = if let Some(d) = t.due_date { d < chrono::Utc::now().naive_utc().date() } else { false };
         let spent = timer::spent_time(t);
         st.update_stat(TOTAL, TOTAL, done, overdue, spent);
         for p in t.projects.iter() {
@@ -191,29 +175,18 @@ fn show_full_stats(tasks: &todo::TaskSlice) {
         };
         print!("{:w$} ", prj, w = PRJ_WIDTH);
 
-        let ctx = if s.ctx.len() > CTX_WIDTH {
-            format!("{:.w$}", s.ctx, w = CTX_WIDTH)
-        } else {
-            s.ctx.clone()
-        };
+        let ctx = if s.ctx.len() > CTX_WIDTH { format!("{:.w$}", s.ctx, w = CTX_WIDTH) } else { s.ctx.clone() };
         print!("{:w$} ", ctx, w = CTX_WIDTH);
 
         let div_by = if s.ctx.is_empty() { length } else { proj_total };
         let sn = format!("{}({:>3}%)", s.total, s.total * 100 / div_by);
         print!("{:>w$} ", &sn, w = NUM_WIDTH);
 
-        let sn = if s.done == 0 {
-            String::new()
-        } else {
-            format!("{}({:>3}%)", s.done, s.done * 100 / s.total)
-        };
+        let sn = if s.done == 0 { String::new() } else { format!("{}({:>3}%)", s.done, s.done * 100 / s.total) };
         print!("{:>w$} ", &sn, w = NUM_WIDTH);
 
-        let sn = if s.overdue == 0 {
-            String::new()
-        } else {
-            format!("{}({:>3}%)", s.overdue, s.overdue * 100 / s.total)
-        };
+        let sn =
+            if s.overdue == 0 { String::new() } else { format!("{}({:>3}%)", s.overdue, s.overdue * 100 / s.total) };
         print!("{:>w$} ", &sn, w = NUM_WIDTH);
 
         if s.spent.num_seconds() == 0 {

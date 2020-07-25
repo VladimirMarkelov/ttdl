@@ -84,10 +84,7 @@ impl Conf {
 }
 
 fn print_usage(program: &str, opts: &Options) {
-    let brief = format!(
-        "Usage: {} command [ID or ID range] [subject] [filter] [new values] [extra options]",
-        program
-    );
+    let brief = format!("Usage: {} command [ID or ID range] [subject] [filter] [new values] [extra options]", program);
     print!("{}", opts.usage(&brief));
 
     println!("\n\n[ID or ID range] - ID is the order number of a todo starting from 1. The range is inclusive. It is OK to use non-existing IDs - all invalid IDs are skipped while processing the command
@@ -197,10 +194,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         c.use_regex = true;
     }
     if matches.opt_present("t") {
-        c.tmr = Some(tfilter::Timer {
-            span: tfilter::ValueSpan::Active,
-            value: 0,
-        });
+        c.tmr = Some(tfilter::Timer { span: tfilter::ValueSpan::Active, value: 0 });
     }
     if matches.opt_present("pri") {
         let s = match matches.opt_str("pri") {
@@ -209,16 +203,10 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         match s.as_str() {
             "-" | "none" => {
-                c.pri = Some(tfilter::Priority {
-                    value: todo::NO_PRIORITY,
-                    span: tfilter::ValueSpan::None,
-                });
+                c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::None });
             }
             "any" | "+" => {
-                c.pri = Some(tfilter::Priority {
-                    value: todo::NO_PRIORITY,
-                    span: tfilter::ValueSpan::Any,
-                });
+                c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::Any });
             }
             _ => {
                 let (s, modif) = split_filter(&s);
@@ -235,10 +223,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
                         name: "priority".to_string(),
                     }));
                 }
-                c.pri = Some(tfilter::Priority {
-                    value: p - b'a',
-                    span: modif,
-                });
+                c.pri = Some(tfilter::Priority { value: p - b'a', span: modif });
             }
         }
     }
@@ -249,16 +234,8 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         match rstr.as_str() {
             "" => {}
-            "-" | "none" => {
-                c.rec = Some(tfilter::Recurrence {
-                    span: tfilter::ValueSpan::None,
-                })
-            }
-            "+" | "any" => {
-                c.rec = Some(tfilter::Recurrence {
-                    span: tfilter::ValueSpan::Any,
-                })
-            }
+            "-" | "none" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::None }),
+            "+" | "any" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::Any }),
             // TODO: add equal?
             _ => {
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
@@ -275,16 +252,10 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         match dstr.as_str() {
             "-" | "none" => {
-                c.due = Some(tfilter::Due {
-                    days: Default::default(),
-                    span: tfilter::ValueSpan::None,
-                });
+                c.due = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
             }
             "any" | "+" => {
-                c.due = Some(tfilter::Due {
-                    days: Default::default(),
-                    span: tfilter::ValueSpan::Any,
-                });
+                c.due = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
             }
             "over" | "overdue" => {
                 c.due = Some(tfilter::Due {
@@ -331,16 +302,10 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         match dstr.as_str() {
             "-" | "none" => {
-                c.thr = Some(tfilter::Due {
-                    days: Default::default(),
-                    span: tfilter::ValueSpan::None,
-                });
+                c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
             }
             "any" | "+" => {
-                c.thr = Some(tfilter::Due {
-                    days: Default::default(),
-                    span: tfilter::ValueSpan::Any,
-                });
+                c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
             }
             _ => {
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
@@ -762,39 +727,22 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     opts.optflag("a", "all", "Select all todos including completed ones");
     opts.optflag("A", "completed", "Select only completed todos");
     opts.optflag("t", "active", "Only active records");
-    opts.optflag(
-        "",
-        "dry-run",
-        "Dry run: do not change todo list, only show which todos would be changed",
-    );
+    opts.optflag("", "dry-run", "Dry run: do not change todo list, only show which todos would be changed");
     opts.optflag("v", "verbose", "Display extra information (used file names etc)");
     opts.optflag(
         "e",
         "regex",
         "Treat the search string as regular expression. By default simple case-insensitive substring search is done",
     );
-    opts.optflag(
-        "",
-        "wipe",
-        "'clean' command deletes todos instead of moving them to 'done.txt'",
-    );
+    opts.optflag("", "wipe", "'clean' command deletes todos instead of moving them to 'done.txt'");
     opts.optflagopt(
         "s",
         "sort",
         "sort todos by the list of fields(if the list is empty todos are sorted by their priority)",
         "FIELD1,FIELD2",
     );
-    opts.optflag(
-        "",
-        "sort-rev",
-        "Reverse todo list after sorting. It works only if the option 'sort' is set",
-    );
-    opts.optopt(
-        "",
-        "rec",
-        "Select only recurrent(any) or non-recurrent(none) todos",
-        "any | none",
-    );
+    opts.optflag("", "sort-rev", "Reverse todo list after sorting. It works only if the option 'sort' is set");
+    opts.optopt("", "rec", "Select only recurrent(any) or non-recurrent(none) todos", "any | none");
     opts.optopt("", "due", "Select records without due date(none), with any due date(any), overdue todos(overdue), today's todos(today), tomorrow's ones(tomorrow), or which are due in a few days(soon)", "any | none | today| tomorrow | soon");
     opts.optopt(
         "",
@@ -894,11 +842,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         print_usage(&program, &opts);
         exit(0);
     }
-    let conf_file = if matches.opt_present("config") {
-        matches.opt_str("config").map(PathBuf::from)
-    } else {
-        None
-    };
+    let conf_file = if matches.opt_present("config") { matches.opt_str("config").map(PathBuf::from) } else { None };
 
     parse_todo(&matches, &mut conf.todo)?;
     parse_sort(&matches, &mut conf.sort)?;
@@ -915,10 +859,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     load_from_config(&mut conf, conf_file);
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
-        println!(
-            "Using main file: {:?}\n   archive file: {:?}",
-            conf.todo_file, conf.done_file
-        );
+        println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
     }
 
     parse_filter(&matches, &mut conf.flt, conf.fmt.colors.soon_days)?;
@@ -947,10 +888,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             conf.flt.range = tfilter::ItemRange::One(id - 1);
             idx += 1;
         }
-    } else if matches.free[idx]
-        .find(|c: char| !c.is_digit(10) && c != '-' && c != ':')
-        .is_none()
-    {
+    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != '-' && c != ':').is_none() {
         // a range in a form "ID1-ID2" or "ID1:ID2"
         let w: Vec<&str> = if matches.free[idx].find('-').is_none() {
             matches.free[idx].split(':').collect()

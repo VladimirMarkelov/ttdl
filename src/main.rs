@@ -165,10 +165,7 @@ fn task_remove(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
 }
 
 fn task_clean(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
-    let flt_conf = tfilter::Conf {
-        all: tfilter::TodoStatus::Done,
-        ..conf.flt.clone()
-    };
+    let flt_conf = tfilter::Conf { all: tfilter::TodoStatus::Done, ..conf.flt.clone() };
     let todos = tfilter::filter(tasks, &flt_conf);
     if todos.is_empty() {
         println!("No todo archived")
@@ -310,11 +307,7 @@ fn task_start_stop(tasks: &mut todo::TaskVec, conf: &conf::Conf, start: bool) {
         println!("No todo {}", action)
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
-        let updated = if start {
-            todo::start(&mut clones, None)
-        } else {
-            todo::stop(&mut clones, None)
-        };
+        let updated = if start { todo::start(&mut clones, None) } else { todo::stop(&mut clones, None) };
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
@@ -328,11 +321,7 @@ fn task_start_stop(tasks: &mut todo::TaskVec, conf: &conf::Conf, start: bool) {
             fmt::print_footer(&tasks, &todos, &updated, &conf.fmt);
         }
     } else {
-        let updated = if start {
-            todo::start(tasks, Some(&todos))
-        } else {
-            todo::stop(tasks, Some(&todos))
-        };
+        let updated = if start { todo::start(tasks, Some(&todos)) } else { todo::stop(tasks, Some(&todos)) };
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {

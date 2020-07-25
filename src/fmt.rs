@@ -494,11 +494,7 @@ fn print_date_val(
         format!("{:wid$} ", " ", wid = width)
     };
     if !arg.is_empty() {
-        let tags = if field == "created" || field == "finished" {
-            &arg[JSON_OPT]
-        } else {
-            &arg[JSON_SPEC]
-        };
+        let tags = if field == "created" || field == "finished" { &arg[JSON_OPT] } else { &arg[JSON_SPEC] };
         if let Some(v) = arg_field_as_str(tags, field) {
             st = format!("{:wid$.wid$} ", v, wid = width);
         }
@@ -508,17 +504,10 @@ fn print_date_val(
 
 fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf, fields: &[&str]) {
     let id_width = field_width("id", c);
-    let fg = if task.finished {
-        c.colors.done.clone()
-    } else {
-        default_color()
-    };
+    let fg = if task.finished { c.colors.done.clone() } else { default_color() };
 
-    let (mut desc, arg) = if let Some(tpl) = external_reconstruct(task, c) {
-        tpl
-    } else {
-        (String::new(), json::JsonValue::Null)
-    };
+    let (mut desc, arg) =
+        if let Some(tpl) = external_reconstruct(task, c) { tpl } else { (String::new(), json::JsonValue::Null) };
     if desc.is_empty() {
         desc = task.subject.clone();
         for (key, value) in &task.tags {
@@ -560,11 +549,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
             }
             "due" => {
                 let dt = task.due_date.as_ref();
-                let mut clr = if task.finished {
-                    c.colors.done.clone()
-                } else {
-                    default_color()
-                };
+                let mut clr = if task.finished { c.colors.done.clone() } else { default_color() };
                 if let Some(d) = task.due_date.as_ref() {
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_due_date(task, days, c);
@@ -573,11 +558,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
             }
             "thr" => {
                 let dt = task.threshold_date.as_ref();
-                let mut clr = if task.finished {
-                    c.colors.done.clone()
-                } else {
-                    default_color()
-                };
+                let mut clr = if task.finished { c.colors.done.clone() } else { default_color() };
                 if let Some(d) = task.threshold_date.as_ref() {
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_threshold_date(task, days, c);
@@ -663,11 +644,7 @@ fn is_common_special_tag(tag: &str) -> bool {
 
 fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(String, json::JsonValue)> {
     let arg = customize(task, c)?;
-    let mut res = if let Some(s) = arg[JSON_DESC].as_str() {
-        s.to_string()
-    } else {
-        task.subject.clone()
-    };
+    let mut res = if let Some(s) = arg[JSON_DESC].as_str() { s.to_string() } else { task.subject.clone() };
     let tags = &arg[JSON_SPEC];
     if !tags.is_array() || tags.is_empty() {
         return None;
@@ -881,11 +858,7 @@ fn print_body_all(
 ) {
     let flist = field_list(c);
     for (i, t) in tasks.iter().enumerate() {
-        let (id, print) = if i < selected.len() {
-            (selected[i], updated[i])
-        } else {
-            (0, false)
-        };
+        let (id, print) = if i < selected.len() { (selected[i], updated[i]) } else { (0, false) };
         if print {
             print_line(stdout, t, id + 1, c, &flist);
         }
