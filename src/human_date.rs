@@ -1,4 +1,7 @@
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
+use std::mem;
+
+use todo_lib::{terr, tfilter};
 
 const NO_CHANGE: &str = "no change";
 const DAYS_PER_WEEK: u32 = 7;
@@ -349,6 +352,58 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str) -> Option<String> {
     }
 }
 
+pub(crate) fn is_range(human: &str) -> bool {
+    human.find("..") != None || human.find(':') != None
+}
+
+fn range_error(msg: &str) -> terr::TodoError {
+    terr::TodoError::from(terr::TodoErrorKind::InvalidValue { value: msg.to_string(), name: "date range".to_string() })
+}
+
+pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Due, terr::TodoError> {
+    let parts: Vec<&str> = if human.find(':') == None {
+        human.split("..").filter(|s| !s.is_empty()).collect()
+    } else {
+        human.split(':').filter(|s| !s.is_empty()).collect()
+    };
+    if parts.len() > 2 {
+        return Err(range_error(human));
+    }
+    let left_open = human.starts_with(':') || human.starts_with("..");
+    if parts.len() == 2 {
+        let mut begin = match human_to_date(base, parts[0]) {
+            Ok(d) => d,
+            Err(e) => return Err(range_error(&e)),
+        };
+        let mut end = match human_to_date(base, parts[1]) {
+            Ok(d) => d,
+            Err(e) => return Err(range_error(&e)),
+        };
+        if begin > end {
+            mem::swap(&mut begin, &mut end);
+        }
+        return Ok(tfilter::Due {
+            days: tfilter::ValueRange { low: (begin - base).num_days(), high: (end - base).num_days() },
+            span: tfilter::ValueSpan::Range,
+        });
+    }
+    if left_open {
+        let end = match human_to_date(base, parts[0]) {
+            Ok(d) => d,
+            Err(e) => return Err(range_error(&e)),
+        };
+        let diff = (end - base).num_days() + 1;
+        return Ok(tfilter::Due { days: tfilter::ValueRange { low: diff, high: 0 }, span: tfilter::ValueSpan::Lower });
+    }
+    match human_to_date(base, parts[0]) {
+        Ok(begin) => {
+            let diff = (begin - base).num_days() - 1;
+            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: diff }, span: tfilter::ValueSpan::Higher })
+        }
+        Err(e) => Err(range_error(&e)),
+    }
+}
+
 #[cfg(test)]
 mod humandate_test {
     use super::*;
@@ -357,6 +412,10 @@ mod humandate_test {
     struct Test {
         txt: &'static str,
         val: NaiveDate,
+    }
+    struct TestRange {
+        txt: &'static str,
+        val: tfilter::Due,
     }
 
     #[test]
@@ -473,6 +532,49 @@ mod humandate_test {
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
+        }
+    }
+
+    #[test]
+    fn range_test() {
+        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let tests: Vec<TestRange> = vec![
+            TestRange {
+                txt: "..tue",
+                val: tfilter::Due { days: tfilter::ValueRange { low: 6, high: 0 }, span: tfilter::ValueSpan::Lower },
+            },
+            TestRange {
+                txt: ":2d",
+                val: tfilter::Due { days: tfilter::ValueRange { low: 3, high: 0 }, span: tfilter::ValueSpan::Lower },
+            },
+            TestRange {
+                txt: "tue..",
+                val: tfilter::Due { days: tfilter::ValueRange { low: 0, high: 4 }, span: tfilter::ValueSpan::Higher },
+            },
+            TestRange {
+                txt: "3d:",
+                val: tfilter::Due { days: tfilter::ValueRange { low: 0, high: 2 }, span: tfilter::ValueSpan::Higher },
+            },
+            TestRange {
+                txt: "-tue..we",
+                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: 6 }, span: tfilter::ValueSpan::Range },
+            },
+            TestRange {
+                txt: "we..-tue",
+                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: 6 }, span: tfilter::ValueSpan::Range },
+            },
+            TestRange {
+                txt: "-tue..-wed",
+                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: -1 }, span: tfilter::ValueSpan::Range },
+            },
+            TestRange {
+                txt: "-1w:today",
+                val: tfilter::Due { days: tfilter::ValueRange { low: -7, high: 0 }, span: tfilter::ValueSpan::Range },
+            },
+        ];
+        for test in tests.iter() {
+            let rng = human_to_range(dt, test.txt).unwrap();
+            assert_eq!(rng, test.val, "{}", test.txt);
         }
     }
 
