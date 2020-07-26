@@ -472,8 +472,7 @@ dependencies = [
 
 [[package]]
 name = "todo_lib"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.5.0"
 dependencies = [
  "caseless 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -507,7 +506,7 @@ dependencies = [
  "termcolor 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "textwrap 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "todo-txt 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "todo_lib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "todo_lib 0.5.0",
  "toml 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -627,7 +626,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum time 0.1.43 (registry+https://github.com/rust-lang/crates.io-index)" = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
 "checksum tinyvec 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "53953d2d3a5ad81d9f844a32f14ebb121f50b650cd59d0ee2a07cf13c617efed"
 "checksum todo-txt 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a163015b4ef21a0f59e5a6301e429b1e6ea8dc3a7f93fe89f8b8775299be615a"
-"checksum todo_lib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a8d53c411f185946fd166263fb7addf79866cde747232dcb460b68ebfd194552"
 "checksum toml 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)" = "758664fc71a3a69038656bee8b6be6477d2a6c315a6b81f7081f591bffa4111f"
 "checksum unicode-normalization 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "6fb19cf769fa8c6a80a162df694621ebeb4dafb606470b2b2fce0be40a98a977"
 "checksum unicode-width 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"

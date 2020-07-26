@@ -183,6 +183,110 @@ fn split_filter(orig: &str) -> (String, tfilter::ValueSpan) {
     (orig.to_string(), tfilter::ValueSpan::Equal)
 }
 
+fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
+    match val {
+        "-" | "none" => {
+            c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::None });
+        }
+        "any" | "+" => {
+            c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::Any });
+        }
+        _ => {
+            let (s, modif) = split_filter(&val);
+            if s.len() != 1 {
+                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                    value: s,
+                    name: "priority".to_string(),
+                }));
+            }
+            let p = s.as_bytes()[0];
+            if p < b'a' || p > b'z' {
+                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                    value: s,
+                    name: "priority".to_string(),
+                }));
+            }
+            c.pri = Some(tfilter::Priority { value: p - b'a', span: modif });
+        }
+    }
+    Ok(())
+}
+
+fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
+    match val {
+        "" => {}
+        "-" | "none" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::None }),
+        "+" | "any" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::Any }),
+        // TODO: add equal?
+        _ => {
+            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                value: val.to_string(),
+                name: "recurrence".to_string(),
+            }));
+        }
+    }
+    Ok(())
+}
+
+fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::Due, terr::TodoError> {
+    if human_date::is_range(val) {
+        let dt = Local::now().date().naive_local();
+        return human_date::human_to_range(dt, val);
+    }
+
+    match val {
+        "-" | "none" => Ok(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None }),
+        "any" | "+" => Ok(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any }),
+        "over" | "overdue" => {
+            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Lower })
+        }
+        "soon" => {
+            Ok(tfilter::Due {
+                days: tfilter::ValueRange {
+                    low: 0,
+                    high: match soon_days {
+                        0 => 7, // default to 7 days if "soon" is not configured
+                        _ => soon_days as i64,
+                    },
+                },
+                span: tfilter::ValueSpan::Range,
+            })
+        }
+        "today" => Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Range }),
+        "tomorrow" => {
+            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 1 }, span: tfilter::ValueSpan::Range })
+        }
+        _ => Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+            value: val.to_string(),
+            name: "date range".to_string(),
+        })),
+    }
+}
+
+fn parse_filter_due(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
+    let rng = parse_filter_date_range(val, soon_days)?;
+    c.due = Some(rng);
+    Ok(())
+}
+
+fn parse_filter_threshold(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
+    match val {
+        "-" | "none" => {
+            c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
+        }
+        "any" | "+" => {
+            c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
+        }
+        _ => {
+            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                value: val.to_string(),
+                name: "date range".to_string(),
+            }));
+        }
+    }
+    Ok(())
+}
+
 fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
     if matches.opt_present("a") {
         c.all = tfilter::TodoStatus::All;
@@ -201,119 +305,28 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
             None => String::new(),
             Some(s_orig) => s_orig.to_lowercase(),
         };
-        match s.as_str() {
-            "-" | "none" => {
-                c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::None });
-            }
-            "any" | "+" => {
-                c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::Any });
-            }
-            _ => {
-                let (s, modif) = split_filter(&s);
-                if s.len() != 1 {
-                    return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                        value: s,
-                        name: "priority".to_string(),
-                    }));
-                }
-                let p = s.as_bytes()[0];
-                if p < b'a' || p > b'z' {
-                    return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                        value: s,
-                        name: "priority".to_string(),
-                    }));
-                }
-                c.pri = Some(tfilter::Priority { value: p - b'a', span: modif });
-            }
-        }
+        parse_filter_pri(&s, c)?;
     }
     if matches.opt_present("rec") {
         let rstr = match matches.opt_str("rec") {
             None => String::new(),
             Some(s) => s.to_lowercase(),
         };
-        match rstr.as_str() {
-            "" => {}
-            "-" | "none" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::None }),
-            "+" | "any" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::Any }),
-            // TODO: add equal?
-            _ => {
-                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                    value: rstr,
-                    name: "recurrence".to_string(),
-                }));
-            }
-        }
+        parse_filter_rec(&rstr, c)?;
     }
     if matches.opt_present("due") {
         let dstr = match matches.opt_str("due") {
             None => String::new(),
             Some(s) => s.to_lowercase(),
         };
-        match dstr.as_str() {
-            "-" | "none" => {
-                c.due = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
-            }
-            "any" | "+" => {
-                c.due = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
-            }
-            "over" | "overdue" => {
-                c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange { low: 0, high: 0 },
-                    span: tfilter::ValueSpan::Lower,
-                });
-            }
-            "soon" => {
-                c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange {
-                        low: 0,
-                        high: match soon_days {
-                            0 => 7, // default to 7 days if "soon" is not configured
-                            _ => soon_days as i64,
-                        },
-                    },
-                    span: tfilter::ValueSpan::Range,
-                });
-            }
-            "today" => {
-                c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange { low: 0, high: 0 },
-                    span: tfilter::ValueSpan::Range,
-                });
-            }
-            "tomorrow" => {
-                c.due = Some(tfilter::Due {
-                    days: tfilter::ValueRange { low: 0, high: 1 },
-                    span: tfilter::ValueSpan::Range,
-                });
-            }
-            _ => {
-                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                    value: dstr,
-                    name: "date range".to_string(),
-                }));
-            }
-        }
+        parse_filter_due(&dstr, c, soon_days)?;
     }
     if matches.opt_present("threshold") {
         let dstr = match matches.opt_str("threshold") {
             None => String::new(),
             Some(s) => s.to_lowercase(),
         };
-        match dstr.as_str() {
-            "-" | "none" => {
-                c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
-            }
-            "any" | "+" => {
-                c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
-            }
-            _ => {
-                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                    value: dstr,
-                    name: "date range".to_string(),
-                }));
-            }
-        }
+        parse_filter_threshold(&dstr, c)?;
     }
 
     Ok(())
