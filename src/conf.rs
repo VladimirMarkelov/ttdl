@@ -117,6 +117,11 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl l --due=soon` - show all incomplete todos which are due are due in less a few days, including overdue ones (the range is configurable and default value is 7 days)
         `ttdl l --due=overdue` - show all incomplete overdue todos
         `ttdl l --due=today -a` - show all todos that are due today
+        `ttdl l --due=today..tomorrow -a` - show all todos that are overdue between today and tomorrow(inclusive)
+        `ttdl l --due=today:tomorrow -a` - the same as above
+        `ttdl l --completed=-1w..today -a` - show all todos that were done the last week(literally: from a week ago through today)
+        `ttdl l --created=-3d..` - show active todos that are created 3 days ago or earlier(3 days old and younger)
+        `ttdl l --due=..2d..` - show active todos that are either overdue or their due date within 2 days from the current date
         `ttdl l -a +myproj @ui @rest` - show both incomplete and done todos related to project 'myproj' which contains either 'ui' or 'rest' context
     add | a - add a new todo
         `ttdl a "send tax declaration +personal @finance @tax due:2018-04-01 rec:1y"` - add a new recurrent todo(yearly todo) with a due date first of April every year
@@ -277,7 +282,7 @@ fn parse_filter_created(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Resu
     Ok(())
 }
 
-fn parse_filter_finished(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
+fn parse_filter_completed(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
     let rng = parse_filter_date_range(val, soon_days)?;
     c.finished = Some(rng);
     Ok(())
@@ -342,12 +347,12 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         parse_filter_created(&dstr, c, soon_days)?;
     }
-    if matches.opt_present("finished") {
-        let dstr = match matches.opt_str("finished") {
+    if matches.opt_present("completed") {
+        let dstr = match matches.opt_str("completed") {
             None => String::new(),
             Some(s) => s.to_lowercase(),
         };
-        parse_filter_finished(&dstr, c, soon_days)?;
+        parse_filter_completed(&dstr, c, soon_days)?;
     }
     if matches.opt_present("threshold") {
         let dstr = match matches.opt_str("threshold") {
@@ -793,8 +798,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     );
     opts.optopt(
         "",
-        "finished",
-        "Select records without finished date(none), with any finished date(any), finished within a date range",
+        "completed",
+        "Select records without completion date(none), with any completion date(any), completed within a date range",
         "any | none | today| tomorrow | yesterday | soon | 'range'",
     );
     opts.optopt(

@@ -8,6 +8,7 @@
         - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
     - [How to use](#how-to-use)
         - [Output example](#output-example)
+        - [Filtering](#filtering)
         - [Archive](#archive)
             - [How to show archived todos](#how-to-show-archived-todos)
         - [Supported commands](#supported-commands)
@@ -160,9 +161,114 @@ Columns:
 * `P` - priority (from A to Z, empty value means no priority)
 * `T` - marks an active todo - a todo which has its timer running to track time spent on it
 
+### Filtering
+
+TTDL allows operations on a range of todos. A range is defined either by todo IDs or by todo attribute values.
+The filters can be used to limit displayed todos with some condition, or to `edit` or `done` a group of command.
+E.g., you can mark `done` all todos of a `project` using a single command.
+
+All examples below are for `list` command, but filter can be used for more commands, like `done` and `edit`.
+
+#### Filter by IDs
+
+If the first argument after a command is a number-like, TTDL treats it as todo ID or todo ID list.
+Supported ID formats:
+
+- `ttdl list 5` - a single todo ID, lists a single todo with ID = 5(if it is incomplete)
+- `ttdl list 2-4` - a range, show all todos from 2nd to 4th(inclusive)
+- `ttdl list 2,4` - a list of IDs, show two todos(if they are incomplete): only 2nd and 4th ones
+
+#### Filter by priority
+
+Priority filter is set with `--pri` argument. Available filter kinds:
+
+- `ttdl list --pri=none` - show all incomplete todos that does not have priority set
+- `ttdl list --pri=-` - the same as above
+- `ttdl list --pri=any` - show all incomplete todos that have non-empty priority
+- `ttdl list --pri=+` - as above
+- `ttdl list --pri=#` - where `#` is a low case Latin letter between `a` and `z`, show all incomplete todos that have the same priority
+- `ttdl list --pri=#+` - where `#` is a low case Latin letter between `a` and `z`, show all incomplete todos that have priority `#` or higher
+
+#### Filter by recurrence
+
+- `ttdl list --rec=none` - show all non-recurrent todos
+- `ttdl list --rec=-` - the same as above
+- `ttdl list --rec=any` - show all recurrent todos
+- `ttdl list --rec=+` - as above
+
+#### Filter by project and context
+
+Any free command-line argument starting with `+` is a project name, and starting with `@` is a context.
+A command can contain any number of project names(the same true for contexts), in this case the filter
+includes all todos that contains *any* of listed projects names. Please note, that while passing a few
+contexts means "select todos with any of provided contexts", passing a few project names and contexts
+at the same time means "select todos with and of provided project names *and* any of provided contexts".
+
+Project names and contexts support basic matching. Append or prepend `*` to project name to match projects
+which names ends or starts with the word. 
+
+- `ttdl list +proj` - show all incomplete todos that belong to project `proj`
+- `ttdl list @ctxA @ctxB` - show all incomplete todos that have either context `ctxA` or context `ctxB`
+- `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to  project `projB`, **and** have context `ctx`
+- `ttdl list +*clientA` - show all incomplete todos which project names ends with `clientA`
+- `ttdl list @car*` - show all incomplete todos which have a context starting with `car`
+
+#### Filter by date
+
+All date-like fields(due, threshold, creation, finish) support filtering with a date range as well as a single date.
+Ranges are always inclusive. Start and end of a range are separated with either `..` or `:`. 
+A range can be opened one: in this case it is a single value with appended or prepended a range separator.
+For closed range, the order of the range ends is arbitrary: TTDL automatically exchanges beginning and end if needed.
+Ranges support only relative dates (positive for dates in the future and negative for dates in the past) or one of special dates.
+
+Relative dates is a list of numbers followed by suffixes (`d` - days, `w` - weeks, `m` - months, `y`- years) without separator.
+E.g., `1y` in a year; `2m1w` in two months and a week; `-10d` - 10 days ago.
+
+Special dates are:
+
+- `today`, `tomorrow`, `yesterday` - their meaning is clear
+- `first` - first day of the next month
+- `-first` - first day of this month or the previous month(in case of today is the 1st)
+- `last` - last day of this month or next month(in case of today is the last day)
+- `-last` - last day of the previous month
+- `day-of-week` - a full name of a day of week or abbreviated to 2 or 3 first letters, the nearest day-of-week in the future(it is never today)
+- `-day-of-week` - a full name of a day of week or abbreviated to 2 or 3 first letters, the nearest day-of-week in the past(it is never today)
+
+Use the following command-line options to filter by:
+
+- due date `--due`
+- threshold date `--thr`
+- date of creation `--created`
+- completion date `--completed`
+
+Examples (note the difference between ranges and single values):
+
+- `ttdl list --due today` - show all todos that are due today
+- `ttdl list --due ..today` - show all todos that are due today or overdue
+- `ttdl list --due today..` - show all todos that are due today or any day after today
+- `ttdl list --due today..tomorrow` - show todos that are due only today or tomorrow
+- `ttdl list --due tomorrow..today` - the same as above
+- `ttdl list --completed -1w.. -a` - show todos that were done withing the last 7 days(a week from today)
+- `ttdl list --completed -first.. -a` - show todos that were done this month(or the previous month if today is the 1st)
+- `ttdl list --due -first..last -a` - show todos that are due this month(including overdue ones); in corner cases(today is the 1st or the last day of month) it shows todos for 2 months range instead of a month range
+- `ttdl list --created -mon..` - show todos that were created this week(or the previous week if today is Monday)
+- `ttdl list --created -mon` - show todos that were created last Monday
+- `ttdl list --due -2d..2d` - show todos that are either slightly overdue(1-2 days overdue) or must be done within 2 next days
+
+#### Global filter by a substring
+
+All filters above works only for a certain todo attribute, but it is possible to filter with a simple substring or regular expression.
+In this case, TTDL looks for the substring everywhere: in subject(description), contexts, and projects.
+To do this, just pass a bare substring as the first argument after a command.
+Note the difference between project/context filter and a simple substring one: in the latter case `*` means a character `*`, not anything before or after substring.
+Use command-line option `-e` to enable fuzzy regular expression based filter.
+
+- `ttdl list car*` - show all incomplete todos that have substring `car*` in subject, project or context
+- `ttdl list car.* -e` show all incomplete todos which project, context or subject matches regular expression `car.*`
+
 ### Archive
 
-In the long run e a todo list gets full of completed tasks. They may slow down the todo list management. If you do not need to keep completed stuff, you can delete them using command `remove`. But if completed tasks must be kept for a while, you can archive them. Execute `clean`(or `archive`) command and completed tasks will be moved from the actual todo list to its archive.
+In the long run a todo list gets full of completed tasks. They may slow down the todo list management. If you do not need to keep completed stuff, you can delete them using command `remove`. But if completed tasks must be kept for a while, you can archive them. Execute `clean`(or `archive`) command and completed tasks will be moved from the actual todo list to its archive.
 
 Archiving completed todos makes the actual todo list loading faster. Though it has a few drawbacks:
 

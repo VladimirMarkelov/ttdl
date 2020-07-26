@@ -222,18 +222,45 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool) -> HumanResult {
         "first" => {
             let mut y = base.year();
             let mut m = base.month();
-            if m < 12 {
-                m += 1;
-            } else {
-                y += 1;
-                m = 1;
+            let d = base.day();
+            if !back {
+                if m < 12 {
+                    m += 1;
+                } else {
+                    y += 1;
+                    m = 1;
+                }
+            } else if d == 1 {
+                if m == 1 {
+                    m = 12;
+                    y -= 1;
+                } else {
+                    m -= 1;
+                }
             }
             Ok(NaiveDate::from_ymd(y, m, 1))
         }
         "last" => {
-            let y = base.year();
-            let m = base.month();
-            let d = days_in_month(y, m);
+            let mut y = base.year();
+            let mut m = base.month();
+            let mut d = base.day();
+            let last_day = days_in_month(y, m);
+            if back {
+                if m == 1 {
+                    m = 12;
+                    y -= 1;
+                } else {
+                    m -= 1;
+                }
+            } else if d == last_day {
+                if m < 12 {
+                    m += 1;
+                } else {
+                    m = 1;
+                    y += 1;
+                }
+            }
+            d = days_in_month(y, m);
             Ok(NaiveDate::from_ymd(y, m, d))
         }
         "monday" | "mon" | "mo" => {
@@ -509,7 +536,27 @@ mod humandate_test {
     fn special() {
         let dt = NaiveDate::from_ymd(2020, 2, 29);
         let nm = human_to_date(dt, "last");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
+        let nm = human_to_date(dt, "-last");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
+
+        let dt = NaiveDate::from_ymd(2020, 2, 10);
+        let nm = human_to_date(dt, "last");
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
+        let nm = human_to_date(dt, "-last");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
+
+        let dt = NaiveDate::from_ymd(2020, 2, 1);
+        let nm = human_to_date(dt, "first");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
+        let nm = human_to_date(dt, "-first");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 1)));
+
+        let dt = NaiveDate::from_ymd(2020, 2, 10);
+        let nm = human_to_date(dt, "first");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
+        let nm = human_to_date(dt, "-first");
+        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 1)));
 
         let dt = NaiveDate::from_ymd(2020, 7, 9); // thursday
         let tests: Vec<Test> = vec![
