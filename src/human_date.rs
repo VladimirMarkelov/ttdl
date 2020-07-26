@@ -360,7 +360,7 @@ fn range_error(msg: &str) -> terr::TodoError {
     terr::TodoError::from(terr::TodoErrorKind::InvalidValue { value: msg.to_string(), name: "date range".to_string() })
 }
 
-pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Due, terr::TodoError> {
+pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::DateRange, terr::TodoError> {
     let parts: Vec<&str> = if human.find(':') == None {
         human.split("..").filter(|s| !s.is_empty()).collect()
     } else {
@@ -382,7 +382,7 @@ pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Du
         if begin > end {
             mem::swap(&mut begin, &mut end);
         }
-        return Ok(tfilter::Due {
+        return Ok(tfilter::DateRange {
             days: tfilter::ValueRange { low: (begin - base).num_days(), high: (end - base).num_days() },
             span: tfilter::ValueSpan::Range,
         });
@@ -393,12 +393,18 @@ pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Du
             Err(e) => return Err(range_error(&e)),
         };
         let diff = (end - base).num_days() + 1;
-        return Ok(tfilter::Due { days: tfilter::ValueRange { low: diff, high: 0 }, span: tfilter::ValueSpan::Lower });
+        return Ok(tfilter::DateRange {
+            days: tfilter::ValueRange { low: diff, high: 0 },
+            span: tfilter::ValueSpan::Lower,
+        });
     }
     match human_to_date(base, parts[0]) {
         Ok(begin) => {
             let diff = (begin - base).num_days() - 1;
-            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: diff }, span: tfilter::ValueSpan::Higher })
+            Ok(tfilter::DateRange {
+                days: tfilter::ValueRange { low: 0, high: diff },
+                span: tfilter::ValueSpan::Higher,
+            })
         }
         Err(e) => Err(range_error(&e)),
     }
@@ -415,7 +421,7 @@ mod humandate_test {
     }
     struct TestRange {
         txt: &'static str,
-        val: tfilter::Due,
+        val: tfilter::DateRange,
     }
 
     #[test]
@@ -541,35 +547,59 @@ mod humandate_test {
         let tests: Vec<TestRange> = vec![
             TestRange {
                 txt: "..tue",
-                val: tfilter::Due { days: tfilter::ValueRange { low: 6, high: 0 }, span: tfilter::ValueSpan::Lower },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 6, high: 0 },
+                    span: tfilter::ValueSpan::Lower,
+                },
             },
             TestRange {
                 txt: ":2d",
-                val: tfilter::Due { days: tfilter::ValueRange { low: 3, high: 0 }, span: tfilter::ValueSpan::Lower },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 3, high: 0 },
+                    span: tfilter::ValueSpan::Lower,
+                },
             },
             TestRange {
                 txt: "tue..",
-                val: tfilter::Due { days: tfilter::ValueRange { low: 0, high: 4 }, span: tfilter::ValueSpan::Higher },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 0, high: 4 },
+                    span: tfilter::ValueSpan::Higher,
+                },
             },
             TestRange {
                 txt: "3d:",
-                val: tfilter::Due { days: tfilter::ValueRange { low: 0, high: 2 }, span: tfilter::ValueSpan::Higher },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 0, high: 2 },
+                    span: tfilter::ValueSpan::Higher,
+                },
             },
             TestRange {
                 txt: "-tue..we",
-                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: 6 }, span: tfilter::ValueSpan::Range },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: -2, high: 6 },
+                    span: tfilter::ValueSpan::Range,
+                },
             },
             TestRange {
                 txt: "we..-tue",
-                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: 6 }, span: tfilter::ValueSpan::Range },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: -2, high: 6 },
+                    span: tfilter::ValueSpan::Range,
+                },
             },
             TestRange {
                 txt: "-tue..-wed",
-                val: tfilter::Due { days: tfilter::ValueRange { low: -2, high: -1 }, span: tfilter::ValueSpan::Range },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: -2, high: -1 },
+                    span: tfilter::ValueSpan::Range,
+                },
             },
             TestRange {
                 txt: "-1w:today",
-                val: tfilter::Due { days: tfilter::ValueRange { low: -7, high: 0 }, span: tfilter::ValueSpan::Range },
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: -7, high: 0 },
+                    span: tfilter::ValueSpan::Range,
+                },
             },
         ];
         for test in tests.iter() {

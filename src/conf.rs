@@ -228,20 +228,20 @@ fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
     Ok(())
 }
 
-fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::Due, terr::TodoError> {
+fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRange, terr::TodoError> {
     if human_date::is_range(val) {
         let dt = Local::now().date().naive_local();
         return human_date::human_to_range(dt, val);
     }
 
     match val {
-        "-" | "none" => Ok(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None }),
-        "any" | "+" => Ok(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any }),
+        "-" | "none" => Ok(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::None }),
+        "any" | "+" => Ok(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::Any }),
         "over" | "overdue" => {
-            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Lower })
+            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Lower })
         }
         "soon" => {
-            Ok(tfilter::Due {
+            Ok(tfilter::DateRange {
                 days: tfilter::ValueRange {
                     low: 0,
                     high: match soon_days {
@@ -252,9 +252,11 @@ fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::Due, ter
                 span: tfilter::ValueSpan::Range,
             })
         }
-        "today" => Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Range }),
+        "today" => {
+            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Range })
+        }
         "tomorrow" => {
-            Ok(tfilter::Due { days: tfilter::ValueRange { low: 0, high: 1 }, span: tfilter::ValueSpan::Range })
+            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 1 }, span: tfilter::ValueSpan::Range })
         }
         _ => Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
             value: val.to_string(),
@@ -269,13 +271,25 @@ fn parse_filter_due(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(
     Ok(())
 }
 
+fn parse_filter_created(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
+    let rng = parse_filter_date_range(val, soon_days)?;
+    c.created = Some(rng);
+    Ok(())
+}
+
+fn parse_filter_finished(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
+    let rng = parse_filter_date_range(val, soon_days)?;
+    c.finished = Some(rng);
+    Ok(())
+}
+
 fn parse_filter_threshold(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
     match val {
         "-" | "none" => {
-            c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::None });
+            c.thr = Some(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::None });
         }
         "any" | "+" => {
-            c.thr = Some(tfilter::Due { days: Default::default(), span: tfilter::ValueSpan::Any });
+            c.thr = Some(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::Any });
         }
         _ => {
             return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
@@ -320,6 +334,20 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
             Some(s) => s.to_lowercase(),
         };
         parse_filter_due(&dstr, c, soon_days)?;
+    }
+    if matches.opt_present("created") {
+        let dstr = match matches.opt_str("created") {
+            None => String::new(),
+            Some(s) => s.to_lowercase(),
+        };
+        parse_filter_created(&dstr, c, soon_days)?;
+    }
+    if matches.opt_present("finished") {
+        let dstr = match matches.opt_str("finished") {
+            None => String::new(),
+            Some(s) => s.to_lowercase(),
+        };
+        parse_filter_finished(&dstr, c, soon_days)?;
     }
     if matches.opt_present("threshold") {
         let dstr = match matches.opt_str("threshold") {
@@ -756,7 +784,19 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     );
     opts.optflag("", "sort-rev", "Reverse todo list after sorting. It works only if the option 'sort' is set");
     opts.optopt("", "rec", "Select only recurrent(any) or non-recurrent(none) todos", "any | none");
-    opts.optopt("", "due", "Select records without due date(none), with any due date(any), overdue todos(overdue), today's todos(today), tomorrow's ones(tomorrow), or which are due in a few days(soon)", "any | none | today| tomorrow | soon");
+    opts.optopt("", "due", "Select records without due date(none), with any due date(any), overdue todos(overdue), today's todos(today), tomorrow's ones(tomorrow), or which are due in a few days(soon)", "any | none | today| tomorrow | yesterday | soon | 'range'");
+    opts.optopt(
+        "",
+        "created",
+        "Select records without creation date(none), with any creation date(any), created within a date range",
+        "any | none | today| tomorrow | yesterday | soon | 'range'",
+    );
+    opts.optopt(
+        "",
+        "finished",
+        "Select records without finished date(none), with any finished date(any), finished within a date range",
+        "any | none | today| tomorrow | yesterday | soon | 'range'",
+    );
     opts.optopt(
         "",
         "threshold",
