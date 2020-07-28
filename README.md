@@ -202,7 +202,7 @@ Any free command-line argument starting with `+` is a project name, and starting
 A command can contain any number of project names(the same true for contexts), in this case the filter
 includes all todos that contains *any* of listed projects names. Please note, that while passing a few
 contexts means "select todos with any of provided contexts", passing a few project names and contexts
-at the same time means "select todos with and of provided project names *and* any of provided contexts".
+at the same time means "select todos with any of provided project names *and* any of provided contexts".
 
 Project names and contexts support basic matching. Append or prepend `*` to project name to match projects
 which names ends or starts with the word. 
@@ -217,8 +217,8 @@ which names ends or starts with the word.
 
 All date-like fields(due, threshold, creation, finish) support filtering with a date range as well as a single date.
 Ranges are always inclusive. Start and end of a range are separated with either `..` or `:`. 
-A range can be opened one: in this case it is a single value with appended or prepended a range separator.
-For closed range, the order of the range ends is arbitrary: TTDL automatically exchanges beginning and end if needed.
+A range can be "open": in this case it is a single value with appended or prepended range separator.
+For a closed range, the order of the range end is arbitrary: TTDL automatically exchanges beginning and end if needed.
 Ranges support only relative dates (positive for dates in the future and negative for dates in the past) or one of special dates.
 
 Relative dates is a list of numbers followed by suffixes (`d` - days, `w` - weeks, `m` - months, `y`- years) without separator.
