@@ -236,7 +236,7 @@ fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
 fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRange, terr::TodoError> {
     if human_date::is_range(val) {
         let dt = Local::now().date().naive_local();
-        return human_date::human_to_range(dt, val);
+        return human_date::human_to_range(dt, val, soon_days);
     }
 
     match val {
@@ -245,18 +245,10 @@ fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRang
         "over" | "overdue" => {
             Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Lower })
         }
-        "soon" => {
-            Ok(tfilter::DateRange {
-                days: tfilter::ValueRange {
-                    low: 0,
-                    high: match soon_days {
-                        0 => 7, // default to 7 days if "soon" is not configured
-                        _ => soon_days as i64,
-                    },
-                },
-                span: tfilter::ValueSpan::Range,
-            })
-        }
+        "soon" => Ok(tfilter::DateRange {
+            days: tfilter::ValueRange { low: 0, high: soon_days as i64 },
+            span: tfilter::ValueSpan::Range,
+        }),
         "today" => {
             Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Range })
         }
@@ -418,9 +410,15 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             "-" | "none" => {
                 c.due_act = todo::Action::Delete;
             }
+            "soon" => {
+                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                    value: s,
+                    name: "set-due".to_string(),
+                }))
+            }
             _ => {
                 let dt = Local::now().date().naive_local();
-                if let Ok(new_date) = human_date::human_to_date(dt, &s) {
+                if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
                     c.due = Some(new_date);
                     c.due_act = todo::Action::Set;
                 } else {
@@ -432,7 +430,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                         Err(_) => {
                             return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                                 value: s,
-                                name: "date".to_string(),
+                                name: "set-due".to_string(),
                             }));
                         }
                     }
@@ -446,9 +444,15 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             "-" | "none" => {
                 c.recurrence_act = todo::Action::Delete;
             }
+            "soon" => {
+                return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+                    value: s,
+                    name: "set-threshold".to_string(),
+                }))
+            }
             _ => {
                 let dt = Local::now().date().naive_local();
-                if let Ok(new_date) = human_date::human_to_date(dt, &s) {
+                if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
                     c.thr = Some(new_date);
                     c.thr_act = todo::Action::Set;
                 } else {
@@ -460,7 +464,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                         Err(_) => {
                             return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                                 value: s,
-                                name: "date".to_string(),
+                                name: "set-threshold".to_string(),
                             }));
                         }
                     }
@@ -660,7 +664,9 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 
     if let Some(soon) = tc.ranges.soon {
-        if soon > 0 && soon < 256 {
+        if soon == 0 {
+            conf.fmt.colors.soon_days = 7u8;
+        } else if soon > 0 && soon < 256 {
             conf.fmt.colors.soon_days = soon as u8;
         }
     }
@@ -920,7 +926,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
     }
 
-    parse_filter(&matches, &mut conf.flt, conf.fmt.colors.soon_days)?;
+    let soon_days = conf.fmt.colors.soon_days;
+    parse_filter(&matches, &mut conf.flt, soon_days)?;
 
     // TODO: check validity before return
     let mut idx: usize = 0;
@@ -993,11 +1000,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             conf.flt.projects.push(project.to_owned().to_lowercase());
         } else if edit_mode {
             let dt = Local::now().date().naive_local();
-            let subj = match human_date::fix_date(dt, &matches.free[idx], "due:") {
+            let subj = match human_date::fix_date(dt, &matches.free[idx], "due:", soon_days) {
                 None => matches.free[idx].clone(),
                 Some(s) => s,
             };
-            let subj = match human_date::fix_date(dt, &subj, "t:") {
+            let subj = match human_date::fix_date(dt, &subj, "t:", soon_days) {
                 None => subj,
                 Some(s) => s,
             };

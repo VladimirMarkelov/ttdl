@@ -210,7 +210,7 @@ fn is_absolute(name: &str) -> bool {
     }
 }
 
-fn special_time_point(base: NaiveDate, human: &str, back: bool) -> HumanResult {
+fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -> HumanResult {
     let s = human.replace(&['-', '_'][..], "").to_lowercase();
     if back && is_absolute(human) {
         return Err(format!("'{}' cannot be back", human));
@@ -219,6 +219,10 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool) -> HumanResult {
         "today" => Ok(base),
         "tomorrow" | "tmr" | "tm" => Ok(base.succ()),
         "yesterday" => Ok(base.pred()),
+        "soon" => {
+            let dur = Duration::days(soon_days as i64);
+            Ok(if back { base - dur } else { base + dur })
+        }
         "first" => {
             let mut y = base.year();
             let mut m = base.month();
@@ -318,7 +322,7 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool) -> HumanResult {
 
 // Converts human-readable date to an absolute date in todo-txt format. If the date is already an
 // absolute value, the function returns None. In case of any error None is returned as well.
-pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
+pub fn human_to_date(base: NaiveDate, human: &str, soon_days: u8) -> HumanResult {
     if human.is_empty() {
         return Err("empty date".to_string());
     }
@@ -347,10 +351,10 @@ pub fn human_to_date(base: NaiveDate, human: &str) -> HumanResult {
     }
 
     // some "special" word like "tomorrow", "tue"
-    special_time_point(base, human, back)
+    special_time_point(base, human, back, soon_days)
 }
 
-pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str) -> Option<String> {
+pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str, soon_days: u8) -> Option<String> {
     if orig.is_empty() || look_for.is_empty() {
         return None;
     }
@@ -364,7 +368,7 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str) -> Option<String> {
     };
     let substr = &orig[start + look_for.len()..];
     let human = if let Some(p) = substr.find(' ') { &substr[..p] } else { &substr };
-    match human_to_date(base, human) {
+    match human_to_date(base, human, soon_days) {
         Err(e) => {
             if e != NO_CHANGE {
                 eprintln!("invalid due date: {}", human);
@@ -387,7 +391,11 @@ fn range_error(msg: &str) -> terr::TodoError {
     terr::TodoError::from(terr::TodoErrorKind::InvalidValue { value: msg.to_string(), name: "date range".to_string() })
 }
 
-pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::DateRange, terr::TodoError> {
+pub(crate) fn human_to_range(
+    base: NaiveDate,
+    human: &str,
+    soon_days: u8,
+) -> Result<tfilter::DateRange, terr::TodoError> {
     let parts: Vec<&str> = if human.find(':') == None {
         human.split("..").filter(|s| !s.is_empty()).collect()
     } else {
@@ -398,11 +406,11 @@ pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Da
     }
     let left_open = human.starts_with(':') || human.starts_with("..");
     if parts.len() == 2 {
-        let mut begin = match human_to_date(base, parts[0]) {
+        let mut begin = match human_to_date(base, parts[0], soon_days) {
             Ok(d) => d,
             Err(e) => return Err(range_error(&e)),
         };
-        let mut end = match human_to_date(base, parts[1]) {
+        let mut end = match human_to_date(base, parts[1], soon_days) {
             Ok(d) => d,
             Err(e) => return Err(range_error(&e)),
         };
@@ -415,7 +423,7 @@ pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Da
         });
     }
     if left_open {
-        let end = match human_to_date(base, parts[0]) {
+        let end = match human_to_date(base, parts[0], soon_days) {
             Ok(d) => d,
             Err(e) => return Err(range_error(&e)),
         };
@@ -425,7 +433,7 @@ pub(crate) fn human_to_range(base: NaiveDate, human: &str) -> Result<tfilter::Da
             span: tfilter::ValueSpan::Lower,
         });
     }
-    match human_to_date(base, parts[0]) {
+    match human_to_date(base, parts[0], soon_days) {
         Ok(begin) => {
             let diff = (begin - base).num_days() - 1;
             Ok(tfilter::DateRange {

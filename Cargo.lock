@@ -492,7 +492,7 @@ dependencies = [
 
 [[package]]
 name = "ttdl"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "atty 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "caseless 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
