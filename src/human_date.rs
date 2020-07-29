@@ -462,7 +462,7 @@ mod humandate_test {
     #[test]
     fn no_change() {
         let dt = Local::now().date().naive_local();
-        let res = human_to_date(dt, "2010-10-10");
+        let res = human_to_date(dt, "2010-10-10", 0);
         let must = Err(NO_CHANGE.to_string());
         assert_eq!(res, must)
     }
@@ -476,34 +476,34 @@ mod humandate_test {
             Test { txt: "31", val: NaiveDate::from_ymd(2020, 7, 31) },
         ];
         for test in tests.iter() {
-            let nm = human_to_date(dt, test.txt);
+            let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
 
         let dt = NaiveDate::from_ymd(2020, 6, 9);
-        let nm = human_to_date(dt, "31");
+        let nm = human_to_date(dt, "31", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 6, 30)));
         let dt = NaiveDate::from_ymd(2020, 2, 4);
-        let nm = human_to_date(dt, "31");
+        let nm = human_to_date(dt, "31", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
         let dt = NaiveDate::from_ymd(2020, 2, 29);
-        let nm = human_to_date(dt, "29");
+        let nm = human_to_date(dt, "29", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
 
-        let nm = human_to_date(dt, "32");
+        let nm = human_to_date(dt, "32", 0);
         assert!(nm.is_err());
-        let nm = human_to_date(dt, "0");
+        let nm = human_to_date(dt, "0", 0);
         assert!(nm.is_err());
     }
 
     #[test]
     fn month_and_day() {
         let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let nm = human_to_date(dt, "07-08");
+        let nm = human_to_date(dt, "07-08", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 7, 8)));
-        let nm = human_to_date(dt, "07-11");
+        let nm = human_to_date(dt, "07-11", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
-        let nm = human_to_date(dt, "02-31");
+        let nm = human_to_date(dt, "02-31", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 2, 28)));
     }
 
@@ -521,7 +521,7 @@ mod humandate_test {
             Test { txt: "-2w2d1m", val: NaiveDate::from_ymd(2020, 5, 23) },
         ];
         for test in tests.iter() {
-            let nm = human_to_date(dt, test.txt);
+            let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
 
@@ -535,7 +535,7 @@ mod humandate_test {
             Test { txt: "-3y", val: NaiveDate::from_ymd(2018, 2, 28) },
         ];
         for test in tests.iter() {
-            let nm = human_to_date(dt, test.txt);
+            let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
     }
@@ -543,27 +543,27 @@ mod humandate_test {
     #[test]
     fn special() {
         let dt = NaiveDate::from_ymd(2020, 2, 29);
-        let nm = human_to_date(dt, "last");
+        let nm = human_to_date(dt, "last", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
-        let nm = human_to_date(dt, "-last");
+        let nm = human_to_date(dt, "-last", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
 
         let dt = NaiveDate::from_ymd(2020, 2, 10);
-        let nm = human_to_date(dt, "last");
+        let nm = human_to_date(dt, "last", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
-        let nm = human_to_date(dt, "-last");
+        let nm = human_to_date(dt, "-last", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
 
         let dt = NaiveDate::from_ymd(2020, 2, 1);
-        let nm = human_to_date(dt, "first");
+        let nm = human_to_date(dt, "first", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
-        let nm = human_to_date(dt, "-first");
+        let nm = human_to_date(dt, "-first", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 1)));
 
         let dt = NaiveDate::from_ymd(2020, 2, 10);
-        let nm = human_to_date(dt, "first");
+        let nm = human_to_date(dt, "first", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
-        let nm = human_to_date(dt, "-first");
+        let nm = human_to_date(dt, "-first", 0);
         assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 1)));
 
         let dt = NaiveDate::from_ymd(2020, 7, 9); // thursday
@@ -591,7 +591,7 @@ mod humandate_test {
             Test { txt: "-sunday", val: NaiveDate::from_ymd(2020, 7, 5) },
         ];
         for test in tests.iter() {
-            let nm = human_to_date(dt, test.txt);
+            let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
     }
@@ -656,9 +656,30 @@ mod humandate_test {
                     span: tfilter::ValueSpan::Range,
                 },
             },
+            TestRange {
+                txt: "..soon",
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 7, high: 0 },
+                    span: tfilter::ValueSpan::Lower,
+                },
+            },
+            TestRange {
+                txt: "soon..",
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: 0, high: 5 },
+                    span: tfilter::ValueSpan::Higher,
+                },
+            },
+            TestRange {
+                txt: "-soon..soon",
+                val: tfilter::DateRange {
+                    days: tfilter::ValueRange { low: -6, high: 6 },
+                    span: tfilter::ValueSpan::Range,
+                },
+            },
         ];
         for test in tests.iter() {
-            let rng = human_to_range(dt, test.txt).unwrap();
+            let rng = human_to_range(dt, test.txt, 6).unwrap();
             assert_eq!(rng, test.val, "{}", test.txt);
         }
     }
@@ -666,16 +687,16 @@ mod humandate_test {
     #[test]
     fn date_replace() {
         let dt = NaiveDate::from_ymd(2020, 7, 9);
-        let s = fix_date(dt, "error due:xxxx next week", "due:");
+        let s = fix_date(dt, "error due:xxxx next week", "due:", 0);
         assert_eq!(s, None);
-        let s = fix_date(dt, "due: next week", "due:");
+        let s = fix_date(dt, "due: next week", "due:", 0);
         assert_eq!(s, None);
 
-        let s = fix_date(dt, "due:1w next week", "due:");
+        let s = fix_date(dt, "due:1w next week", "due:", 0);
         assert_eq!(s, Some("due:2020-07-16 next week".to_string()));
-        let s = fix_date(dt, "next day due:1d", "due:");
+        let s = fix_date(dt, "next day due:1d", "due:", 0);
         assert_eq!(s, Some("next day due:2020-07-10".to_string()));
-        let s = fix_date(dt, "special due:sat in the middle", "due:");
+        let s = fix_date(dt, "special due:sat in the middle", "due:", 0);
         assert_eq!(s, Some("special due:2020-07-11 in the middle".to_string()));
     }
 }
