@@ -5,6 +5,7 @@ use todo_lib::{terr, tfilter};
 
 const NO_CHANGE: &str = "no change";
 const DAYS_PER_WEEK: u32 = 7;
+const FAR_PAST: i64 = -100 * 365; // far in the past
 
 type HumanResult = Result<NaiveDate, String>;
 
@@ -205,7 +206,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
 // the past and `yesterday` cannot be in the future, so the function returns `true` for both.
 fn is_absolute(name: &str) -> bool {
     match name {
-        "today" | "tomorrow" | "tmr" | "tm" | "yesterday" => true,
+        "today" | "tomorrow" | "tmr" | "tm" | "yesterday" | "overdue" => true,
         _ => false,
     }
 }
@@ -219,6 +220,7 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
         "today" => Ok(base),
         "tomorrow" | "tmr" | "tm" => Ok(base.succ()),
         "yesterday" => Ok(base.pred()),
+        "overdue" => Ok(base + Duration::days(FAR_PAST)),
         "soon" => {
             let dur = Duration::days(soon_days as i64);
             Ok(if back { base - dur } else { base + dur })
