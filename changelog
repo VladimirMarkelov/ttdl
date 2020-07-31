@@ -4,7 +4,10 @@ ttdl (0.10.1) unstable; urgency=medium
     The value of `soon` depends on the configuration value `ranges.soon`.
     If the value of config is zero, the value defaults to 7.
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 28 Jul 2020 23:14:26 -0700
+  * Add `overdue` as a valid value for a range end for consistency. Any
+    range with a due is the same as an open range without 'overdue' part.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 30 Jul 2020 21:56:09 -0700
 
 ttdl (0.10.0) unstable; urgency=medium
 
