@@ -226,6 +226,7 @@ E.g., `1y` in a year; `2m1w` in two months and a week; `-10d` - 10 days ago.
 
 Special dates are:
 
+- `none` - a date is unset; the value can be used as a single value or as only one end of a range. In latter case the filter works as two filters combined: an open range with a real date, and all todos that have the date field empty
 - `today`, `tomorrow`, `yesterday` - their meaning is clear
 - `first` - first day of the next month
 - `-first` - first day of this month or the previous month(in case of today is the 1st)
@@ -254,6 +255,9 @@ Examples (note the difference between ranges and single values):
 - `ttdl list --created -mon..` - show todos that were created this week(or the previous week if today is Monday)
 - `ttdl list --created -mon` - show todos that were created last Monday
 - `ttdl list --due -2d..2d` - show todos that are either slightly overdue(1-2 days overdue) or must be done within 2 next days
+- `ttdl list --due none` - show todos with undefined due date
+- `ttdl list --due none..tomorrow` - show todos that are overdue, due today or tomorrow, and with empty due date
+- `ttdl list --due tomorrow..none` - show todos that are due tomorrow or further in the future, and with empty due date
 
 #### Global filter by a substring
 

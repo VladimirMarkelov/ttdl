@@ -1,3 +1,13 @@
+ttdl (0.10.2) unstable; urgency=medium
+
+  * Add `none` as a valid value for a range end. Using `none` in a range makes
+    the range an open one. The result is the combination of two lists: an open
+    one with real date, and all todos that have the date undefined.
+    Example: `list --due=none..tomorrow` shows all todos that are overdue, due
+    today or tomorrow, and that do not have a due date
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 08 Aug 2020 19:39:38 -0700
+
 ttdl (0.10.1) unstable; urgency=medium
 
   * Add `soon` as a valid value for a range end. `-soon` works as well.
