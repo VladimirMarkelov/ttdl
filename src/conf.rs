@@ -234,6 +234,10 @@ fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
 }
 
 fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRange, terr::TodoError> {
+    if human_date::is_range_with_none(val) {
+        let dt = Local::now().date().naive_local();
+        return human_date::human_to_range_with_none(dt, val, soon_days);
+    }
     if human_date::is_range(val) {
         let dt = Local::now().date().naive_local();
         return human_date::human_to_range(dt, val, soon_days);

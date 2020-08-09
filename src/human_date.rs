@@ -385,6 +385,47 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str, soon_days: u8) -> O
     }
 }
 
+pub(crate) fn is_range_with_none(human: &str) -> bool {
+    if !is_range(human) {
+        return false;
+    }
+    human.starts_with("none..") || human.ends_with("..none") || human.starts_with("none:") || human.ends_with(":none")
+}
+
+pub(crate) fn human_to_range_with_none(
+    base: NaiveDate,
+    human: &str,
+    soon_days: u8,
+) -> Result<tfilter::DateRange, terr::TodoError> {
+    let parts: Vec<&str> = if human.find(':') == None {
+        human.split("..").filter(|s| !s.is_empty()).collect()
+    } else {
+        human.split(':').filter(|s| !s.is_empty()).collect()
+    };
+    if parts.len() > 2 {
+        return Err(range_error(human));
+    }
+    if parts[1] == "none" {
+        match human_to_date(base, parts[0], soon_days) {
+            Err(e) => Err(range_error(&e)),
+            Ok(d) => Ok(tfilter::DateRange {
+                days: tfilter::ValueRange { low: tfilter::INCLUDE_NONE, high: (d - base).num_days() },
+                span: tfilter::ValueSpan::Higher,
+            }),
+        }
+    } else if parts[0] == "none" {
+        match human_to_date(base, parts[1], soon_days) {
+            Err(e) => Err(range_error(&e)),
+            Ok(d) => Ok(tfilter::DateRange {
+                days: tfilter::ValueRange { high: tfilter::INCLUDE_NONE, low: (d - base).num_days() },
+                span: tfilter::ValueSpan::Lower,
+            }),
+        }
+    } else {
+        Err(range_error(human))
+    }
+}
+
 pub(crate) fn is_range(human: &str) -> bool {
     human.find("..") != None || human.find(':') != None
 }
