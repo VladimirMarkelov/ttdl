@@ -257,7 +257,7 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
         for t in clones.iter_mut() {
             if to_end {
                 if !subj.starts_with(' ') {
-                    t.subject.push_str(" ");
+                    t.subject.push(' ');
                 }
                 t.subject.push_str(subj);
             } else if subj.ends_with(' ') {
@@ -282,7 +282,7 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
             }
 
             if to_end {
-                tasks[*idx].subject.push_str(" ");
+                tasks[*idx].subject.push(' ');
                 tasks[*idx].subject.push_str(subj);
             } else {
                 tasks[*idx].subject = format!("{} {}", subj, tasks[*idx].subject);

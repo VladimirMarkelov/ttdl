@@ -50,7 +50,7 @@ fn show_short_stats(tasks: &todo::TaskSlice) {
         println!("{:wid$}{:>4} ({}%)", "Done:", done, done * 100 / length, wid = width);
     }
     if threshold > 0 {
-        println!("{:wid$}{:4} ({}%)", "Missed theshold:", threshold, threshold * 100 / length, wid = width);
+        println!("{:wid$}{:4} ({}%)", "Missed threshold:", threshold, threshold * 100 / length, wid = width);
     }
     if overdue > 0 {
         println!("{:wid$}{:4} ({}%)", "Overdue:", overdue, overdue * 100 / length, wid = width);

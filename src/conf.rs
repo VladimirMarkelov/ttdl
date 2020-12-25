@@ -284,21 +284,9 @@ fn parse_filter_completed(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Re
     Ok(())
 }
 
-fn parse_filter_threshold(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
-    match val {
-        "-" | "none" => {
-            c.thr = Some(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::None });
-        }
-        "any" | "+" => {
-            c.thr = Some(tfilter::DateRange { days: Default::default(), span: tfilter::ValueSpan::Any });
-        }
-        _ => {
-            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                value: val.to_string(),
-                name: "date range".to_string(),
-            }));
-        }
-    }
+fn parse_filter_threshold(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
+    let rng = parse_filter_date_range(val, soon_days)?;
+    c.finished = Some(rng);
     Ok(())
 }
 
@@ -355,7 +343,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
             None => String::new(),
             Some(s) => s.to_lowercase(),
         };
-        parse_filter_threshold(&dstr, c)?;
+        parse_filter_threshold(&dstr, c, soon_days)?;
     }
 
     Ok(())

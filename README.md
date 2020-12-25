@@ -334,7 +334,7 @@ General statistics includes the total numbers of all todos, completed, overdue, 
 ```
 Total todos:          8
 Done:                 1 (12%)
-Missed theshold:      1 (12%)
+Missed threshold:     1 (12%)
 Overdue:              2 (25%)
 Recurrent:            1
 ```

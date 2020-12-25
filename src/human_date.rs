@@ -205,10 +205,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
 // Returns if a special day is always either in the future or in the past. E.g., `today` cannot be in
 // the past and `yesterday` cannot be in the future, so the function returns `true` for both.
 fn is_absolute(name: &str) -> bool {
-    match name {
-        "today" | "tomorrow" | "tmr" | "tm" | "yesterday" | "overdue" => true,
-        _ => false,
-    }
+    matches!(name, "today" | "tomorrow" | "tmr" | "tm" | "yesterday" | "overdue")
 }
 
 fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -> HumanResult {
