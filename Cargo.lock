@@ -551,9 +551,9 @@ dependencies = [
 
 [[package]]
 name = "todo_lib"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9e7835dad077be139bda4136db2c1186802db92efea2e98d06a36cc8289c2ac"
+checksum = "bccbd1428f9e60417d2e25aa515ce0458c2840c5165a133c3cdbe31122e2ad5a"
 dependencies = [
  "caseless",
  "chrono",
