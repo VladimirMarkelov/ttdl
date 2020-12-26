@@ -286,7 +286,7 @@ fn parse_filter_completed(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Re
 
 fn parse_filter_threshold(val: &str, c: &mut tfilter::Conf, soon_days: u8) -> Result<(), terr::TodoError> {
     let rng = parse_filter_date_range(val, soon_days)?;
-    c.finished = Some(rng);
+    c.thr = Some(rng);
     Ok(())
 }
 
@@ -769,7 +769,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
     opts.optflag("a", "all", "Select all todos including completed ones");
-    opts.optflag("A", "completed", "Select only completed todos");
+    opts.optflag("A", "only-completed", "Select only completed todos");
     opts.optflag("t", "active", "Only active records");
     opts.optflag("", "dry-run", "Dry run: do not change todo list, only show which todos would be changed");
     opts.optflag("v", "verbose", "Display extra information (used file names etc)");
