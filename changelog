@@ -1,4 +1,4 @@
-ttdl (0.10.3) unstable; urgency=medium
+ttdl (0.10.4) unstable; urgency=medium
 
   * Enable range filter for threshold date
   * Fix conflict between two CLI options: there were `-A/--completed` and

@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "ttdl"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "atty",
  "caseless",
