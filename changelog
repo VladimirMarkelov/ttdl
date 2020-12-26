@@ -1,10 +1,13 @@
 ttdl (0.10.3) unstable; urgency=medium
 
-  * Enable rang filter for threshold date
+  * Enable range filter for threshold date
+  * Fix conflict between two CLI options: there were `-A/--completed` and
+    `--completed`. It resulted in the error `invalid date range` for any value
+    after `--completed`. Now the former one is `-A/--only-completed`
   * Bump packages
   * Few clippy fixes
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 25 Dec 2020 15:49:09 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 25 Dec 2020 17:20:17 -0800
 
 ttdl (0.10.2) unstable; urgency=medium
 
