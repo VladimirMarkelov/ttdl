@@ -532,7 +532,9 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
     if matches.opt_present("wrap") {
         c.long = fmt::LongLine::WordWrap;
     }
-    c.human = matches.opt_present("human");
+    if matches.opt_present("human") {
+        c.human = true;
+    }
     if let Some(s) = matches.opt_str("human") {
         if s != "" {
             for f in s.split(',') {
@@ -900,6 +902,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     }
     let conf_file = if matches.opt_present("config") { matches.opt_str("config").map(PathBuf::from) } else { None };
 
+    load_from_config(&mut conf, conf_file);
     parse_todo(&matches, &mut conf.todo)?;
     parse_sort(&matches, &mut conf.sort)?;
     parse_fmt(&matches, &mut conf.fmt)?;
@@ -912,7 +915,6 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         conf.flt.all = tfilter::TodoStatus::Done;
     }
 
-    load_from_config(&mut conf, conf_file);
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
         println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
