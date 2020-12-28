@@ -1,3 +1,11 @@
+ttdl (1.0.0) unstable; urgency=medium
+
+  * Todos can be filtered by tag names
+  * New options to filter by projects(--project), contexts(--context), and
+    tags(--tag) in addition to original filtering with `@` and `+`.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 27 Dec 2020 18:06:20 -0800
+
 ttdl (0.10.4) unstable; urgency=medium
 
   * Enable range filter for threshold date
@@ -33,10 +41,10 @@ ttdl (0.10.1) unstable; urgency=medium
 ttdl (0.10.0) unstable; urgency=medium
 
   * New feature: allow range in due date filter. Both ends of a range are
-    inclusive. Range can be opened from one end, ends are seprated either
+    inclusive. Range can be opened from one end, ends are separated either
     with ".." or with ":"
 
-  * New feature: in additon to due and threshold dates, now it is possible to
+  * New feature: in addition to due and threshold dates, now it is possible to
     filter by creation and finish dates
 
   * New command-line arguments for filtering: '--created' and '--finished'

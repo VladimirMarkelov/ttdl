@@ -196,7 +196,9 @@ Priority filter is set with `--pri` argument. Available filter kinds:
 - `ttdl list --rec=any` - show all recurrent todos
 - `ttdl list --rec=+` - as above
 
-#### Filter by project and context
+#### Filter by project, context, and tag
+
+##### Free CLI arguments
 
 Any free command-line argument starting with `+` is a project name, and starting with `@` is a context.
 A command can contain any number of project names(the same true for contexts), in this case the filter
@@ -212,6 +214,23 @@ which names ends or starts with the word.
 - `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to  project `projB`, **and** have context `ctx`
 - `ttdl list +*clientA` - show all incomplete todos which project names ends with `clientA`
 - `ttdl list @car*` - show all incomplete todos which have a context starting with `car`
+
+##### Classic CLI options
+
+Besides using `+` and `@` to indicate project and context titles, the application supports classic CLI options to set the list of values for a filter:
+
+- `--project` - filter by project title
+- `--contex` - filter by context name
+- `--tag` - filter by tag name
+
+All options accepts a comma-separated list of names (and/or patterns). If any option value matches any record value, the record is displayed.
+
+Special values:
+
+- `none` - select records that do not have any values (`--context none` - records without any context)
+- `any` - select records that have at least one value (`--project any` - records that belong any project)
+
+Any item can be a full name or a pattern to match as it is described in the [previous section](#free-cli-arguments).
 
 #### Filter by date
 
@@ -644,6 +663,6 @@ All examples are for the current date `2020-07-11`
 | `ttdl lc ` | show all context tags |
 | `ttdl listcon @phone*` | show all context tags starting with phone |
 | `ttdl lp ` | show all project tags |
-| `ttdl listproj +*car*` | show all project tags containg *car* |
+| `ttdl listproj +*car*` | show all project tags containing *car* |
 
 These commands could be used to implement tag completion in your editor / shell.

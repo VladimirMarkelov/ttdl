@@ -91,7 +91,7 @@ fn print_usage(program: &str, opts: &Options) {
 ");
 
     let filter = r#"Filter options include:
-    --all | -a, --complete | -A, --rec, --due, --pri, --regex | -e, --threshold
+    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold
     +project - select todos which are related to project "project"; if more than one project name is defined in command line, they are combined with OR;
     @context - select todos which have context "project"; if more than one context is set, they are combined with OR;
     "#;
@@ -345,6 +345,37 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         };
         parse_filter_threshold(&dstr, c, soon_days)?;
     }
+
+    if let Some(dstr) = matches.opt_str("context") {
+        let lstr = dstr.trim().to_lowercase();
+        if lstr.is_empty() {
+            c.contexts.push("none".to_string());
+        } else {
+            for st in lstr.split(',') {
+                c.contexts.push(st.to_string());
+            }
+        }
+    };
+    if let Some(dstr) = matches.opt_str("project") {
+        let lstr = dstr.trim().to_lowercase();
+        if lstr.is_empty() {
+            c.projects.push("none".to_string());
+        } else {
+            for st in lstr.split(',') {
+                c.projects.push(st.to_string());
+            }
+        }
+    };
+    if let Some(dstr) = matches.opt_str("tag") {
+        let lstr = dstr.trim().to_lowercase();
+        if lstr.is_empty() {
+            c.tags.push("none".to_string());
+        } else {
+            for st in lstr.split(',') {
+                c.tags.push(st.to_string());
+            }
+        }
+    };
 
     Ok(())
 }
@@ -806,13 +837,31 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "",
         "threshold",
         "Select records without threshold date(none), with any threshold date(any)",
-        "any | none",
+        "any | none | today| tomorrow | yesterday | soon | 'range'",
     );
-    opts.optopt("", "pri", "Select todos without prioriry(none), with any priority(any), with a given priority, with a priority equal to or higer/lower than the given priority", "none | any | a | b+ | c-");
+    opts.optopt(
+        "",
+        "project",
+        "Comma-separated list of projects. Select records that have any of them. Special values: 'none' - select records with no project, and 'any' - select records that have at least one project. Basic pattern matching supported: '*ab' - project ends with 'ab', 'ab*' - project starts with 'ab', '*ab*' - project contains 'ab'",
+        "PROJECT1,PROJECT2",
+    );
+    opts.optopt(
+        "",
+        "context",
+        "Comma-separated list of contexts. Select records that have any of them. Special values: 'none' - select records with no context, and 'any' - select records that have at least one context. Basic pattern matching supported: '*ab' - context ends with 'ab', 'ab*' - context starts with 'ab', '*ab*' - context contains 'ab'",
+        "CONTEXT1,CONTEXT2",
+    );
+    opts.optopt(
+        "",
+        "tag",
+        "Comma-separated list of tags. Select records that have any of them. Special values: 'none' - select records with no tag, and 'any' - select records that have at least one tag. Basic pattern matching supported: '*ab' - tag ends with 'ab', 'ab*' - tag starts with 'ab', '*ab*' - tag contains 'ab'",
+        "TAG1,TAG2",
+    );
+    opts.optopt("", "pri", "Select todos without priority(none), with any priority(any), with a given priority, with a priority equal to or higher/lower than the given priority", "none | any | a | b+ | c-");
     opts.optopt(
         "",
         "set-pri",
-        "Change priority for selected todos: remove priority, set exact priorty, increase or decrease it",
+        "Change priority for selected todos: remove priority, set exact priority, increase or decrease it",
         "none | A-Z | + | -",
     );
     opts.optopt(
@@ -855,7 +904,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     opts.optflagopt(
         "",
         "human",
-        "Show relative date(for due and thresold dates) instead of default YYYY-MM-DD. Examples: 'today', '4d overdue', or 'in 2m'",
+        "Show relative date(for due and threshold dates) instead of default YYYY-MM-DD. Examples: 'today', '4d overdue', or 'in 2m'",
         "empty value or FIELD1,FIELD2",
     );
     opts.optflag("", "compact", "Show relative date in compact mode: without 'in' or 'overdue', overdue and future dates are distinguished by their colors");
