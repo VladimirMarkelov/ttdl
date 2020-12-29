@@ -96,3 +96,8 @@ old = "1y"
 #    false - first day of week is Monday
 # Note: The option is unused yet
 # first_sunday = true
+
+# enables strict command-line mode: in this mode the first free command-line
+# argument must be a TTDL command. It may be useful to avoid adding incorrect
+# todos after making a type, e.g, `ttdl listt`
+# strict_mode = false

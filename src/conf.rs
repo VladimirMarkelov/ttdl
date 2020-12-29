@@ -48,6 +48,7 @@ pub struct Conf {
     pub wipe: bool,
     pub use_done: bool,
     pub first_sunday: bool,
+    pub strict_mode: bool,
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
 
@@ -66,6 +67,7 @@ impl Default for Conf {
             wipe: false,
             use_done: false,
             first_sunday: true,
+            strict_mode: false,
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
 
@@ -793,6 +795,9 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
     update_colors_from_conf(&info_toml, conf);
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
+    if let Some(strict) = info_toml.global.strict_mode {
+        conf.strict_mode = strict;
+    }
 }
 
 pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
@@ -930,6 +935,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "TODO FILE PATH",
     );
     opts.optopt("", "done-file", "path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
+    opts.optflag("", "strict", "enable strict mode");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -963,6 +969,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     if conf.use_done && conf.flt.all == tfilter::TodoStatus::Active {
         conf.flt.all = tfilter::TodoStatus::Done;
     }
+    if matches.opt_present("strict") {
+        conf.strict_mode = true;
+    }
 
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
@@ -972,17 +981,18 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     let soon_days = conf.fmt.colors.soon_days;
     parse_filter(&matches, &mut conf.flt, soon_days)?;
 
-    // TODO: check validity before return
     let mut idx: usize = 0;
     if idx >= matches.free.len() {
         conf.mode = RunMode::List;
         return Ok(conf);
     }
 
-    // first should be command
+    // first should be command. In strict mode, the first argument must be a command
     conf.mode = str_to_mode(&matches.free[idx]);
     if conf.mode != RunMode::None {
         idx += 1;
+    } else if conf.strict_mode {
+        return Err(terr::TodoError::from(terr::TodoErrorKind::NotCommand));
     }
     if idx >= matches.free.len() {
         // TODO: validity check

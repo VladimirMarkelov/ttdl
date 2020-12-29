@@ -306,6 +306,19 @@ To display archived todos, use option `--done`. The option enables "archive" mod
 
 The list of available command is short but the commands are powerful. All commands support group operations and dry run mode. Except `add` command that adds a new todo one at a time. Please, refer to section "Examples", it provides a handful of useful examples of how to filter and modify todo list.
 
+The application determines which command to execute with the following rules:
+
+1. If the command does not contain any free arguments, TTDL executes `list` command
+2. If the first free argument is a command, TTDL executes it
+3. In all other cases TTDL executes `add` command
+
+The rules above allow a user to omit the most used commands `add` and `list`.
+At the same time, the way is error-prone because every typo in command results in adding a new undesirable todo.
+E.g., if you type `ttdl del 15`, TTDL, instead of removing todo at 15 position, adds a new todo with message `del 15`.
+To avoid such cases and make TTDL command-line check stricter, either add `strict_mode = true` to section `global` or pass `--strict` in command-line.
+It disables the rule number 3 and TTDL will always require a valid command as the first argument, if there are at least one exists.
+In strict mode, `ttdl del 15` returns the error "first argument must be a command".
+
 Commands:
 
 * add - add a new todo;

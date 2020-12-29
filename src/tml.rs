@@ -28,6 +28,7 @@ pub struct Global {
     pub script_ext: Option<String>,
     pub script_prefix: Option<String>,
     pub first_sunday: Option<bool>,
+    pub strict_mode: Option<bool>,
 }
 
 #[derive(Deserialize)]
