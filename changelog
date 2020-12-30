@@ -3,8 +3,10 @@ ttdl (1.0.0) unstable; urgency=medium
   * Todos can be filtered by tag names
   * New options to filter by projects(--project), contexts(--context), and
     tags(--tag) in addition to original filtering with `@` and `+`.
+  * New strict mode(disabled by default, enabled via configuration file or
+    command-line option)
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 27 Dec 2020 18:06:20 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 29 Dec 2020 20:23:43 -0800
 
 ttdl (0.10.4) unstable; urgency=medium
 
