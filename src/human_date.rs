@@ -171,7 +171,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
     let m = match parts[0].parse::<u32>() {
         Err(_) => return Err(format!("invalid month number: {}", parts[0])),
         Ok(n) => {
-            if n < 1 || n > 12 {
+            if !(1..=12).contains(&n) {
                 return Err(format!("month number must be between 1 and 12 ({})", n));
             }
             n
@@ -180,7 +180,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
     let d = match parts[1].parse::<u32>() {
         Err(_) => return Err(format!("invalid day number: {}", parts[1])),
         Ok(n) => {
-            if n < 1 || n > 31 {
+            if !(1..=31).contains(&n) {
                 return Err(format!("day number must be between 1 and 31 ({})", n));
             }
             let mx = days_in_month(y, m);
@@ -328,13 +328,13 @@ pub fn human_to_date(base: NaiveDate, human: &str, soon_days: u8) -> HumanResult
     let back = human.starts_with('-');
     let human = if back { &human[1..] } else { human };
 
-    if human.find(|c: char| c < '0' || c > '9').is_none() {
+    if human.find(|c: char| !('0'..='9').contains(&c)).is_none() {
         if back {
             return Err("negative day of month".to_string());
         }
         return day_of_first_month(base, human);
     }
-    if human.find(|c: char| (c < '0' || c > '9') && c != '-').is_none() {
+    if human.find(|c: char| !('0'..='9').contains(&c) && c != '-').is_none() {
         if back {
             return Err("negative absolute date".to_string());
         }

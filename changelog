@@ -1,3 +1,9 @@
+ttdl (2.0.0) unstable; urgency=medium
+
+  * Replace todotxt library .....
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 06 Feb 2021 14:16:21 -0800
+
 ttdl (1.0.0) unstable; urgency=medium
 
   * Todos can be filtered by tag names

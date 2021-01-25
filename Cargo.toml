@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2018"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 lto = true
 
 [dependencies]
-todo_lib = "1.0"
+todo_lib = "2.0"
 getopts = "0.2"
 chrono = "^0.4"
 textwrap = "0.11"
@@ -28,10 +28,6 @@ termcolor = "1.0.4"
 serde = "1.0"
 serde_derive = "1.0.84"
 json = "0.12"
-
-[dependencies.todo-txt]
-version = "2.0"
-features = ["extended"]
 
 [package.metadata.deb]
 section = "utility"

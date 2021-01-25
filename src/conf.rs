@@ -12,7 +12,7 @@ use termcolor::{Color, ColorSpec};
 use crate::fmt;
 use crate::human_date;
 use crate::tml;
-use todo_lib::{terr, tfilter, todo, tsort};
+use todo_lib::{terr, tfilter, todo, todotxt, tsort};
 
 const TODOFILE_VAR: &str = "TTDL_FILENAME";
 const APP_DIR: &str = "ttdl";
@@ -193,10 +193,10 @@ fn split_filter(orig: &str) -> (String, tfilter::ValueSpan) {
 fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoError> {
     match val {
         "-" | "none" => {
-            c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::None });
+            c.pri = Some(tfilter::Priority { value: todotxt::NO_PRIORITY, span: tfilter::ValueSpan::None });
         }
         "any" | "+" => {
-            c.pri = Some(tfilter::Priority { value: todo::NO_PRIORITY, span: tfilter::ValueSpan::Any });
+            c.pri = Some(tfilter::Priority { value: todotxt::NO_PRIORITY, span: tfilter::ValueSpan::Any });
         }
         _ => {
             let (s, modif) = split_filter(&val);
@@ -207,7 +207,7 @@ fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
                 }));
             }
             let p = s.as_bytes()[0];
-            if p < b'a' || p > b'z' {
+            if !(b'a'..=b'z').contains(&p) {
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                     value: s,
                     name: "priority".to_string(),
@@ -384,7 +384,7 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
 
 fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoError> {
     if let Some(s) = matches.opt_str("set-pri") {
-        let s = if s == "" { "none".to_owned() } else { s.to_lowercase() };
+        let s = if s.is_empty() { "none".to_owned() } else { s.to_lowercase() };
         match s.as_str() {
             "-" => {
                 c.priority_act = todo::Action::Decrease;
@@ -397,7 +397,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
             _ => {
                 let p = s.as_bytes()[0];
-                if p < b'a' || p > b'z' {
+                if !(b'a'..=b'z').contains(&p) {
                     return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                         value: s,
                         name: "priority".to_string(),
@@ -415,7 +415,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             "-" | "none" => {
                 c.recurrence_act = todo::Action::Delete;
             }
-            _ => match todo_txt::task::Recurrence::from_str(&s) {
+            _ => match todotxt::Recurrence::from_str(&s) {
                 Ok(r) => {
                     c.recurrence = Some(r);
                     c.recurrence_act = todo::Action::Set;
@@ -569,7 +569,7 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
         c.human = true;
     }
     if let Some(s) = matches.opt_str("human") {
-        if s != "" {
+        if !s.is_empty() {
             for f in s.split(',') {
                 c.human_fields.push(f.to_lowercase());
             }
@@ -699,7 +699,7 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 
     if let Some(ref old) = tc.ranges.old {
-        if let Ok(r) = todo_txt::task::Recurrence::from_str(old) {
+        if let Ok(r) = todotxt::Recurrence::from_str(old) {
             conf.fmt.colors.old_period = Some(r);
         }
     }

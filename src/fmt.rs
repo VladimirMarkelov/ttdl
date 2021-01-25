@@ -5,8 +5,7 @@ use std::process::{Command, Stdio};
 use caseless::default_caseless_match_str;
 use chrono::{Duration, Local, NaiveDate};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use todo_lib::timer;
-use todo_lib::todo;
+use todo_lib::{timer, todo, todotxt};
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -47,7 +46,7 @@ pub struct Colors {
 
     pub important_limit: u8,
     pub soon_days: u8,
-    pub old_period: Option<todo_txt::task::Recurrence>,
+    pub old_period: Option<todotxt::Recurrence>,
 }
 fn default_done_color() -> ColorSpec {
     let mut spc = ColorSpec::new();
@@ -95,7 +94,7 @@ impl Default for Colors {
             done: default_done_color(),
             old: default_done_color(),
 
-            important_limit: todo::NO_PRIORITY,
+            important_limit: todotxt::NO_PRIORITY,
             soon_days: 0u8,
             old_period: None,
         }
@@ -290,12 +289,13 @@ fn print_header_line(c: &Conf, fields: &[&str]) {
     println!("Subject");
 }
 
-fn color_for_priority(task: &todo_txt::task::Extended, c: &Conf) -> ColorSpec {
+fn color_for_priority(task: &todotxt::Task, c: &Conf) -> ColorSpec {
     if task.finished {
         return c.colors.done.clone();
     }
 
-    if task.priority == 0 || (task.priority < c.colors.important_limit && c.colors.important_limit != todo::NO_PRIORITY)
+    if task.priority == 0
+        || (task.priority < c.colors.important_limit && c.colors.important_limit != todotxt::NO_PRIORITY)
     {
         if task.priority == 0 {
             return c.colors.top.clone();
@@ -307,7 +307,7 @@ fn color_for_priority(task: &todo_txt::task::Extended, c: &Conf) -> ColorSpec {
     default_color()
 }
 
-fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSpec {
+fn color_for_creation_date(task: &todotxt::Task, c: &Conf) -> ColorSpec {
     let spc = default_color();
     if task.finished {
         return c.colors.done.clone();
@@ -319,12 +319,12 @@ fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSp
         None => {
             return spc;
         }
-        Some(r) => r.clone(),
+        Some(r) => *r,
     };
 
     if let Some(ref cd) = task.create_date {
         let today = Local::now().date().naive_local();
-        let mcreate = rec + *cd;
+        let mcreate = rec.next_date(*cd);
         if mcreate < today {
             return c.colors.old.clone();
         }
@@ -333,7 +333,7 @@ fn color_for_creation_date(task: &todo_txt::task::Extended, c: &Conf) -> ColorSp
     spc
 }
 
-fn color_for_due_date(task: &todo_txt::task::Extended, days: i64, c: &Conf) -> ColorSpec {
+fn color_for_due_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorSpec {
     let spc = default_color();
     if task.finished {
         return c.colors.done.clone();
@@ -358,7 +358,7 @@ fn color_for_due_date(task: &todo_txt::task::Extended, days: i64, c: &Conf) -> C
     spc
 }
 
-fn color_for_threshold_date(task: &todo_txt::task::Extended, days: i64, c: &Conf) -> ColorSpec {
+fn color_for_threshold_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorSpec {
     let spc = default_color();
     if task.finished {
         return c.colors.done.clone();
@@ -385,7 +385,7 @@ fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) {
     }
 }
 
-fn done_str(task: &todo_txt::task::Extended) -> String {
+fn done_str(task: &todotxt::Task) -> String {
     if timer::is_timer_on(task) {
         "T ".to_string()
     } else if task.finished {
@@ -397,8 +397,8 @@ fn done_str(task: &todo_txt::task::Extended) -> String {
     }
 }
 
-fn priority_str(task: &todo_txt::task::Extended) -> String {
-    if task.priority < todo::NO_PRIORITY {
+fn priority_str(task: &todotxt::Task) -> String {
+    if task.priority < todotxt::NO_PRIORITY {
         format!("{} ", (b'A' + task.priority) as char)
     } else {
         "  ".to_string()
@@ -449,7 +449,7 @@ fn arg_field_as_str(arg: &json::JsonValue, field: &str) -> Option<String> {
 
 fn print_done_val(
     stdout: &mut StandardStream,
-    task: &todo_txt::task::Extended,
+    task: &todotxt::Task,
     arg: &json::JsonValue,
     def_color: &termcolor::ColorSpec,
 ) {
@@ -463,7 +463,7 @@ fn print_done_val(
     print_with_color(stdout, &s, &def_color);
 }
 
-fn print_priority_val(stdout: &mut StandardStream, task: &todo_txt::task::Extended, arg: &json::JsonValue, c: &Conf) {
+fn print_priority_val(stdout: &mut StandardStream, task: &todotxt::Task, arg: &json::JsonValue, c: &Conf) {
     let mut s = priority_str(task);
     if !arg.is_empty() {
         let tags = &arg[JSON_OPT];
@@ -479,7 +479,7 @@ fn print_date_val(
     arg: &json::JsonValue,
     c: &Conf,
     field: &str,
-    dt: Option<&todo_txt::Date>,
+    dt: Option<&chrono::NaiveDate>,
     def_color: termcolor::ColorSpec,
 ) {
     let width = field_width(field, c);
@@ -502,7 +502,7 @@ fn print_date_val(
     print_with_color(stdout, &st, &def_color);
 }
 
-fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: usize, c: &Conf, fields: &[&str]) {
+fn print_line(stdout: &mut StandardStream, task: &todotxt::Task, id: usize, c: &Conf, fields: &[&str]) {
     let id_width = field_width("id", c);
     let fg = if task.finished { c.colors.done.clone() } else { default_color() };
 
@@ -510,9 +510,6 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
         if let Some(tpl) = external_reconstruct(task, c) { tpl } else { (String::new(), json::JsonValue::Null) };
     if desc.is_empty() {
         desc = task.subject.clone();
-        for (key, value) in &task.tags {
-            desc += &format!(" {}:{}", key, value);
-        }
     }
 
     print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg);
@@ -576,9 +573,6 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
         }
     }
 
-    if let Some(r) = task.recurrence.as_ref() {
-        desc.push_str(&format!(" rec:{}", *r));
-    }
     if c.width != 0 && c.long != LongLine::Simple {
         let (skip, subj_w) = calc_width(c, fields);
         let lines = textwrap::wrap(&desc, subj_w);
@@ -600,7 +594,7 @@ fn print_line(stdout: &mut StandardStream, task: &todo_txt::task::Extended, id: 
     }
 }
 
-fn customize(task: &todo_txt::task::Extended, c: &Conf) -> Option<json::JsonValue> {
+fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {
     let mut ext_cmds: Vec<String> = Vec::new();
     for (key, _val) in task.tags.iter() {
         if key.starts_with('!') {
@@ -642,7 +636,7 @@ fn is_common_special_tag(tag: &str) -> bool {
     tag == "due" || tag == "thr" || tag == "rec"
 }
 
-fn external_reconstruct(task: &todo_txt::task::Extended, c: &Conf) -> Option<(String, json::JsonValue)> {
+fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json::JsonValue)> {
     let arg = customize(task, c)?;
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() { s.to_string() } else { task.subject.clone() };
     let tags = &arg[JSON_SPEC];
@@ -711,7 +705,7 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
 }
 
 // {"description": "Desc", "specialTags":[{"tag1": "val"},], "optional":[{"pri": "A"}]}
-fn build_ext_arg(task: &todo_txt::task::Extended) -> json::JsonValue {
+fn build_ext_arg(task: &todotxt::Task) -> json::JsonValue {
     let mut jarr = json::JsonValue::new_array();
     for (key, val) in task.tags.iter() {
         let _ = jarr.push(json::object! { key => val.to_string() });

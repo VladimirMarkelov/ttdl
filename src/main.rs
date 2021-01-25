@@ -16,7 +16,7 @@ use std::str::FromStr;
 
 use todo_lib::*;
 
-type FnUpdateData = fn(tasks: &mut Vec<todo_txt::task::Extended>, ids: Option<&todo::IDVec>) -> todo::ChangedVec;
+type FnUpdateData = fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>) -> todo::ChangedVec;
 
 fn calculate_updated(v: &todo::ChangedSlice) -> u32 {
     let mut cnt = 0u32;
@@ -73,19 +73,12 @@ fn task_add(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
         }
         Some(s) => s.clone(),
     };
+    let now = chrono::Local::now().date().naive_local();
     if conf.dry {
-        match todo_txt::task::Extended::from_str(&subj) {
-            Ok(t) => {
-                println!("To be added: ");
-                fmt::print_header(&conf.fmt);
-                fmt::print_todos(&[t], &[tasks.len()], &[true], &conf.fmt, true);
-            }
-            Err(e) => {
-                eprintln!("Invalid format: {:?}", e);
-                exit(1);
-            }
-        }
-
+        let t = todotxt::Task::parse(&subj, now);
+        println!("To be added: ");
+        fmt::print_header(&conf.fmt);
+        fmt::print_todos(&[t], &[tasks.len()], &[true], &conf.fmt, true);
         return;
     }
 
@@ -347,7 +340,7 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
             return;
         }
     };
-    let rec = match todo_txt::task::Recurrence::from_str(subj) {
+    let rec = match todotxt::Recurrence::from_str(subj) {
         Ok(r) => r,
         Err(e) => {
             println!("Invalid recurrence format: {:?}", e);
@@ -361,13 +354,12 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let mut updated: Vec<bool> = Vec::new();
         for clone in clones.iter_mut() {
-            if clone.finished {
+            if clone.finished || clone.due_date.is_none() {
                 updated.push(false);
             } else if let Some(dt) = clone.due_date {
-                clone.due_date = Some(rec.clone() + dt);
+                let new_due = rec.next_date(dt);
+                clone.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
                 updated.push(true);
-            } else {
-                updated.push(false);
             }
         }
         let updated_cnt = calculate_updated(&updated);
@@ -388,7 +380,7 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
             if *idx >= tasks.len() || tasks[*idx].finished {
                 updated.push(false);
             } else if let Some(dt) = tasks[*idx].due_date {
-                tasks[*idx].due_date = Some(rec.clone() + dt);
+                tasks[*idx].due_date = Some(rec.next_date(dt));
                 updated.push(true);
             } else {
                 updated.push(false);
@@ -413,7 +405,7 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
 // helper function to collect list of unique project tags / context tags
 fn collect_unique_items<F>(tasks: &todo::TaskSlice, selected: &todo::IDSlice, get_items: F) -> Vec<String>
 where
-    F: Fn(&todo_txt::task::Extended) -> &Vec<String>,
+    F: Fn(&todotxt::Task) -> &Vec<String>,
 {
     let mut items: Vec<String> = Vec::new();
 
