@@ -1,4 +1,17 @@
-# A TTDL config. It can be in the current working directory - to support
+# The configuration file follows TOML format rules: https://toml.io/
+# Note on file paths:
+#   On Windows a file path usually includes backslashes. When TOML parses a string
+#   enclosed into double quotes, it treats backslashes as escape characters. This
+#   results in errors when loading a configuration file. To avoid this trouble, use
+#   one of the following ways to put a file path to the configuration:
+#   1. Use single quotes instead of double ones:
+#     filename = 'c:\Users\user\todo.txt'
+#   2. Duplicate backslashes:
+#     filename = "c:\\Users\\user\\todo.txt"
+#   3. Replace backslashes with slashes:
+#     filename = "c:/Users/user/todo.txt"
+#
+# A TTDL config can be in the current working directory - to support
 #   ttdl settings on per project basis. Global user config must be in:
 # * Linux: ~/.config/ttdl/ttdl.toml
 # * Windows: c:\Users\<username>\AppData\Roaming\ttdl\ttdl.toml
@@ -9,7 +22,7 @@
 #
 # available colors (names are case-insensitive):
 #   black, red, green, yellow, blue, magenta, cyan, white
-# every color may have upto 3 modifiers:
+# every color may have up to 3 modifiers:
 #   bold, underline, bright(or intense)
 # the first two modifiers works only in ANSI-compatible terminal.
 # To make them work on Windows, use ConEmu or Cmder instead
@@ -64,7 +77,8 @@ old = "1y"
 
 [global]
 # set global todo.txt filename. It works as environment variable TTDL_FILENAME,
-#   but environment variable overrides config setting
+#   but environment variable overrides config setting.
+# See a note about file paths on Windows at the top of the file
 # filename = "./"
 
 # automatically set creation date to today if it is not set when adding a new todo
@@ -89,6 +103,7 @@ old = "1y"
 
 # add prefix to plugin name before calling it.
 # E.g., for powershell simple "plugin" fails but "./plugin" works fine.
+# See a note about file paths on Windows at the top of the file
 # script_prefix = "./"
 
 # determine first day of the week
