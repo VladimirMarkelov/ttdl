@@ -543,7 +543,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
     Ok(())
 }
 
-fn parse_sort(matches: &Matches, c: &mut tsort::Conf) -> Result<(), terr::TodoError> {
+fn parse_sort(matches: &Matches, c: &mut tsort::Conf) {
     if matches.opt_present("s") {
         // TODO: check for valid
         match matches.opt_str("s") {
@@ -554,11 +554,9 @@ fn parse_sort(matches: &Matches, c: &mut tsort::Conf) -> Result<(), terr::TodoEr
     if matches.opt_present("sort-rev") {
         c.rev = true;
     }
-
-    Ok(())
 }
 
-fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError> {
+fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
     if matches.opt_present("short") {
         c.fmt = fmt::Format::Short;
     }
@@ -609,8 +607,6 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) -> Result<(), terr::TodoError
             c.fields = s.split(':').map(|s| s.to_string()).collect();
         }
     }
-
-    Ok(())
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
@@ -959,8 +955,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
 
     load_from_config(&mut conf, conf_file);
     parse_todo(&matches, &mut conf.todo)?;
-    parse_sort(&matches, &mut conf.sort)?;
-    parse_fmt(&matches, &mut conf.fmt)?;
+    parse_sort(&matches, &mut conf.sort);
+    parse_fmt(&matches, &mut conf.fmt);
 
     conf.dry = matches.opt_present("dry-run");
     conf.verbose = matches.opt_present("verbose");

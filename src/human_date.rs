@@ -112,27 +112,27 @@ fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
     Ok(dt)
 }
 
-fn next_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
+fn next_weekday(base: NaiveDate, wd: Weekday) -> NaiveDate {
     let base_wd = base.weekday();
     let (bn, wn) = (base_wd.number_from_monday(), wd.number_from_monday());
     if bn < wn {
         // this week
-        Ok(base + Duration::days((wn - bn) as i64))
+        base + Duration::days((wn - bn) as i64)
     } else {
         // next week
-        Ok(base + Duration::days((DAYS_PER_WEEK + wn - bn) as i64))
+        base + Duration::days((DAYS_PER_WEEK + wn - bn) as i64)
     }
 }
 
-fn prev_weekday(base: NaiveDate, wd: Weekday) -> HumanResult {
+fn prev_weekday(base: NaiveDate, wd: Weekday) -> NaiveDate {
     let base_wd = base.weekday();
     let (bn, wn) = (base_wd.number_from_monday(), wd.number_from_monday());
     if bn > wn {
         // this week
-        Ok(base - Duration::days(bn as i64 - wn as i64))
+        base - Duration::days(bn as i64 - wn as i64)
     } else {
         // week before
-        Ok(base + Duration::days(wn as i64 - bn as i64 - DAYS_PER_WEEK as i64))
+        base + Duration::days(wn as i64 - bn as i64 - DAYS_PER_WEEK as i64)
     }
 }
 
@@ -268,51 +268,51 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
         }
         "monday" | "mon" | "mo" => {
             if back {
-                prev_weekday(base, Weekday::Mon)
+                Ok(prev_weekday(base, Weekday::Mon))
             } else {
-                next_weekday(base, Weekday::Mon)
+                Ok(next_weekday(base, Weekday::Mon))
             }
         }
         "tuesday" | "tue" | "tu" => {
             if back {
-                prev_weekday(base, Weekday::Tue)
+                Ok(prev_weekday(base, Weekday::Tue))
             } else {
-                next_weekday(base, Weekday::Tue)
+                Ok(next_weekday(base, Weekday::Tue))
             }
         }
         "wednesday" | "wed" | "we" => {
             if back {
-                prev_weekday(base, Weekday::Wed)
+                Ok(prev_weekday(base, Weekday::Wed))
             } else {
-                next_weekday(base, Weekday::Wed)
+                Ok(next_weekday(base, Weekday::Wed))
             }
         }
         "thursday" | "thu" | "th" => {
             if back {
-                prev_weekday(base, Weekday::Thu)
+                Ok(prev_weekday(base, Weekday::Thu))
             } else {
-                next_weekday(base, Weekday::Thu)
+                Ok(next_weekday(base, Weekday::Thu))
             }
         }
         "friday" | "fri" | "fr" => {
             if back {
-                prev_weekday(base, Weekday::Fri)
+                Ok(prev_weekday(base, Weekday::Fri))
             } else {
-                next_weekday(base, Weekday::Fri)
+                Ok(next_weekday(base, Weekday::Fri))
             }
         }
         "saturday" | "sat" | "sa" => {
             if back {
-                prev_weekday(base, Weekday::Sat)
+                Ok(prev_weekday(base, Weekday::Sat))
             } else {
-                next_weekday(base, Weekday::Sat)
+                Ok(next_weekday(base, Weekday::Sat))
             }
         }
         "sunday" | "sun" | "su" => {
             if back {
-                prev_weekday(base, Weekday::Sun)
+                Ok(prev_weekday(base, Weekday::Sun))
             } else {
-                next_weekday(base, Weekday::Sun)
+                Ok(next_weekday(base, Weekday::Sun))
             }
         }
         _ => Err(format!("invalid date '{}'", human)),

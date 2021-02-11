@@ -475,6 +475,7 @@ dependencies = [
  "textwrap",
  "todo_lib",
  "toml",
+ "unicode-width",
 ]
 
 [[package]]
