@@ -1,8 +1,19 @@
 ttdl (2.0.0) unstable; urgency=medium
 
-  * Replace todotxt library .....
+  * Replace todotxt library with another one
+  * Now project and context names are case-sensitive
+  * All tags are preserved in a todo's subject (they were appended to the
+    subject in the previous library)
+  * Completing a todo with recurrence and threshodl do not chaneg theshold
+  * Todo completion follows strict flag('+' character before a recurrence -
+    e.g, "rec:+1m"): if strict flag is present, the next date is recurrence
+    plus due date, otherwise recurrence plus the current date
+  * A tag cannot have empty value. Setting empty value to a tag removes the
+    tag from the subject completely
+  * If a todo's text starts with two dates, and the todo is incomplete, only
+    the first is parsed as creation date, and the rest goes to subject
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 06 Feb 2021 14:16:21 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 11 Feb 2021 22:40:34 -0800
 
 ttdl (1.0.0) unstable; urgency=medium
 
