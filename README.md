@@ -387,7 +387,7 @@ myproj                        1( 12%)               1(100%)
                 ui            1(100%)               1(100%)
 ```
 
-Notes:
+#### Notes
 
 1. The first line with number is a grand total for the entire todo list
 2. In the example above, there are total 8 todos, but only 3 of them have project tags. And `myproject` project has only one todo with 2 context tags
@@ -464,7 +464,7 @@ your native language(e.g., display `10 Sep` instead of `2020-09-10`).
 A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
 requirement is that the result should include all fields above.
 
-### Notes
+#### Notes
 
 1. While it is OK to set any value to an existing field, the output is limited with the current
    column width (only `description` is displayed in full). E.g., if a plugin changes value of
@@ -479,8 +479,7 @@ requirement is that the result should include all fields above.
    Standard fields are: "done", "pri", "created", "finished", "description", "thr", "due".
 
 Quick example for #3. Today's date is 2020-01-18, a todo contains `2020-01-17 Test line !plug:2020 !plug2:01`,
-and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, and relative it
-prints with default formatting:
+and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, it prints with default formatting:
 
 ```shell
 Created  Description
