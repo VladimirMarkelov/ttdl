@@ -1,3 +1,10 @@
+ttdl (2.0.2) unstable; urgency=medium
+
+  * Upgrade packages
+  * Update README
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 01 May 2021 17:50:19 -0700
+
 ttdl (2.0.0) unstable; urgency=medium
 
   * Replace todotxt library with another one
