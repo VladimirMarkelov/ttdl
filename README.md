@@ -1,39 +1,39 @@
 # Table of Contents
 
 - [TTDL (Terminal ToDo List)](#ttdl-terminal-todo-list)
-    - [Installation](#installation)
-        - [Precompiled binaries](#precompiled-binaries)
-    - [Known issues](#known-issues)
-    - [Configuration](#configuration)
-        - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
-    - [How to use](#how-to-use)
-        - [Output example](#output-example)
-        - [Filtering](#filtering)
-        - [Archive](#archive)
-            - [How to show archived todos](#how-to-show-archived-todos)
-        - [Supported commands](#supported-commands)
-        - [Tags](#tags)
-        - [Time tracking](#time-tracking)
-        - [Statistics](#statistics)
-        - [Custom formatting](#custom-formatting)
-            - [How to enable custom formatting](#how-to-enable-custom-formatting)
-            - [Plugin interaction](#plugin-interaction)
-            - [Example](#example)
-        - [Extra features](#extra-features)
-        - [Human-readable dates](#human-readable-dates)
-    - [Command line examples](#command-line-examples)
-        - [List and filter](#list-and-filter)
-        - [Add a new todo](#add-a-new-todo)
-        - [Done (undone)](#done-undone)
-        - [Clean up the list](#clean-up-the-list)
-        - [Modify todo list](#modify-todo-list)
-        - [Use human-readable dates](#use-human-readable-dates)
-        - [Show all project or context tags](#show-all-project-or-context-tags)
+  - [Installation](#installation)
+    - [Precompiled binaries](#precompiled-binaries)
+  - [Known issues](#known-issues)
+  - [Configuration](#configuration)
+    - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
+  - [How to use](#how-to-use)
+    - [Output example](#output-example)
+    - [Filtering](#filtering)
+    - [Archive](#archive)
+      - [How to show archived todos](#how-to-show-archived-todos)
+    - [Supported commands](#supported-commands)
+    - [Tags](#tags)
+    - [Time tracking](#time-tracking)
+    - [Statistics](#statistics)
+    - [Custom formatting](#custom-formatting)
+      - [How to enable custom formatting](#how-to-enable-custom-formatting)
+      - [Plugin interaction](#plugin-interaction)
+      - [Example](#example)
+    - [Extra features](#extra-features)
+    - [Human-readable dates](#human-readable-dates)
+  - [Command line examples](#command-line-examples)
+    - [List and filter](#list-and-filter)
+    - [Add a new todo](#add-a-new-todo)
+    - [Done (undone)](#done-undone)
+    - [Clean up the list](#clean-up-the-list)
+    - [Modify todo list](#modify-todo-list)
+    - [Use human-readable dates](#use-human-readable-dates)
+    - [Show all project or context tags](#show-all-project-or-context-tags)
 
-# TTDL (Terminal ToDo List)
+## TTDL (Terminal ToDo List)
 
-![](https://travis-ci.com/VladimirMarkelov/ttdl.svg?branch=master)
-[![](https://img.shields.io/crates/v/ttdl.svg)](https://crates.io/crates/ttdl)
+![build](https://travis-ci.com/VladimirMarkelov/ttdl.svg?branch=master)
+[![crates.io](https://img.shields.io/crates/v/ttdl.svg)](https://crates.io/crates/ttdl)
 [![Downloads](https://img.shields.io/crates/d/ttdl.svg)](https://crates.io/crates/ttdl)
 
 A CLI tool to manage todo lists in [todo.txt format](http://todotxt.org/). A short demo of TTDL in action:
@@ -45,21 +45,21 @@ A CLI tool to manage todo lists in [todo.txt format](http://todotxt.org/). A sho
 The application can be compiled from source, or installed using cargo:
 
 ```shell
-$ cargo install ttdl
+cargo install ttdl
 ```
 
 You need Rust compiler that supports Rust 2018 edition (Rust 1.31 or newer) to do it. If you want to upgrade existing ttdl execute the following command:
 
 ```shell
-$ cargo install ttdl --force
+cargo install ttdl --force
 ```
 
 ### Precompiled binaries
 
 For Windows and Ubuntu you can download precompiled binaries from [Release page](https://github.com/VladimirMarkelov/ttdl/releases).
 
-* Windows binary works on Windows 7 or newer Windows.
-* Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
+- Windows binary works on Windows 7 or newer Windows.
+- Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
 
 ## Known issues
 
@@ -84,12 +84,12 @@ Added todo:
 
 ## Configuration
 
-TTDL is a standalone binary and it does not create any files in user's directory. But at start, it checks for a configuration file - please see example configuration (ttdl.toml)[./ttdl.toml] in user's configuration directory and loads it. Local configuration files are supported as well. Locations where TTDL looks for a configuration file:
+TTDL is a standalone binary and it does not create any files in user's directory. But at start, it checks for a configuration file - please see example configuration [ttdl.toml](./ttdl.toml) in user's configuration directory and loads it. Local configuration files are supported as well. Locations where TTDL looks for a configuration file:
 
-* current working directory
-* Linux:  `~/.config/ttdl/ttdl.toml`
-* Windows: `c:\Users\{username}\AppData\Roaming\ttdl\ttdl.toml`
-* OSX: `/Users/{username}/Library/Preferences/ttdl/ttdl.toml`
+- current working directory
+- Linux: `~/.config/ttdl/ttdl.toml`
+- Windows: `c:\Users\{username}\AppData\Roaming\ttdl\ttdl.toml`
+- OSX: `/Users/{username}/Library/Preferences/ttdl/ttdl.toml`
 
 First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory. Automatic configuration path detection can be overridden with command line option `-c` or `--config`. If the option is set in command line TTDL disables automatic detection of the configuration file path.
 
@@ -121,7 +121,7 @@ Rules to choose a file which is used to store archived todos (from lowest to hig
 
 Run TTDL with the command line:
 
-```
+```shell
 ttdl [command] [ID range] [subject] [filter options] [extra options]
 ```
 
@@ -133,18 +133,19 @@ If the first non-option word contains only digits and dash character, it is trea
 
 The second non-option(or the first one if ID range is not defined) is a subject. Subject's usage depends on command:
 
-* `add` - it is an entire text for a new todo (including projects, contexts, due date, recurrence);
-* `edit` - it is an entire new subject for the first selected todo;
-* for the rest commands it can be either a substring(case-insensitive search) or a regular expression to search in the todo's subject, projects, and contexts - depends on the option `--regex`.
+- `add` - it is an entire text for a new todo (including projects, contexts, due date, recurrence);
+- `edit` - it is an entire new subject for the first selected todo;
+- for the rest commands it can be either a substring(case-insensitive search) or a regular expression to search in the todo's subject, projects, and contexts - depends on the option `--regex`.
 
 NOTES:
+
 1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits)
 2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
 
 ### Output example
 
-```
+```shell
 # D P Created    Finished   Due        Threshold  Subject
 ----------------------------------------------------
 1 x A 2016-04-30 2016-05-20                       measure space for +chapelShelving @chapel
@@ -156,10 +157,10 @@ NOTES:
 
 Columns:
 
-* `#` - order number of a todo
-* `D` - 'Done', it is empty for an incomplete regular todo, 'x' for a completed todo, and 'R' for recurrent todo
-* `P` - priority (from A to Z, empty value means no priority)
-* `T` - marks an active todo - a todo which has its timer running to track time spent on it
+- `#` - order number of a todo
+- `D` - 'Done', it is empty for an incomplete regular todo, 'x' for a completed todo, and 'R' for recurrent todo
+- `P` - priority (from A to Z, empty value means no priority)
+- `T` - marks an active todo - a todo which has its timer running to track time spent on it
 
 ### Filtering
 
@@ -202,16 +203,16 @@ Priority filter is set with `--pri` argument. Available filter kinds:
 
 Any free command-line argument starting with `+` is a project name, and starting with `@` is a context.
 A command can contain any number of project names(the same true for contexts), in this case the filter
-includes all todos that contains *any* of listed projects names. Please note, that while passing a few
+includes all todos that contains _any_ of listed projects names. Please note, that while passing a few
 contexts means "select todos with any of provided contexts", passing a few project names and contexts
-at the same time means "select todos with any of provided project names *and* any of provided contexts".
+at the same time means "select todos with any of provided project names _and_ any of provided contexts".
 
 Project names and contexts support basic matching. Append or prepend `*` to project name to match projects
-which names ends or starts with the word. 
+which names ends or starts with the word.
 
 - `ttdl list +proj` - show all incomplete todos that belong to project `proj`
 - `ttdl list @ctxA @ctxB` - show all incomplete todos that have either context `ctxA` or context `ctxB`
-- `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to  project `projB`, **and** have context `ctx`
+- `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to project `projB`, **and** have context `ctx`
 - `ttdl list +*clientA` - show all incomplete todos which project names ends with `clientA`
 - `ttdl list @car*` - show all incomplete todos which have a context starting with `car`
 
@@ -235,7 +236,7 @@ Any item can be a full name or a pattern to match as it is described in the [pre
 #### Filter by date
 
 All date-like fields(due, threshold, creation, finish) support filtering with a date range as well as a single date.
-Ranges are always inclusive. Start and end of a range are separated with either `..` or `:`. 
+Ranges are always inclusive. Start and end of a range are separated with either `..` or `:`.
 A range can be "open": in this case it is a single value with appended or prepended range separator.
 For a closed range, the order of the range end is arbitrary: TTDL automatically exchanges beginning and end if needed.
 Ranges support only relative dates (positive for dates in the future and negative for dates in the past) or one of special dates.
@@ -321,21 +322,21 @@ In strict mode, `ttdl del 15` returns the error "first argument must be a comman
 
 Commands:
 
-* add - add a new todo;
-* list - show list of todo items. By default it displays all incomplete todos;
-* done - mark selected todos completed. If a todo is recurrent its due date moves to the next date but the todo remains incomplete;
-* undone - remove `finished` mark from completed todos;
-* remove - deletes the selected todos;
-* clean  - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
-* edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped;
-* append - adds a text to the end of the selected todos (space between old text and new one is added automatically);
-* prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically);
-* start - activate todo's timer;
-* stop - stop todo's timer and update time spent on the todo;
-* stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
-* postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them
-* listprojects - show list of all project tags. Filters used by "list" are supported;
-* listcontexts - show list of all context tags. Filters used by "list" are supported;
+- add - add a new todo;
+- list - show list of todo items. By default it displays all incomplete todos;
+- done - mark selected todos completed. If a todo is recurrent its due date moves to the next date but the todo remains incomplete;
+- undone - remove `finished` mark from completed todos;
+- remove - deletes the selected todos;
+- clean - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
+- edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped;
+- append - adds a text to the end of the selected todos (space between old text and new one is added automatically);
+- prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically);
+- start - activate todo's timer;
+- stop - stop todo's timer and update time spent on the todo;
+- stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
+- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them
+- listprojects - show list of all project tags. Filters used by "list" are supported;
+- listcontexts - show list of all context tags. Filters used by "list" are supported;
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
@@ -347,9 +348,9 @@ The original todo.txt format describes a user-defined tags that can be used by a
 
 TTDL supports a few custom tags (as of version 0.3):
 
-* `due` - a todo's due date. The tag value is in format YYYY-MM-DD;
-* `t` - a todo's threshold date. The tag value is in format YYYY-MM-DD;
-* `rec` - makes a todo recurrent. It makes sense only when using along with `due` tag. The tag value is the number of time intervals and one-character time interval name: `d` - every few days, `w` every few weeks, `m` - every few months, `y` - every few years. Examples: `1w` - a weekly todo, `5d` - every 5 days.
+- `due` - a todo's due date. The tag value is in format YYYY-MM-DD;
+- `t` - a todo's threshold date. The tag value is in format YYYY-MM-DD;
+- `rec` - makes a todo recurrent. It makes sense only when using along with `due` tag. The tag value is the number of time intervals and one-character time interval name: `d` - every few days, `w` every few weeks, `m` - every few months, `y` - every few years. Examples: `1w` - a weekly todo, `5d` - every 5 days.
 
 ### Time tracking
 
@@ -363,7 +364,7 @@ Command `stats` displays general statistics followed by detailed one. If you nee
 
 General statistics includes the total numbers of all todos, completed, overdue, recurrent todos, and todos that missed threshold date. For the all numbers, except the total number of all todos, the percentage of all todos is displayed in parentheses. Example:
 
-```
+```shell
 Total todos:          8
 Done:                 1 (12%)
 Missed threshold:     1 (12%)
@@ -373,7 +374,7 @@ Recurrent:            1
 
 Detailed statistics groups all todos by projects and contexts and prints the subtotals for all of them. Note: because of todos can have no project or have more than one project or context, the total number of all todos is usually not equal to sum of all subgroups. Example:
 
-```
+```shell
 Project         Context    Total      Done       Overdue    Spent
                               8(100%)    1( 12%)    2( 25%) 3.1m
 -----------------------------------------------------------------
@@ -386,8 +387,7 @@ myproj                        1( 12%)               1(100%)
                 ui            1(100%)               1(100%)
 ```
 
-
-Notes:
+#### Notes
 
 1. The first line with number is a grand total for the entire todo list
 2. In the example above, there are total 8 todos, but only 3 of them have project tags. And `myproject` project has only one todo with 2 context tags
@@ -464,7 +464,7 @@ your native language(e.g., display `10 Sep` instead of `2020-09-10`).
 A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
 requirement is that the result should include all fields above.
 
-**Notes**
+#### Notes
 
 1. While it is OK to set any value to an existing field, the output is limited with the current
    column width (only `description` is displayed in full). E.g., if a plugin changes value of
@@ -479,10 +479,9 @@ requirement is that the result should include all fields above.
    Standard fields are: "done", "pri", "created", "finished", "description", "thr", "due".
 
 Quick example for #3. Today's date is 2020-01-18, a todo contains `2020-01-17 Test line !plug:2020 !plug2:01`,
-and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, and relative it
-prints with default formatting:
+and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, it prints with default formatting:
 
-```
+```shell
 Created  Description
 1d ago   Test line !plug:2020 !plug2:01
 ```
@@ -490,7 +489,7 @@ Created  Description
 If the plugin exists, it gets argument `{ "description": "Test line", "optional: [{"created": "2020-01-17"}], "specialTags: [{"!plug": "2020"}, {"plug2": "01"]}`.
 Case A: the plugin returns the original JSON untouched. All values are taken from JSON:
 
-```
+```shell
 Created  Description
 2020-01- Test line !plug:2020 !plug2:01
 ```
@@ -498,7 +497,7 @@ Created  Description
 Case B: the plugin removes `created` and `!plug2` from original JSON and returns `{ "description": "Test line", "optional: [], "specialTags: [{"!plug": "2020"}]}`.
 Now the current formatting setting are applied to standard `created`, non-standard `!plug2` is ignored and it prints:
 
-```
+```shell
 Created  Description
 1d ago   Test line !plug:2020
 ```
@@ -507,7 +506,7 @@ Created  Description
 
 Let's assume there is the following line in todo.txt, and TTDL config contains `script_prefix="/home/username/ttdlscripts/"`:
 
-```
+```shell
 2020-01-17 sprint ends !issue-cnt:project_name !issue-pct:project_name rec:2w
 ```
 
@@ -518,7 +517,7 @@ are added `!issue-cnt:project_name` and `!issue-pct:project_name`.
 TTDL detects a tag with leading `!` and the plugin engine kicks in. The todo description is "sprint ends".
 The argument for the first plugin is:
 
-```
+```shell
 {"description": "sprint ends", \
     "optional": [ {"created": "2020-01-17" ], \
     "specialTags": [ {"!issue-cnt": "project_name"}, {"!issue-high": "project_name"} ]}
@@ -527,7 +526,7 @@ The argument for the first plugin is:
 The first tag is `!issue-cnt`. It gives script name `/home/username/ttdlscripts/issue-cnt`. On Linux
 it eventually executes:
 
-```
+```shell
 sh -cu /home/username/ttdlscripts/issue-cnt \
     '{"description": "sprint ends", \
       "specialTags": [ {"!issue-cnt": "project_name"}, \
@@ -540,7 +539,7 @@ second plugin `issue-pct` to show percentage, so the first plugin removes redund
 field to make it printed with default settings and original values. The plugin `issue-cnt` prints to
 stdout its result:
 
-```
+```shell
 {"description": "sprint ends - well done!", \
    "specialTags": [ {"issues:ALL-DONE": "project_name"} ]}
 ```
@@ -549,7 +548,7 @@ TTDL gets intermediate result, and before calling the next plugin `issue-pct`, i
 name is still in the list. It is not found, and as it is the last plugin to call, TTDL builds
 the description from the last collected output. It joins description with all tags and prints:
 
-```
+```shell
 2020-01-17 sprint ends - well done! issues:ALL-DONE
 ```
 
@@ -573,27 +572,27 @@ This way only displays the content but does modify anything.
 
 The list of supported abbreviations (more can be added in the future if needed):
 
-| Abbreviation | Date |
-| --- | --- |
-| `today` | Today's date |
-| `#` | `#` stands for a positive number - sets date to `#` day of the current or next month |
-| `#-#` | `#-#` stands for a "month-day" - if this day of the current year is in the past it sets due date to the "next_year-month-day" and "current_year-month-day" otherwise |
-| `tm`, `tmr`, `tomorrow` | Tomorrow's date |
-| `#d` | `#` is a positive number: in `#` days |
-| `#w` | `#` is a positive number: in `#` weeks |
-| `#m` | `#` is a positive number: in `#` months |
-| `#y` | `#` is a positive number: in `#` years |
-| `mo`, `mon`, `monday` | nearest Monday in the future |
-| `tu`, `tue`, `tuesday` | nearest Tuesday in the future |
-| `we`, `wed`, `wednesday` | nearest Wednesday in the future |
-| `th`, `thu`, `thursday` | nearest Thursday in the future |
-| `fr`, `fri`, `friday` | nearest Friday in the future |
-| `sa`, `sat`, `saturday` | nearest Saturday in the future |
-| `su`, `sun`, `sunday` | nearest Sunday in the future |
+| Abbreviation             | Date                                                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `today`                  | Today's date                                                                                                                                                         |
+| `#`                      | `#` stands for a positive number - sets date to `#` day of the current or next month                                                                                 |
+| `#-#`                    | `#-#` stands for a "month-day" - if this day of the current year is in the past it sets due date to the "next_year-month-day" and "current_year-month-day" otherwise |
+| `tm`, `tmr`, `tomorrow`  | Tomorrow's date                                                                                                                                                      |
+| `#d`                     | `#` is a positive number: in `#` days                                                                                                                                |
+| `#w`                     | `#` is a positive number: in `#` weeks                                                                                                                               |
+| `#m`                     | `#` is a positive number: in `#` months                                                                                                                              |
+| `#y`                     | `#` is a positive number: in `#` years                                                                                                                               |
+| `mo`, `mon`, `monday`    | nearest Monday in the future                                                                                                                                         |
+| `tu`, `tue`, `tuesday`   | nearest Tuesday in the future                                                                                                                                        |
+| `we`, `wed`, `wednesday` | nearest Wednesday in the future                                                                                                                                      |
+| `th`, `thu`, `thursday`  | nearest Thursday in the future                                                                                                                                       |
+| `fr`, `fri`, `friday`    | nearest Friday in the future                                                                                                                                         |
+| `sa`, `sat`, `saturday`  | nearest Saturday in the future                                                                                                                                       |
+| `su`, `sun`, `sunday`    | nearest Sunday in the future                                                                                                                                         |
 
 1. All day of week abbreviations never set today's date. So, if the current date is Monday, `due:mon` sets the due date to the next Monday.
 2. `#d`, `#w`, `#m`, and `#y` are addictive and can be grouped. Moreover, you can use the same abbreviation as many times as you want. Examples: `due:3d4d` is the same as `due:1w`; and `due:1w1d` is the same as `due:11d`
-3. `#m` and `#y` does not add a constant number of days to the current date. They increase the month and year respectively with one extra rule: 
+3. `#m` and `#y` does not add a constant number of days to the current date. They increase the month and year respectively with one extra rule:
    if current date is the last day of the month, the new date is the end of the month as well. E.g., `due:1m` when current date is `2020-02-29` sets due date to `2020-03-31`.
 4. `#` and `#-#` never sets the date in the past. So, if `#` is less than the current day of month, the resulting date is in the next, otherwise it is in the current period(month for `#`, year for `#-#`). The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
 5. `#` and `#-#` accept values for a day in a range `[1..31]`, bigger numbers cause errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Examples: `due:31` for date `2020-02-05` sets the due date to `2020-02-29`, and `due:02-31` sets due date to `2020-02-29`.
@@ -604,78 +603,78 @@ By default todos from a given range are processed only if they are incomplete. T
 
 ### List and filter
 
-| Command | Description |
-|---|---|
-| `ttdl l 2` | show a single todo with ID 2 |
-| `ttdl l 2-5` | show todos with ID from 2 through 5 |
-| `ttdl l 2,5` | show only todos with ID 2 and 5 |
-| `ttdl l -s=proj,pri` | show all todos sorted by their project and by priority inside each project |
-| `ttdl l "car*"` | list todos which have substring `car*` in their subject, project or context |
-| `ttdl l "car*" -e` | list todos which have subject, project or context matched regular expression `car*` |
-| `ttdl l "car"` | list todos which have substring `car` in their subject, project or context |
-| `ttdl l --pri=a` | show todos with the highest priority A |
-| `ttdl l --pri=b+` | show todos with priority B and higher (only A and B in this case) |
-| `ttdl l +car +train` | show todos which related either to `car` or to `train` projects |
-| `ttdl l +my* @*tax` | show todos that have a project tag starts with `my` and a context ends with `tax` |
-| `ttdl l --due=tomorrow` | show todos that are due tomorrow |
-| `ttdl l --due=soon` | show todos which are due in less than a few days, including overdue ones (the range is configurable and default value is 7 days) |
-| `ttdl l --due=overdue` | show overdue todos |
-| `ttdl l --due=none` | show todos that does not have due date |
-| `ttdl l --due=today` | show todos that are due today |
-| `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context |
+| Command                    | Description                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ttdl l 2`                 | show a single todo with ID 2                                                                                                     |
+| `ttdl l 2-5`               | show todos with ID from 2 through 5                                                                                              |
+| `ttdl l 2,5`               | show only todos with ID 2 and 5                                                                                                  |
+| `ttdl l -s=proj,pri`       | show all todos sorted by their project and by priority inside each project                                                       |
+| `ttdl l "car*"`            | list todos which have substring `car*` in their subject, project or context                                                      |
+| `ttdl l "car*" -e`         | list todos which have subject, project or context matched regular expression `car*`                                              |
+| `ttdl l "car"`             | list todos which have substring `car` in their subject, project or context                                                       |
+| `ttdl l --pri=a`           | show todos with the highest priority A                                                                                           |
+| `ttdl l --pri=b+`          | show todos with priority B and higher (only A and B in this case)                                                                |
+| `ttdl l +car +train`       | show todos which related either to `car` or to `train` projects                                                                  |
+| `ttdl l +my* @*tax`        | show todos that have a project tag starts with `my` and a context ends with `tax`                                                |
+| `ttdl l --due=tomorrow`    | show todos that are due tomorrow                                                                                                 |
+| `ttdl l --due=soon`        | show todos which are due in less than a few days, including overdue ones (the range is configurable and default value is 7 days) |
+| `ttdl l --due=overdue`     | show overdue todos                                                                                                               |
+| `ttdl l --due=none`        | show todos that does not have due date                                                                                           |
+| `ttdl l --due=today`       | show todos that are due today                                                                                                    |
+| `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context                                              |
 
 ### Add a new todo
 
-| Command | Description |
-|---|---|
+| Command                                                                       | Description                                                                     |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `ttdl a "send tax declaration +personal @finance @tax due:2018-04-01 rec:1y"` | add a new recurrent todo(yearly todo) with a due date first of April every year |
 
 ### Done (undone)
 
-| Command | Description |
-|---|---|
+| Command      | Description                               |
+| ------------ | ----------------------------------------- |
 | `ttdl d 2-5` | mark todos with IDs from 2 through 5 done |
 
 ### Clean up the list
 
-| Command | Description |
-|---|---|
-| `ttdl rm 2-5` | delete incomplete todos with IDs from 2 thorough 5 |
-| `ttdl rm 2-5 -a` | delete both done and incomplete todos with IDs from 2 through 5 |
-| `ttdl rm 2-5 -A` | delete all done todos with IDs from 2 through 5 |
+| Command                 | Description                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `ttdl rm 2-5`           | delete incomplete todos with IDs from 2 thorough 5                                                  |
+| `ttdl rm 2-5 -a`        | delete both done and incomplete todos with IDs from 2 through 5                                     |
+| `ttdl rm 2-5 -A`        | delete all done todos with IDs from 2 through 5                                                     |
 | `ttdl clean 2-5 --wipe` | delete all completed todos with IDs from 2 through 5. It does the same as the previous command does |
-| `ttdl clean 2-5` | move all completed todos with IDs from 2 through 5 to done.txt |
+| `ttdl clean 2-5`        | move all completed todos with IDs from 2 through 5 to done.txt                                      |
 
 ### Modify todo list
 
-| Command | Description |
-|---|---|
-| `ttdl e 2-5 "new subject"` | only the first incomplete todo with ID between 2 and 5 changes its subject (in this case todo with ID equals 2 gets subject "new subject") |
-| `ttdl e +proj --repl-ctx=bug1010@bug1020` | replace context `bug1010` with `bug1020` for all incomplete todos that related to project `proj` |
-| `ttdl e @customer_acme --set-due=2018-12-31` | set due date 2018-12-31 for all incomplete todos that has `customer_acme` context |
-| `ttdl e @customer_acme --set-due=none` | remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context |
-| `ttdl e --pri=none --set-pri=z` | set the lowest priority for all incomplete todos which do not have a priority set |
-| `ttdl e @bug1000 --set-pri=+` | increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z` |
-| `ttdl postpone 3 5d` | push back due date of task #3 by 5 days |
+| Command                                      | Description                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ttdl e 2-5 "new subject"`                   | only the first incomplete todo with ID between 2 and 5 changes its subject (in this case todo with ID equals 2 gets subject "new subject") |
+| `ttdl e +proj --repl-ctx=bug1010@bug1020`    | replace context `bug1010` with `bug1020` for all incomplete todos that related to project `proj`                                           |
+| `ttdl e @customer_acme --set-due=2018-12-31` | set due date 2018-12-31 for all incomplete todos that has `customer_acme` context                                                          |
+| `ttdl e @customer_acme --set-due=none`       | remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context                                                       |
+| `ttdl e --pri=none --set-pri=z`              | set the lowest priority for all incomplete todos which do not have a priority set                                                          |
+| `ttdl e @bug1000 --set-pri=+`                | increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z` |
+| `ttdl postpone 3 5d`                         | push back due date of task #3 by 5 days                                                                                                    |
 
 ### Use human-readable dates
 
 All examples are for the current date `2020-07-11`
 
-| Command | Description |
-|---|---|
-| `ttdl "fix by monday due:mon"` | Adds a new todo with a content `fix by monday due:2020-07-13` |
-| `ttdl "update docs t:1m due:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25` |
-| `ttdl e 3 --set-due 1m` | Updates the third todo with new due date `2020-08-11` |
-| `ttdl e 3 --set-due 1m` | For the current date `2020-02-29` it sets due date to the end of the next month `2020-03-31` |
+| Command                            | Description                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ttdl "fix by monday due:mon"`     | Adds a new todo with a content `fix by monday due:2020-07-13`                                |
+| `ttdl "update docs t:1m due:1m2w"` | Adds a new todo with a content `update docs t:2020-08-11 due:2020-08-25`                     |
+| `ttdl e 3 --set-due 1m`            | Updates the third todo with new due date `2020-08-11`                                        |
+| `ttdl e 3 --set-due 1m`            | For the current date `2020-02-29` it sets due date to the end of the next month `2020-03-31` |
 
 ### Show all project or context tags
 
-| Command | Description |
-|---|---|
-| `ttdl lc ` | show all context tags |
+| Command                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `ttdl lc`              | show all context tags                     |
 | `ttdl listcon @phone*` | show all context tags starting with phone |
-| `ttdl lp ` | show all project tags |
-| `ttdl listproj +*car*` | show all project tags containing *car* |
+| `ttdl lp`              | show all project tags                     |
+| `ttdl listproj +*car*` | show all project tags containing _car_    |
 
 These commands could be used to implement tag completion in your editor / shell.
