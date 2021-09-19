@@ -199,7 +199,7 @@ fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
             c.pri = Some(tfilter::Priority { value: todotxt::NO_PRIORITY, span: tfilter::ValueSpan::Any });
         }
         _ => {
-            let (s, modif) = split_filter(&val);
+            let (s, modif) = split_filter(val);
             if s.len() != 1 {
                 return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
                     value: s,

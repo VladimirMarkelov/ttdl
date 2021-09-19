@@ -436,7 +436,7 @@ fn print_done_val(
             s = format!("{:wid$.wid$}", v, wid = 2);
         }
     };
-    print_with_color(stdout, &s, &def_color);
+    print_with_color(stdout, &s, def_color);
 }
 
 fn print_priority_val(stdout: &mut StandardStream, task: &todotxt::Task, arg: &json::JsonValue, c: &Conf) {
@@ -549,7 +549,7 @@ fn print_line(
             "spent" => {
                 print_with_color(
                     stdout,
-                    &format!("{:wid$} ", &duration_str(timer::spent_time(&task)), wid = SPENT_WIDTH),
+                    &format!("{:wid$} ", &duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
                     &fg,
                 );
             }
