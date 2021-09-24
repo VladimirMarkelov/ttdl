@@ -16,7 +16,25 @@ use std::str::FromStr;
 
 use todo_lib::*;
 
+const TASK_HIDDEN_VAL: &str = "1";
+const TASK_HIDDEN_FLD: &str = "h";
+
 type FnUpdateData = fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>) -> todo::ChangedVec;
+
+fn task_is_hidden(task: &todotxt::Task) -> bool {
+    match task.tags.get(TASK_HIDDEN_FLD) {
+        Some(val) => val == TASK_HIDDEN_VAL,
+        None => false,
+    }
+}
+
+fn filter_tasks(tasks: &[todotxt::Task], c: &conf::Conf) -> todo::IDVec {
+    let mut todos = tfilter::filter(tasks, &c.flt);
+    if !c.show_hidden {
+        todos.retain(|&id| !task_is_hidden(&tasks[id]));
+    }
+    todos
+}
 
 fn calculate_updated(v: &todo::ChangedSlice) -> u32 {
     let mut cnt = 0u32;
@@ -30,7 +48,7 @@ fn calculate_updated(v: &todo::ChangedSlice) -> u32 {
 }
 
 fn process_tasks(tasks: &mut todo::TaskVec, c: &conf::Conf, action: &str, f: FnUpdateData) -> bool {
-    let todos = tfilter::filter(tasks, &c.flt);
+    let todos = filter_tasks(tasks, c);
 
     if c.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
@@ -102,7 +120,7 @@ fn task_add(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
 }
 
 fn task_list(tasks: &todo::TaskSlice, conf: &conf::Conf) {
-    let mut todos = tfilter::filter(tasks, &conf.flt);
+    let mut todos = filter_tasks(tasks, conf);
     let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
     tsort::sort(&mut todos, tasks, &conf.sort);
     fmt::print_header(&conf.fmt, &widths);
@@ -138,7 +156,7 @@ fn task_remove(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
     if flt_conf.flt.all == tfilter::TodoStatus::Active {
         flt_conf.flt.all = tfilter::TodoStatus::All;
     }
-    let todos = tfilter::filter(tasks, &flt_conf.flt);
+    let todos = filter_tasks(tasks, conf);
     if todos.is_empty() {
         println!("No todo deleted")
     } else {
@@ -164,8 +182,9 @@ fn task_remove(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
 }
 
 fn task_clean(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
-    let flt_conf = tfilter::Conf { all: tfilter::TodoStatus::Done, ..conf.flt.clone() };
-    let todos = tfilter::filter(tasks, &flt_conf);
+    let mut conf = conf.clone();
+    conf.flt = tfilter::Conf { all: tfilter::TodoStatus::Done, ..conf.flt.clone() };
+    let todos = filter_tasks(tasks, &conf);
     if todos.is_empty() {
         println!("No todo archived")
     } else {
@@ -198,7 +217,7 @@ fn task_clean(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
 }
 
 fn task_edit(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     let action = "changed";
     if todos.is_empty() {
         println!("No todo changed")
@@ -246,7 +265,7 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
         }
         Some(s) => s,
     };
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     if todos.is_empty() {
         println!("No todo changed");
         return;
@@ -305,7 +324,7 @@ fn task_add_text(tasks: &mut todo::TaskVec, conf: &conf::Conf, to_end: bool) {
 }
 
 fn task_start_stop(tasks: &mut todo::TaskVec, conf: &conf::Conf, start: bool) {
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     let action = if start { "started" } else { "stopped" };
     if todos.is_empty() {
         println!("No todo {}", action)
@@ -360,7 +379,7 @@ fn task_postpone(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
             return;
         }
     };
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     if todos.is_empty() {
         println!("No todo postponed")
     } else if conf.dry {
@@ -442,7 +461,7 @@ where
 }
 
 fn task_list_projects(tasks: &todo::TaskSlice, conf: &conf::Conf) {
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     // no tsort::sort() here since multiple projects in one task
     // would mess up the alphabetical output sort
 
@@ -452,7 +471,7 @@ fn task_list_projects(tasks: &todo::TaskSlice, conf: &conf::Conf) {
 }
 
 fn task_list_contexts(tasks: &todo::TaskSlice, conf: &conf::Conf) {
-    let todos = tfilter::filter(tasks, &conf.flt);
+    let todos = filter_tasks(tasks, conf);
     // no tsort::sort() here since multiple contexts in one task
     // would mess up the alphabetical output sort
 

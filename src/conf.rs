@@ -49,6 +49,7 @@ pub struct Conf {
     pub use_done: bool,
     pub first_sunday: bool,
     pub strict_mode: bool,
+    pub show_hidden: bool,
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
 
@@ -68,6 +69,7 @@ impl Default for Conf {
             use_done: false,
             first_sunday: true,
             strict_mode: false,
+            show_hidden: false,
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
 
@@ -93,7 +95,7 @@ fn print_usage(program: &str, opts: &Options) {
 ");
 
     let filter = r#"Filter options include:
-    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold
+    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold, --hidden
     +project - select todos which are related to project "project"; if more than one project name is defined in command line, they are combined with OR;
     @context - select todos which have context "project"; if more than one context is set, they are combined with OR;
     "#;
@@ -932,6 +934,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     );
     opts.optopt("", "done-file", "path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
     opts.optflag("", "strict", "enable strict mode");
+    opts.optflag("", "hidden", "Include hidden tasks");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -962,6 +965,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     conf.verbose = matches.opt_present("verbose");
     conf.wipe = matches.opt_present("wipe");
     conf.use_done = matches.opt_present("done");
+    conf.show_hidden = matches.opt_present("hidden");
     if conf.use_done && conf.flt.all == tfilter::TodoStatus::Active {
         conf.flt.all = tfilter::TodoStatus::Done;
     }
