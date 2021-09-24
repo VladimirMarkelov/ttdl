@@ -461,7 +461,9 @@ where
 }
 
 fn task_list_projects(tasks: &todo::TaskSlice, conf: &conf::Conf) {
-    let todos = filter_tasks(tasks, conf);
+    let mut conf = conf.clone();
+    conf.show_hidden = true;
+    let todos = filter_tasks(tasks, &conf);
     // no tsort::sort() here since multiple projects in one task
     // would mess up the alphabetical output sort
 
@@ -471,7 +473,9 @@ fn task_list_projects(tasks: &todo::TaskSlice, conf: &conf::Conf) {
 }
 
 fn task_list_contexts(tasks: &todo::TaskSlice, conf: &conf::Conf) {
-    let todos = filter_tasks(tasks, conf);
+    let mut conf = conf.clone();
+    conf.show_hidden = true;
+    let todos = filter_tasks(tasks, &conf);
     // no tsort::sort() here since multiple contexts in one task
     // would mess up the alphabetical output sort
 

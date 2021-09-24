@@ -814,11 +814,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "regex",
         "Treat the search string as regular expression. By default simple case-insensitive substring search is done",
     );
-    opts.optflag("", "wipe", "'clean' command deletes todos instead of moving them to 'done.txt'");
+    opts.optflag("", "wipe", "'Clean' command deletes todos instead of moving them to 'done.txt'");
     opts.optflagopt(
         "s",
         "sort",
-        "sort todos by the list of fields(if the list is empty todos are sorted by their priority)",
+        "Sort todos by the list of fields(if the list is empty todos are sorted by their priority)",
         "FIELD1,FIELD2",
     );
     opts.optflag("", "sort-rev", "Reverse todo list after sorting. It works only if the option 'sort' is set");
@@ -925,15 +925,15 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "Use file of completed todos - done.txt. In this mode the only available command is 'list'",
     );
     opts.optflag("", "version", "Show TTDL version");
-    opts.optopt("c", "config", "path to configuration file", "CONF FILE PATH");
+    opts.optopt("c", "config", "Path to configuration file", "CONF FILE PATH");
     opts.optopt(
         "",
         "todo-file",
-        "path to file with todos (if it is directory 'todo.txt' is added automatically) ",
+        "Path to file with todos (if it is directory 'todo.txt' is added automatically) ",
         "TODO FILE PATH",
     );
-    opts.optopt("", "done-file", "path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
-    opts.optflag("", "strict", "enable strict mode");
+    opts.optopt("", "done-file", "Path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
+    opts.optflag("", "strict", "Enable strict mode");
     opts.optflag("", "hidden", "Include hidden tasks");
 
     let matches: Matches = match opts.parse(&args[1..]) {
