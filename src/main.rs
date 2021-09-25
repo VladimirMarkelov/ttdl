@@ -16,14 +16,14 @@ use std::str::FromStr;
 
 use todo_lib::*;
 
-const TASK_HIDDEN_VAL: &str = "1";
+const TASK_HIDDEN_OFF: &str = "0";
 const TASK_HIDDEN_FLD: &str = "h";
 
 type FnUpdateData = fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>) -> todo::ChangedVec;
 
 fn task_is_hidden(task: &todotxt::Task) -> bool {
     match task.tags.get(TASK_HIDDEN_FLD) {
-        Some(val) => val == TASK_HIDDEN_VAL,
+        Some(val) => val != TASK_HIDDEN_OFF,
         None => false,
     }
 }

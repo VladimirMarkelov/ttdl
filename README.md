@@ -340,17 +340,20 @@ Commands:
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
+All commands(except `listcontexts` and `listprojects`) skip hidden tasks by default. To include hidden tasks, use `--hidden` option. See section [tags](#tags) for details.
+
 NOTE: `done` moves a recurrent todo's due date to the next one, but it does not check if the new due date is in the future (it is by design). So, if a monthly task is 2 months overdue, you have to execute `ttdl done ID` two times to push it to the incoming month or manually set a new due date with the command `ttdl edit ID --set-due=YYYY-MM-DD`.
 
 ### Tags
 
 The original todo.txt format describes a user-defined tags that can be used by any application for special needs. The format of a tag is `tag_name:tag_value`. The original format does not specify any tag - all are considered custom ones.
 
-TTDL supports a few custom tags (as of version 0.3):
+TTDL supports a few custom tags:
 
 - `due` - a todo's due date. The tag value is in format YYYY-MM-DD;
 - `t` - a todo's threshold date. The tag value is in format YYYY-MM-DD;
 - `rec` - makes a todo recurrent. It makes sense only when using along with `due` tag. The tag value is the number of time intervals and one-character time interval name: `d` - every few days, `w` every few weeks, `m` - every few months, `y` - every few years. Examples: `1w` - a weekly todo, `5d` - every 5 days.
+- `h` - mark a task hidden if the value of the tag is not `0`. Hidden tasks are skipped by default by all commands except autocompletion support. It allows a user to keep a hidden task with all projects and contexts for shell auto-completion without spoiling the regular tasks with unrelated contexts and projects.
 
 ### Time tracking
 
