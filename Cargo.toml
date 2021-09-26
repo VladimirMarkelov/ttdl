@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 lto = true
 
 [dependencies]
-todo_lib = "2.0"
+todo_lib = "2.1"
 getopts = "0.2"
 chrono = "^0.4"
 textwrap = "0.11"
