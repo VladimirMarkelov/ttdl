@@ -434,9 +434,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "todo_lib"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2263f9eeb99c26efda1756df46d11303d31d7e779241c56424ff28a66d24d3b"
+checksum = "86e0a4074727d4a7d1694885b92f8f3fbde3f346d82e58d7e39bb6b35173fa51"
 dependencies = [
  "chrono",
  "failure",
