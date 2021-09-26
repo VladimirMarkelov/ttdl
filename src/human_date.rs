@@ -406,16 +406,16 @@ pub(crate) fn human_to_range_with_none(
         match human_to_date(base, parts[0], soon_days) {
             Err(e) => Err(range_error(&e)),
             Ok(d) => Ok(tfilter::DateRange {
-                days: tfilter::ValueRange { low: tfilter::INCLUDE_NONE, high: (d - base).num_days() },
-                span: tfilter::ValueSpan::Higher,
+                days: tfilter::ValueRange { high: tfilter::INCLUDE_NONE, low: (d - base).num_days() },
+                span: tfilter::ValueSpan::Range,
             }),
         }
     } else if parts[0] == "none" {
         match human_to_date(base, parts[1], soon_days) {
             Err(e) => Err(range_error(&e)),
             Ok(d) => Ok(tfilter::DateRange {
-                days: tfilter::ValueRange { high: tfilter::INCLUDE_NONE, low: (d - base).num_days() },
-                span: tfilter::ValueSpan::Lower,
+                days: tfilter::ValueRange { low: tfilter::INCLUDE_NONE, high: (d - base).num_days() },
+                span: tfilter::ValueSpan::Range,
             }),
         }
     } else {

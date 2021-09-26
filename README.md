@@ -262,6 +262,11 @@ Use the following command-line options to filter by:
 - date of creation `--created`
 - completion date `--completed`
 
+Field `threshold` is the only field with a specific default value.
+All other fields have empty default value which means the filter is off.
+The default value of threshold is inclusive range `[none..today]`.
+TTDL by default hides tasks that has threshold date and the threshold date is tomorrow and later.
+
 Examples (note the difference between ranges and single values):
 
 - `ttdl list --due today` - show all todos that are due today
