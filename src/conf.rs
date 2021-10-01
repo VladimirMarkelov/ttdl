@@ -353,30 +353,30 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
     if let Some(dstr) = matches.opt_str("context") {
         let lstr = dstr.trim().to_lowercase();
         if lstr.is_empty() {
-            c.contexts.push("none".to_string());
+            c.include.contexts.push("none".to_string());
         } else {
             for st in lstr.split(',') {
-                c.contexts.push(st.to_string());
+                c.include.contexts.push(st.to_string());
             }
         }
     };
     if let Some(dstr) = matches.opt_str("project") {
         let lstr = dstr.trim().to_lowercase();
         if lstr.is_empty() {
-            c.projects.push("none".to_string());
+            c.include.projects.push("none".to_string());
         } else {
             for st in lstr.split(',') {
-                c.projects.push(st.to_string());
+                c.include.projects.push(st.to_string());
             }
         }
     };
     if let Some(dstr) = matches.opt_str("tag") {
         let lstr = dstr.trim().to_lowercase();
         if lstr.is_empty() {
-            c.tags.push("none".to_string());
+            c.include.tags.push("none".to_string());
         } else {
             for st in lstr.split(',') {
-                c.tags.push(st.to_string());
+                c.include.tags.push(st.to_string());
             }
         }
     };
@@ -1047,10 +1047,10 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     while idx < matches.free.len() {
         if matches.free[idx].starts_with('@') && matches.free[idx].find(' ').is_none() {
             let context = matches.free[idx].trim_start_matches('@');
-            conf.flt.contexts.push(context.to_owned().to_lowercase());
+            conf.flt.include.contexts.push(context.to_owned().to_lowercase());
         } else if matches.free[idx].starts_with('+') && matches.free[idx].find(' ').is_none() {
             let project = matches.free[idx].trim_start_matches('+');
-            conf.flt.projects.push(project.to_owned().to_lowercase());
+            conf.flt.include.projects.push(project.to_owned().to_lowercase());
         } else if edit_mode {
             let dt = Local::now().date().naive_local();
             let subj = match human_date::fix_date(dt, &matches.free[idx], "due:", soon_days) {
