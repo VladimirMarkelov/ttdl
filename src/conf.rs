@@ -351,37 +351,40 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
     }
 
     if let Some(dstr) = matches.opt_str("context") {
-        let lstr = dstr.trim().to_lowercase();
-        if lstr.is_empty() {
-            c.include.contexts.push("none".to_string());
-        } else {
-            for st in lstr.split(',') {
-                c.include.contexts.push(st.to_string());
-            }
-        }
+        let (i, e) = comma_list_to_vec(&dstr);
+        c.include.contexts = i;
+        c.exclude.contexts = e;
     };
     if let Some(dstr) = matches.opt_str("project") {
-        let lstr = dstr.trim().to_lowercase();
-        if lstr.is_empty() {
-            c.include.projects.push("none".to_string());
-        } else {
-            for st in lstr.split(',') {
-                c.include.projects.push(st.to_string());
-            }
-        }
+        let (i, e) = comma_list_to_vec(&dstr);
+        c.include.projects = i;
+        c.exclude.projects = e;
     };
     if let Some(dstr) = matches.opt_str("tag") {
-        let lstr = dstr.trim().to_lowercase();
-        if lstr.is_empty() {
-            c.include.tags.push("none".to_string());
-        } else {
-            for st in lstr.split(',') {
-                c.include.tags.push(st.to_string());
-            }
-        }
+        let (i, e) = comma_list_to_vec(&dstr);
+        c.include.tags = i;
+        c.exclude.tags = e;
     };
 
     Ok(())
+}
+
+fn comma_list_to_vec(list: &str) -> (Vec<String>, Vec<String>) {
+    let mut incl = Vec::new();
+    let mut excl = Vec::new();
+    let lstr = list.trim().to_lowercase();
+    if lstr.is_empty() {
+        incl.push("none".to_string());
+    } else {
+        for st in lstr.split(',') {
+            if st.starts_with('-') {
+                excl.push(st.trim_start_matches('-').to_string());
+            } else {
+                incl.push(st.to_string());
+            }
+        }
+    }
+    (incl, excl)
 }
 
 fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoError> {
@@ -798,7 +801,20 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
     }
 }
 
+fn preprocess_args(args: &[String]) -> Vec<String> {
+    let mut res: Vec<String> = Vec::new();
+    for arg in args {
+        if arg.starts_with("-@") || arg.starts_with("-+") {
+            res.push(" ".to_string() + arg);
+        } else {
+            res.push(arg.to_string());
+        }
+    }
+    res
+}
+
 pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
+    let args = preprocess_args(args);
     let program = args[0].clone();
     let mut conf = Conf::new();
 
@@ -1045,15 +1061,23 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         || conf.mode == RunMode::Postpone;
 
     while idx < matches.free.len() {
-        if matches.free[idx].starts_with('@') && matches.free[idx].find(' ').is_none() {
-            let context = matches.free[idx].trim_start_matches('@');
+        let arg = matches.free[idx].trim_start();
+        let has_space = arg.contains(' ');
+        if arg.starts_with('@') && !has_space {
+            let context = arg.trim_start_matches('@');
             conf.flt.include.contexts.push(context.to_owned().to_lowercase());
-        } else if matches.free[idx].starts_with('+') && matches.free[idx].find(' ').is_none() {
-            let project = matches.free[idx].trim_start_matches('+');
+        } else if arg.starts_with("-@") && !has_space {
+            let context = arg.trim_start_matches("-@");
+            conf.flt.exclude.contexts.push(context.to_owned().to_lowercase());
+        } else if arg.starts_with('+') && !has_space {
+            let project = arg.trim_start_matches('+');
             conf.flt.include.projects.push(project.to_owned().to_lowercase());
+        } else if arg.starts_with("-+") && !has_space {
+            let project = arg.trim_start_matches("-+");
+            conf.flt.exclude.projects.push(project.to_owned().to_lowercase());
         } else if edit_mode {
             let dt = Local::now().date().naive_local();
-            let subj = match human_date::fix_date(dt, &matches.free[idx], "due:", soon_days) {
+            let subj = match human_date::fix_date(dt, arg, "due:", soon_days) {
                 None => matches.free[idx].clone(),
                 Some(s) => s,
             };
@@ -1063,7 +1087,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             };
             conf.todo.subject = Some(subj);
         } else {
-            conf.flt.regex = Some(matches.free[idx].clone());
+            conf.flt.regex = Some(arg.to_string());
         }
 
         idx += 1;
