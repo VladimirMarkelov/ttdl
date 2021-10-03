@@ -216,6 +216,10 @@ which names ends or starts with the word.
 - `ttdl list +*clientA` - show all incomplete todos which project names ends with `clientA`
 - `ttdl list @car*` - show all incomplete todos which have a context starting with `car`
 
+To exclude todos containing certain project or context, prepend `-`(minus sign) before `+` or `@`:
+
+`ttdl list +projA -@ctx` - show all incomplete todos that belongs to project `projA` and do not contains context `ctx`.
+
 ##### Classic CLI options
 
 Besides using `+` and `@` to indicate project and context titles, the application supports classic CLI options to set the list of values for a filter:
@@ -232,6 +236,11 @@ Special values:
 - `any` - select records that have at least one value (`--project any` - records that belong any project)
 
 Any item can be a full name or a pattern to match as it is described in the [previous section](#free-cli-arguments).
+
+It is possible to exclude todos that contain given projects or contexts from the output.
+Minus sign `-` marks items to exclude:
+
+`ttdl list --project projA --context "any,-ctxB"` - list all todos that belong to project `projA` and have any context except `ctxB`.
 
 #### Filter by date
 
