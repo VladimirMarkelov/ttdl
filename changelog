@@ -1,3 +1,15 @@
+ttdl (3.0.0) unstable; urgency=medium
+
+  * All ranges are now exclusive ones as the documentation states. Before the
+    fix, ranges with `none` as one end were non-exclusive ones
+  * Support tag `h` to hide any todo from the output. If value of the tag is
+    not `0`, the todo is excluded from all operations (except auto-compelete
+    functions)
+  * Added a way to exclude todos what contains certain projects, contexts or
+    tags from the list. Prepend `-` to a value to mark it as an exclusion.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 03 Oct 2021 11:10:19 -0700
+
 ttdl (2.0.2) unstable; urgency=medium
 
   * Upgrade packages
