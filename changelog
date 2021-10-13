@@ -1,3 +1,10 @@
+ttdl (3.0.1) unstable; urgency=medium
+
+  * Fix regression: filter "due=none..4d" did not include tasks with empty due
+    dates
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 13 Oct 2021 11:38:51 -0700
+
 ttdl (3.0.0) unstable; urgency=medium
 
   * All ranges are now exclusive ones as the documentation states. Before the
