@@ -434,9 +434,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "todo_lib"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70cd22e331d72b93ecebd4359ea35fe3b2e5086688fffc163c5e679348660576"
+checksum = "7309af1e7855fb009dc2b1be9e2a403f578c750db631a82dd839c64edeefc5f8"
 dependencies = [
  "chrono",
  "failure",
@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "ttdl"
-version = "3.0.1"
+version = "3.0.2"
 dependencies = [
  "atty",
  "caseless",

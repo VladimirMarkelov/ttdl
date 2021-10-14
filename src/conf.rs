@@ -20,6 +20,12 @@ const CONF_FILE: &str = "ttdl.toml";
 const TODO_FILE: &str = "todo.txt";
 const DONE_FILE: &str = "done.txt";
 
+struct RangeEnds {
+    l: usize,
+    r: usize,
+}
+const RANGE_END_SKIP: usize = 8_999_999_999_998;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum RunMode {
     None,
@@ -1022,31 +1028,34 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             conf.flt.range = tfilter::ItemRange::One(id - 1);
             idx += 1;
         }
-    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != '-' && c != ':').is_none() {
+    } else if is_id_range(&matches.free[idx]) {
         // a range in a form "ID1-ID2" or "ID1:ID2"
-        let w: Vec<&str> = if matches.free[idx].find('-').is_none() {
-            matches.free[idx].split(':').collect()
-        } else {
-            matches.free[idx].split('-').collect()
-        };
-        if w.len() != 2 {
-            return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
-                value: matches.free[idx].to_owned(),
-                name: "ID range".to_string(),
-            }));
+        let ends = parse_id_range(&matches.free[idx])?;
+        if ends.l != RANGE_END_SKIP {
+            conf.flt.range = tfilter::ItemRange::Range(ends.l, ends.r);
+            idx += 1;
         }
-        match (w[0].parse::<usize>(), w[1].parse::<usize>()) {
-            (Ok(id1), Ok(id2)) => {
-                conf.flt.range = tfilter::ItemRange::Range(id1 - 1, id2 - 1);
-                idx += 1;
-            }
-            (_, _) => {}
-        }
-    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != ',').is_none() {
+    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != ',' && c != '-' && c != ':').is_none() {
+        // a list, possibly list of ranges
         let mut v: Vec<usize> = Vec::new();
         for s in matches.free[idx].split(',') {
+            if is_id_range(s) {
+                let ends = parse_id_range(s)?;
+                if ends.l == RANGE_END_SKIP {
+                    continue;
+                }
+                for id in ends.l..=ends.r {
+                    if !v.contains(&id) {
+                        v.push(id);
+                    }
+                }
+                continue;
+            }
             if let Ok(id) = s.parse::<usize>() {
-                v.push(id - 1);
+                let id = id - 1;
+                if !v.contains(&id) {
+                    v.push(id);
+                }
             }
         }
         conf.flt.range = tfilter::ItemRange::List(v);
@@ -1095,6 +1104,35 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
 
     // TODO: validate
     Ok(conf)
+}
+
+// Parses a range in a form "ID1-ID2" or "ID1:ID2".
+// Returns range ends. RangeEnds.l is always less than or equal to RangeEnds.r
+fn parse_id_range(s: &str) -> Result<RangeEnds, terr::TodoError> {
+    let w: Vec<&str> = if s.find('-').is_none() { s.split(':').collect() } else { s.split('-').collect() };
+    if w.len() != 2 {
+        return Err(terr::TodoError::from(terr::TodoErrorKind::InvalidValue {
+            value: s.to_owned(),
+            name: "ID range".to_string(),
+        }));
+    }
+    match (w[0].parse::<usize>(), w[1].parse::<usize>()) {
+        (Ok(id1), Ok(id2)) => {
+            if id1 <= id2 {
+                Ok(RangeEnds { l: id1 - 1, r: id2 - 1 })
+            } else {
+                Ok(RangeEnds { l: id2 - 1, r: id1 - 1 })
+            }
+        }
+        (_, _) => Ok(RangeEnds { l: RANGE_END_SKIP, r: RANGE_END_SKIP }),
+    }
+}
+
+fn is_id_range(s: &str) -> bool {
+    if s.find(|c: char| !c.is_digit(10) && c != '-' && c != ':').is_some() {
+        return false;
+    }
+    s.contains(|c: char| c == '-' || c == ':')
 }
 
 fn color_from_str(s: &str) -> ColorSpec {
