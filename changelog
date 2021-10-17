@@ -1,3 +1,13 @@
+ttdl (4.0.0) unstable; urgency=medium
+
+  * Now threshold dates moves to the future like due dates when a todo is
+    completed
+  * On completion of a recurrent todo, its due and threshold dates are not
+    modified. The todo is marked completed and a new todo is created with
+    changed due and threshold dates.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 17 Oct 2021 11:53:01 -0700
+
 ttdl (3.0.2) unstable; urgency=medium
 
   * Fixed: ID '1' was always ignored when list of IDs was passed to TTDL

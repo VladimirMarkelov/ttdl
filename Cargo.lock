@@ -220,9 +220,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.103"
+version = "0.2.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8f7255a17a627354f321ef0055d63b898c6fb27eff628af4d1b66b7331edf6"
+checksum = "7b2f96d100e1cf1929e7719b7edb3b90ab5298072638fccd77be9ce942ecdfce"
 
 [[package]]
 name = "memchr"
@@ -434,9 +434,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "todo_lib"
-version = "3.0.2"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7309af1e7855fb009dc2b1be9e2a403f578c750db631a82dd839c64edeefc5f8"
+checksum = "942413ce9a7253162ace3548e812c7a7bc36cc3676f73d1b9bbc485677daa4d5"
 dependencies = [
  "chrono",
  "failure",
@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "ttdl"
-version = "3.0.2"
+version = "3.1.0"
 dependencies = [
  "atty",
  "caseless",

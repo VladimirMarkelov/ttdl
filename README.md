@@ -338,7 +338,7 @@ Commands:
 
 - add - add a new todo;
 - list - show list of todo items. By default it displays all incomplete todos;
-- done - mark selected todos completed. If a todo is recurrent its due date moves to the next date but the todo remains incomplete;
+- done - mark selected todos completed. If a todo is recurrent and contains due or threshold date(or both) the todo is marked completed and new one is created with due and threshold dates moved to the future;
 - undone - remove `finished` mark from completed todos;
 - remove - deletes the selected todos;
 - clean - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
