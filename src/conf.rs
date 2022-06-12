@@ -209,11 +209,11 @@ fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
         _ => {
             let (s, modif) = split_filter(val);
             if s.len() != 1 {
-                return Err(terr::TodoError::InvalidValue (s, "priority".to_string()));
+                return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
             }
             let p = s.as_bytes()[0];
             if !(b'a'..=b'z').contains(&p) {
-                return Err(terr::TodoError::InvalidValue (s, "priority".to_string()));
+                return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
             }
             c.pri = Some(tfilter::Priority { value: p - b'a', span: modif });
         }
@@ -228,7 +228,7 @@ fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
         "+" | "any" => c.rec = Some(tfilter::Recurrence { span: tfilter::ValueSpan::Any }),
         // TODO: add equal?
         _ => {
-            return Err(terr::TodoError::InvalidValue (val.to_string(), "recurrence".to_string()));
+            return Err(terr::TodoError::InvalidValue(val.to_string(), "recurrence".to_string()));
         }
     }
     Ok(())
@@ -260,7 +260,7 @@ fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRang
         "tomorrow" => {
             Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 1 }, span: tfilter::ValueSpan::Range })
         }
-        _ => Err(terr::TodoError::InvalidValue (val.to_string(), "date range".to_string())),
+        _ => Err(terr::TodoError::InvalidValue(val.to_string(), "date range".to_string())),
     }
 }
 
@@ -397,7 +397,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             _ => {
                 let p = s.as_bytes()[0];
                 if !(b'a'..=b'z').contains(&p) {
-                    return Err(terr::TodoError::InvalidValue (s, "priority".to_string()));
+                    return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
                 }
                 c.priority = p - b'a';
                 c.priority_act = todo::Action::Set;
@@ -417,7 +417,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                     c.recurrence_act = todo::Action::Set;
                 }
                 Err(_) => {
-                    return Err(terr::TodoError::InvalidValue (s, "recurrence".to_string()));
+                    return Err(terr::TodoError::InvalidValue(s, "recurrence".to_string()));
                 }
             },
         }
@@ -429,7 +429,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                 c.due_act = todo::Action::Delete;
             }
             "soon" => {
-                return Err(terr::TodoError::InvalidValue (s, "set-due".to_string()));
+                return Err(terr::TodoError::InvalidValue(s, "set-due".to_string()));
             }
             _ => {
                 let dt = Local::now().date().naive_local();
@@ -443,7 +443,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                             c.due_act = todo::Action::Set;
                         }
                         Err(_) => {
-                            return Err(terr::TodoError::InvalidValue (s, "set-due".to_string()));
+                            return Err(terr::TodoError::InvalidValue(s, "set-due".to_string()));
                         }
                     }
                 }
@@ -457,7 +457,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                 c.recurrence_act = todo::Action::Delete;
             }
             "soon" => {
-                return Err(terr::TodoError::InvalidValue (s, "set-threshold".to_string()));
+                return Err(terr::TodoError::InvalidValue(s, "set-threshold".to_string()));
             }
             _ => {
                 let dt = Local::now().date().naive_local();
@@ -471,7 +471,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                             c.thr_act = todo::Action::Set;
                         }
                         Err(_) => {
-                            return Err(terr::TodoError::InvalidValue (s, "set-threshold".to_string()));
+                            return Err(terr::TodoError::InvalidValue(s, "set-threshold".to_string()));
                         }
                     }
                 }
@@ -1081,7 +1081,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
 fn parse_id_range(s: &str) -> Result<RangeEnds, terr::TodoError> {
     let w: Vec<&str> = if s.find('-').is_none() { s.split(':').collect() } else { s.split('-').collect() };
     if w.len() != 2 {
-        return Err(terr::TodoError::InvalidValue (s.to_owned(), "ID range".to_string()));
+        return Err(terr::TodoError::InvalidValue(s.to_owned(), "ID range".to_string()));
     }
     match (w[0].parse::<usize>(), w[1].parse::<usize>()) {
         (Ok(id1), Ok(id2)) => {

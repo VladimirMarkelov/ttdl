@@ -428,7 +428,7 @@ pub(crate) fn is_range(human: &str) -> bool {
 }
 
 fn range_error(msg: &str) -> terr::TodoError {
-    terr::TodoError::InvalidValue (msg.to_string(), "date range".to_string())
+    terr::TodoError::InvalidValue(msg.to_string(), "date range".to_string())
 }
 
 pub(crate) fn human_to_range(
