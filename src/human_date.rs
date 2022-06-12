@@ -366,7 +366,7 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str, soon_days: u8) -> O
         return None;
     };
     let substr = &orig[start + look_for.len()..];
-    let human = if let Some(p) = substr.find(' ') { &substr[..p] } else { &substr };
+    let human = if let Some(p) = substr.find(' ') { &substr[..p] } else { substr };
     match human_to_date(base, human, soon_days) {
         Err(e) => {
             if e != NO_CHANGE {
