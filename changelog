@@ -1,4 +1,11 @@
-ttdl (4.0.0) unstable; urgency=medium
+ttdl (3.2.0) unstable; urgency=medium
+
+  * Upgrade 'todo_lib' to version '5.0'
+  * Replace 'failure' crate with 'thiserror' one
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 12 Jun 2022 00:20:58 -0700
+
+ttdl (3.1.0) unstable; urgency=medium
 
   * Now threshold dates moves to the future like due dates when a todo is
     completed
