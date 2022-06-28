@@ -9,11 +9,17 @@ mod human_date;
 mod stats;
 mod tml;
 
+use std::collections::HashMap;
 use std::env;
+use std::io::Write;
 use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 
+use chrono::{Datelike, NaiveDate, Weekday};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
+use crate::human_date::{calendar_first_day, calendar_last_day, prev_weekday};
 use todo_lib::*;
 
 const TASK_HIDDEN_OFF: &str = "0";
@@ -126,6 +132,104 @@ fn task_list(tasks: &todo::TaskSlice, conf: &conf::Conf) {
     fmt::print_header(&conf.fmt, &widths);
     fmt::print_todos(tasks, &todos, &[], &conf.fmt, &widths, false);
     fmt::print_footer(tasks, &todos, &[], &conf.fmt, &widths);
+}
+
+fn fill_calendar(
+    first_date: NaiveDate,
+    last_date: NaiveDate,
+    tasks: &todo::TaskSlice,
+    selected: &todo::IDSlice,
+) -> HashMap<NaiveDate, u32> {
+    let mut res = HashMap::new();
+    for id in selected.iter() {
+        if let Some(dt) = tasks[*id].due_date {
+            if dt < first_date || dt > last_date {
+                continue;
+            }
+            *res.entry(dt).or_insert(0) += 1;
+        }
+    }
+    res
+}
+
+fn print_calendar_header(stdout: &mut StandardStream, conf: &conf::Conf) {
+    if conf.first_sunday {
+        let _ = stdout.write(b" Su Mo Tu We Th Fr Sa\n");
+    } else {
+        let _ = stdout.write(b" Mo Tu We Th Fr Sa Su\n");
+    }
+}
+
+fn reset_colors(stdout: &mut StandardStream) {
+    let mut clr = ColorSpec::new();
+    clr.set_fg(Some(Color::White));
+    clr.set_bg(Some(Color::Black));
+    let _ = stdout.set_color(&clr);
+}
+
+fn print_calendar_body(
+    stdout: &mut StandardStream,
+    today: NaiveDate,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    counter: &HashMap<NaiveDate, u32>,
+    conf: &conf::Conf,
+) {
+    let is_first = (start_date.weekday() == Weekday::Sun && conf.first_sunday)
+        || (start_date.weekday() == Weekday::Mon && !conf.first_sunday);
+    let mut from_date = if is_first {
+        start_date
+    } else if conf.first_sunday {
+        prev_weekday(start_date, Weekday::Sun)
+    } else {
+        prev_weekday(start_date, Weekday::Mon)
+    };
+    while from_date <= end_date {
+        if from_date < start_date {
+            print!("   ");
+            from_date = from_date.succ();
+            continue;
+        }
+        let bg = if from_date == today { Color::Blue } else { Color::Black };
+        let fg = match counter.get(&from_date) {
+            None => Color::White,
+            Some(n) => {
+                if n > &1 {
+                    Color::Red
+                } else {
+                    Color::Magenta
+                }
+            }
+        };
+        let st = format!(" {:>2}", from_date.day());
+        let mut clr = ColorSpec::new();
+        clr.set_fg(Some(fg));
+        clr.set_bg(Some(bg));
+        let _ = stdout.set_color(&clr);
+        let _ = stdout.write(st.as_bytes());
+        let wd = from_date.weekday();
+        if (wd == Weekday::Sun && !conf.first_sunday) || (wd == Weekday::Sat && conf.first_sunday) {
+            reset_colors(stdout);
+            let _ = stdout.write(b"\n");
+        }
+        from_date = from_date.succ();
+    }
+    reset_colors(stdout);
+    let _ = stdout.write(b"\n");
+}
+
+fn task_list_calendar(tasks: &todo::TaskSlice, conf: &conf::Conf) {
+    let todos = filter_tasks(tasks, conf);
+    let now = chrono::Local::now().date().naive_local();
+    let rng = conf.calendar.expect("calendar range must be set");
+    let start_date = calendar_first_day(now, &rng, conf.first_sunday);
+    let end_date = calendar_last_day(now, &rng, conf.first_sunday);
+    let counter = fill_calendar(start_date, end_date, tasks, &todos);
+
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    print_calendar_header(&mut stdout, conf);
+    print_calendar_body(&mut stdout, now, start_date, end_date, &counter, conf);
+    print!("");
 }
 
 fn task_done(tasks: &mut todo::TaskVec, conf: &conf::Conf) {
@@ -529,7 +633,13 @@ fn main() {
 
     match conf.mode {
         conf::RunMode::Add => task_add(&mut tasks, &conf),
-        conf::RunMode::List => task_list(&tasks, &conf),
+        conf::RunMode::List => {
+            if conf.calendar.is_none() {
+                task_list(&tasks, &conf);
+            } else {
+                task_list_calendar(&tasks, &conf);
+            }
+        }
         conf::RunMode::Done => task_done(&mut tasks, &conf),
         conf::RunMode::Undone => task_undone(&mut tasks, &conf),
         conf::RunMode::Remove => task_remove(&mut tasks, &conf),

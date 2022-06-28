@@ -63,6 +63,8 @@ pub struct Conf {
     pub fmt: fmt::Conf,
     pub flt: tfilter::Conf,
     pub sort: tsort::Conf,
+
+    pub calendar: Option<human_date::CalendarRange>,
 }
 
 impl Default for Conf {
@@ -83,6 +85,7 @@ impl Default for Conf {
             todo: Default::default(),
             flt: Default::default(),
             sort: Default::default(),
+            calendar: None,
         }
     }
 }
@@ -133,6 +136,10 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl l --created=-3d..` - show active todos that are created 3 days ago or earlier(3 days old and younger)
         `ttdl l --due=..2d..` - show active todos that are either overdue or their due date within 2 days from the current date
         `ttdl l -a +myproj @ui @rest` - show both incomplete and done todos related to project 'myproj' which contains either 'ui' or 'rest' context
+        `ttdl l --calendar=m` - show calendar for this month and mark dates that have one or more due todos
+        `ttdl l --calendar=2w` - show calendar for this and next week and mark dates that have one or more due todos
+        `ttdl l --calendar=+1m` - show calendar for 30 days(one month) starting with today
+        `ttdl l --calendar=+-10d` - show calendar for 10 days in the past(one month) ending with today
     add | a - add a new todo
         `ttdl a "send tax declaration +personal @finance @tax due:2018-04-01 rec:1y"` - add a new recurrent todo(yearly todo) with a due date first of April every year
     done | d - mark regular incomplete todos completed, pushes due date for recurrent todos to their next date
@@ -927,6 +934,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     opts.optopt("", "done-file", "Path to file with archived todos (if it is directory 'done.txt' is added automatically, if it contains only file name then the directory is the same as for todo.txt) ", "DONE FILE PATH");
     opts.optflag("", "strict", "Enable strict mode");
     opts.optflag("", "hidden", "Include hidden tasks");
+    opts.optopt(
+        "",
+        "calendar",
+        "Display a calendar with dates highlighted if any todo is due on that date(foreground color). Today is highlighted with background color, Default values for `NUMBER` is `1` and for `TYPE` is `d`(days). Valid values for type are `d`(days), `w`(weeks), and `m`(months). Pepending plus sign shows the selected interval starting from today, not from Monday or first day of the month",
+        "[+][NUMBER][TYPE]",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -964,6 +977,10 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     if matches.opt_present("strict") {
         conf.strict_mode = true;
     }
+    if let Some(dstr) = matches.opt_str("calendar") {
+        let rng = human_date::CalendarRange::parse(&dstr)?;
+        conf.calendar = Some(rng);
+    }
 
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
@@ -992,7 +1009,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     }
 
     // second should be a range
-    if matches.free[idx].find(|c: char| !c.is_digit(10)).is_none() {
+    if matches.free[idx].find(|c: char| !c.is_ascii_digit()).is_none() {
         // a single ID
         if let Ok(id) = matches.free[idx].parse::<usize>() {
             conf.flt.range = tfilter::ItemRange::One(id - 1);
@@ -1005,7 +1022,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             conf.flt.range = tfilter::ItemRange::Range(ends.l, ends.r);
             idx += 1;
         }
-    } else if matches.free[idx].find(|c: char| !c.is_digit(10) && c != ',' && c != '-' && c != ':').is_none() {
+    } else if matches.free[idx].find(|c: char| !c.is_ascii_digit() && c != ',' && c != '-' && c != ':').is_none() {
         // a list, possibly list of ranges
         let mut v: Vec<usize> = Vec::new();
         for s in matches.free[idx].split(',') {
@@ -1096,7 +1113,7 @@ fn parse_id_range(s: &str) -> Result<RangeEnds, terr::TodoError> {
 }
 
 fn is_id_range(s: &str) -> bool {
-    if s.find(|c: char| !c.is_digit(10) && c != '-' && c != ':').is_some() {
+    if s.find(|c: char| !c.is_ascii_digit() && c != '-' && c != ':').is_some() {
         return false;
     }
     s.contains(|c: char| c == '-' || c == ':')

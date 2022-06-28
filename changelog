@@ -1,3 +1,11 @@
+ttdl (3.3.0) unstable; urgency=medium
+
+  * New task view mode `--calendar=<range>` where `range` is a single value
+    which denotes how long the calendar is. The value uses the same syntax as
+    todo value `recurrent` with some extra contractions.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 08 Jul 2022 19:28:27 -0700
+
 ttdl (3.2.0) unstable; urgency=medium
 
   * Upgrade 'todo_lib' to version '5.0'

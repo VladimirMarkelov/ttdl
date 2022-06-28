@@ -627,6 +627,7 @@ fn is_common_special_tag(tag: &str) -> bool {
     tag == "due" || tag == "thr" || tag == "rec"
 }
 
+#[allow(clippy::format_push_string)]
 fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json::JsonValue)> {
     let arg = customize(task, c)?;
     let mut res = if let Some(s) = arg[JSON_DESC].as_str() { s.to_string() } else { task.subject.clone() };
@@ -652,6 +653,7 @@ fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json:
     Some((res, arg))
 }
 
+#[allow(clippy::format_push_string)]
 fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     let mut plugin_bin = plugin.to_string();
     if !c.script_prefix.is_empty() {

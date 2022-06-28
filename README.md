@@ -12,6 +12,7 @@
     - [Archive](#archive)
       - [How to show archived todos](#how-to-show-archived-todos)
     - [Supported commands](#supported-commands)
+      - [Calendar](#calendar)
     - [Tags](#tags)
     - [Time tracking](#time-tracking)
     - [Statistics](#statistics)
@@ -357,6 +358,57 @@ Most of the commands can be abbreviated. Please refer to built-in TTDL help to g
 All commands(except `listcontexts` and `listprojects`) skip hidden tasks by default. To include hidden tasks, use `--hidden` option. See section [tags](#tags) for details.
 
 NOTE: `done` moves a recurrent todo's due date to the next one, but it does not check if the new due date is in the future (it is by design). So, if a monthly task is 2 months overdue, you have to execute `ttdl done ID` two times to push it to the incoming month or manually set a new due date with the command `ttdl edit ID --set-due=YYYY-MM-DD`.
+
+#### Calendar
+
+By default, the list of todos is displayed as a table.
+Command-line switch `--calendar=<range>` allows you to peek what is on your plate in a convenient way.
+The displayed calendar always includes today's date.
+The `range` is a single value, like `recurrence`, denotes how far in the future or or in the past (negative value) the first or the last date of the range.
+The calendar displays only dates on which you have something due, i.e, the calendar filters only todos that has `due` tag.
+The full `range` form is `number + range type`, e.g. `2w` - show this and the next week.
+The range can be negative. In this case, TTDL displays the past weeks.
+E.g, `--calendar=-2w` prints out the current and the previous week.
+
+Note: when printing by full weeks and months, numbers `1`, `-1`, and `0` works the same and always shows only the current week or month.
+So, `--calendar=1w` and `--calendar=-1w` both display the current week.
+
+Supported range types:
+
+- `d` - days
+- `w` - weeks
+- `m` - months
+
+Also you can use some short-cuts:
+
+- if you do not specify a number, it is defaulted to `1`. E.g, `--calendar=m` and `--calendar=1m` is the same
+- if you omit range type, it defaults to `d`. E.g, `--calendar=10` means `--calendar=10d`.
+
+In `w` and `m` modes the displayed interval always starts from the first weekday of a week or from the first date of a month,
+and ends with the last day of a week or a month respectively.
+E.g, if today is `2022-07-10` and you request `--calendar=1m`, TTDL outputs the calendar for the entire July: from `2022-07-01` to `2022-07-31`.
+If you want to display exactly one months starting from today, mark the range strict by prepending `+`: `--calendar=+1m` for today's date `2022-07-10` prints the calendar from `2022-07-10` to `2022-08-09`.
+
+Note: in strict mode `--calendar=1w` and `--calendar=-1w` are not equivalent.
+The former displays 7 days *starting* with today.
+The latter prints out 7 days *ending* with today.
+
+Color legend:
+
+- regular Black and White colors - "empty" day when you do not have any todo due
+- Blue background - today's date
+- Magenta foreground - on this day you have one todo due
+- Red foreground - this day has more than one due todo
+
+Example:
+
+<img src="./images/todo-calendar.png" alt="Calendar example output">
+
+In the picture:
+
+- Today's date is 7th
+- There is one todo is due on 20th
+- There are more than one todo due on 6th
 
 ### Tags
 
