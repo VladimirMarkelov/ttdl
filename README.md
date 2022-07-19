@@ -226,7 +226,7 @@ To exclude todos containing certain project or context, prepend `-`(minus sign) 
 Besides using `+` and `@` to indicate project and context titles, the application supports classic CLI options to set the list of values for a filter:
 
 - `--project` - filter by project title
-- `--contex` - filter by context name
+- `--context` - filter by context name
 - `--tag` - filter by tag name
 
 All options accepts a comma-separated list of names (and/or patterns). If any option value matches any record value, the record is displayed.
