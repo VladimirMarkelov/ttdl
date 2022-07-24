@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "3.3.0"
+version = "3.4.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2018"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 lto = true
 
 [dependencies]
-todo_lib = "5.0"
+todo_lib = "5"
 getopts = "0.2"
 chrono = "^0.4"
 textwrap = "0.11"
