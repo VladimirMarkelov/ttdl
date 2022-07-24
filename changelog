@@ -1,3 +1,10 @@
+ttdl (3.4.0) unstable; urgency=medium
+
+  * Fix `set-rec` command: it modified todo's recurrent date only if the todo
+    was marked as a done one
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 24 Jul 2022 11:13:25 -0700
+
 ttdl (3.3.0) unstable; urgency=medium
 
   * New task view mode `--calendar=<range>` where `range` is a single value
