@@ -3,6 +3,7 @@
 - [TTDL (Terminal ToDo List)](#ttdl-terminal-todo-list)
   - [Installation](#installation)
     - [Precompiled binaries](#precompiled-binaries)
+    - [Homebrew](#homebrew)
   - [Known issues](#known-issues)
   - [Configuration](#configuration)
     - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
@@ -61,6 +62,14 @@ For Windows and Ubuntu you can download precompiled binaries from [Release page]
 
 - Windows binary works on Windows 7 or newer Windows.
 - Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
+
+### Homebrew
+
+For macOS and Linux you can install TTDL using [Homebrew](https://brew.sh/):
+
+```shell
+brew install ttdl
+```
 
 ## Known issues
 
