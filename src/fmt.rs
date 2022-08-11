@@ -1,10 +1,10 @@
 use std::cmp::Ordering;
-use std::io::Write;
+use std::io::{self, Write};
 use std::process::{Command, Stdio};
 
 use caseless::default_caseless_match_str;
 use chrono::{Duration, Local, NaiveDate};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
@@ -227,8 +227,8 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
     (before, c.width as usize - before)
 }
 
-fn print_header_line(c: &Conf, fields: &[&str], widths: &[usize]) {
-    print!("{:>wid$} ", "#", wid = field_width_cached("id", widths));
+fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], widths: &[usize]) -> io::Result<()> {
+    write!(stdout, "{:>wid$} ", "#", wid = field_width_cached("id", widths))?;
 
     for f in FIELDS.iter() {
         let mut found = false;
@@ -242,27 +242,27 @@ fn print_header_line(c: &Conf, fields: &[&str], widths: &[usize]) {
         if found {
             let width = field_width_cached(*f, widths);
             match *f {
-                "done" => print!("D "),
-                "pri" => print!("P "),
-                "created" => print!("{:wid$} ", "Created", wid = width),
-                "finished" => print!("{:wid$} ", "Finished", wid = width),
-                "due" => print!("{:wid$} ", "Due", wid = width),
+                "done" => write!(stdout, "D ")?,
+                "pri" => write!(stdout, "P ")?,
+                "created" => write!(stdout, "{:wid$} ", "Created", wid = width)?,
+                "finished" => write!(stdout, "{:wid$} ", "Finished", wid = width)?,
+                "due" => write!(stdout, "{:wid$} ", "Due", wid = width)?,
                 "thr" => {
                     if c.is_human(*f) && c.compact {
-                        print!("{:wid$} ", "Thr", wid = width);
+                        write!(stdout, "{:wid$} ", "Thr", wid = width)?;
                     } else {
-                        print!("{:wid$} ", "Threshold", wid = width);
+                        write!(stdout, "{:wid$} ", "Threshold", wid = width)?;
                     }
                 }
-                "spent" => print!("{:wid$} ", "Spent", wid = SPENT_WIDTH),
-                "uid" => print!("{:wid$}", "UID", wid = width + 1),
-                "parent" => print!("{:wid$}", "Parent", wid = width + 1),
+                "spent" => write!(stdout, "{:wid$} ", "Spent", wid = SPENT_WIDTH)?,
+                "uid" => write!(stdout, "{:wid$}", "UID", wid = width + 1)?,
+                "parent" => write!(stdout, "{:wid$}", "Parent", wid = width + 1)?,
                 _ => {}
             }
         }
     }
 
-    println!("Subject");
+    writeln!(stdout, "Subject")
 }
 
 fn color_for_priority(task: &todotxt::Task, c: &Conf) -> ColorSpec {
@@ -813,10 +813,10 @@ fn header_len(c: &Conf, flist: &[&str], widths: &[usize]) -> usize {
     other + "Subject".len() + 1
 }
 
-pub fn print_header(c: &Conf, widths: &[usize]) {
+pub fn print_header(stdout: &mut StandardStream, c: &Conf, widths: &[usize]) -> io::Result<()> {
     let flist = field_list(c);
-    print_header_line(c, &flist, widths);
-    println!("{}", "-".repeat(header_len(c, &flist, widths)));
+    print_header_line(stdout, c, &flist, widths)?;
+    writeln!(stdout, "{}", "-".repeat(header_len(c, &flist, widths)))
 }
 
 fn print_body_selected(
@@ -855,21 +855,22 @@ fn print_body_all(
 }
 
 pub fn print_footer(
+    stdout: &mut StandardStream,
     tasks: &todo::TaskSlice,
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
     c: &Conf,
     widths: &[usize],
-) {
+) -> io::Result<()> {
     let flist = field_list(c);
-    println!("{}", "-".repeat(header_len(c, &flist, widths)));
+    writeln!(stdout, "{}", "-".repeat(header_len(c, &flist, widths)))?;
 
     if updated.is_empty() && !selected.is_empty() {
-        println!("{} todos (of {} total)", selected.len(), c.max);
+        writeln!(stdout, "{} todos (of {} total)", selected.len(), c.max)
     } else if tasks.len() != updated.len() {
-        println!("{} todos (of {} total)", updated.len(), c.max);
+        writeln!(stdout, "{} todos (of {} total)", updated.len(), c.max)
     } else {
-        println!("{} todos", updated.len());
+        writeln!(stdout, "{} todos", updated.len())
     }
 }
 
