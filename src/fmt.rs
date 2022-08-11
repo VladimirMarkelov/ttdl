@@ -874,6 +874,7 @@ pub fn print_footer(
 }
 
 pub fn print_todos(
+    stdout: &mut StandardStream,
     tasks: &todo::TaskSlice,
     select: &todo::IDSlice,
     updated: &todo::ChangedSlice,
@@ -881,20 +882,14 @@ pub fn print_todos(
     widths: &[usize],
     all: bool,
 ) {
-    let mut stdout = match c.color_term {
-        TermColorType::Ansi => StandardStream::stdout(ColorChoice::AlwaysAnsi),
-        TermColorType::Auto => StandardStream::stdout(ColorChoice::Always),
-        TermColorType::None => StandardStream::stdout(ColorChoice::Never),
-    };
-
     if tasks.is_empty() || select.is_empty() {
         return;
     }
 
     if all {
-        print_body_all(&mut stdout, tasks, select, updated, c, widths);
+        print_body_all(stdout, tasks, select, updated, c, widths);
     } else {
-        print_body_selected(&mut stdout, tasks, select, updated, c, widths);
+        print_body_selected(stdout, tasks, select, updated, c, widths);
     }
 }
 

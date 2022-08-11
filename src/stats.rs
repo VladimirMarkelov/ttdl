@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 use crate::fmt;
 use caseless::default_caseless_match_str;
+use termcolor::{StandardStream};
 use todo_lib::*;
 
 const TOTAL: &str = "";
@@ -9,7 +10,7 @@ const PRJ_WIDTH: usize = 15;
 const CTX_WIDTH: usize = 10;
 const NUM_WIDTH: usize = 10;
 
-pub fn show_stats(tasks: &todo::TaskSlice, conf: &fmt::Conf) {
+pub fn show_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &fmt::Conf) {
     show_short_stats(tasks);
     if conf.fmt != fmt::Format::Short {
         println!();
