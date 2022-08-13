@@ -1,7 +1,9 @@
 use std::cmp::Ordering;
+use std::io::{self, Write};
 
 use crate::fmt;
 use caseless::default_caseless_match_str;
+use termcolor::StandardStream;
 use todo_lib::*;
 
 const TOTAL: &str = "";
@@ -9,15 +11,16 @@ const PRJ_WIDTH: usize = 15;
 const CTX_WIDTH: usize = 10;
 const NUM_WIDTH: usize = 10;
 
-pub fn show_stats(tasks: &todo::TaskSlice, conf: &fmt::Conf) {
-    show_short_stats(tasks);
+pub fn show_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &fmt::Conf) -> io::Result<()> {
+    show_short_stats(stdout, tasks)?;
     if conf.fmt != fmt::Format::Short {
-        println!();
-        show_full_stats(tasks);
+        writeln!(stdout)?;
+        show_full_stats(stdout, tasks)?;
     }
+    Ok(())
 }
 
-fn show_short_stats(tasks: &todo::TaskSlice) {
+fn show_short_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::Result<()> {
     let mut overdue: usize = 0;
     let mut threshold: usize = 0;
     let mut recurrent: usize = 0;
@@ -45,19 +48,20 @@ fn show_short_stats(tasks: &todo::TaskSlice) {
 
     let width = 19;
     let length = tasks.len();
-    println!("{:wid$}{:4}", "Total todos:", length, wid = width);
+    writeln!(stdout, "{:wid$}{:4}", "Total todos:", length, wid = width)?;
     if done > 0 {
-        println!("{:wid$}{:>4} ({}%)", "Done:", done, done * 100 / length, wid = width);
+        writeln!(stdout, "{:wid$}{:>4} ({}%)", "Done:", done, done * 100 / length, wid = width)?;
     }
     if threshold > 0 {
-        println!("{:wid$}{:4} ({}%)", "Missed threshold:", threshold, threshold * 100 / length, wid = width);
+        writeln!(stdout, "{:wid$}{:4} ({}%)", "Missed threshold:", threshold, threshold * 100 / length, wid = width)?;
     }
     if overdue > 0 {
-        println!("{:wid$}{:4} ({}%)", "Overdue:", overdue, overdue * 100 / length, wid = width);
+        writeln!(stdout, "{:wid$}{:4} ({}%)", "Overdue:", overdue, overdue * 100 / length, wid = width)?;
     }
     if recurrent > 0 {
-        println!("{:wid$}{:4}", "Recurrent:", recurrent, wid = width);
+        writeln!(stdout, "{:wid$}{:4}", "Recurrent:", recurrent, wid = width)?;
     }
+    Ok(())
 }
 
 struct Stat {
@@ -124,7 +128,7 @@ impl Stats {
     }
 }
 
-fn show_full_stats(tasks: &todo::TaskSlice) {
+fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::Result<()> {
     let mut st = Stats { stats: Vec::new() };
 
     for t in tasks.iter() {
@@ -157,14 +161,14 @@ fn show_full_stats(tasks: &todo::TaskSlice) {
         cw = CTX_WIDTH,
         nw = NUM_WIDTH
     );
-    println!("{}", header);
+    writeln!(stdout, "{}", header)?;
     let sep = "-".repeat(header.len());
 
     for s in st.stats.iter() {
         let prj = if s.prj == last_prj {
             String::new()
         } else {
-            println!("{}", sep);
+            writeln!(stdout, "{}", sep)?;
             last_prj = s.prj.clone();
             proj_total = s.total;
             if s.prj.len() > PRJ_WIDTH {
@@ -173,26 +177,27 @@ fn show_full_stats(tasks: &todo::TaskSlice) {
                 s.prj.clone()
             }
         };
-        print!("{:w$} ", prj, w = PRJ_WIDTH);
+        write!(stdout, "{:w$} ", prj, w = PRJ_WIDTH)?;
 
         let ctx = if s.ctx.len() > CTX_WIDTH { format!("{:.w$}", s.ctx, w = CTX_WIDTH) } else { s.ctx.clone() };
-        print!("{:w$} ", ctx, w = CTX_WIDTH);
+        write!(stdout, "{:w$} ", ctx, w = CTX_WIDTH)?;
 
         let div_by = if s.ctx.is_empty() { length } else { proj_total };
         let sn = format!("{}({:>3}%)", s.total, s.total * 100 / div_by);
-        print!("{:>w$} ", &sn, w = NUM_WIDTH);
+        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
 
         let sn = if s.done == 0 { String::new() } else { format!("{}({:>3}%)", s.done, s.done * 100 / s.total) };
-        print!("{:>w$} ", &sn, w = NUM_WIDTH);
+        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
 
         let sn =
             if s.overdue == 0 { String::new() } else { format!("{}({:>3}%)", s.overdue, s.overdue * 100 / s.total) };
-        print!("{:>w$} ", &sn, w = NUM_WIDTH);
+        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
 
         if s.spent.num_seconds() == 0 {
-            println!();
+            writeln!(stdout)?;
         } else {
-            println!("{}", &fmt::duration_str(s.spent));
+            writeln!(stdout, "{}", &fmt::duration_str(s.spent))?;
         }
     }
+    Ok(())
 }
