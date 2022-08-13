@@ -9,7 +9,7 @@ const FAR_PAST: i64 = -100 * 365; // far in the past
 
 type HumanResult = Result<NaiveDate, String>;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum CalendarRangeType {
     Days(i8),
     Weeks(i8),

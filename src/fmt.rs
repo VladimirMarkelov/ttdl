@@ -22,13 +22,13 @@ lazy_static! {
         ["id", "done", "pri", "created", "finished", "due", "thr", "spent", "uid", "parent"];
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Format {
     Full,
     Short,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LongLine {
     Simple,
     WordWrap,
@@ -103,7 +103,7 @@ impl Default for Colors {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TermColorType {
     None,
     Auto,
