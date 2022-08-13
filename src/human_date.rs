@@ -15,7 +15,7 @@ pub enum CalendarRangeType {
     Weeks(i8),
     Months(i8),
 }
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct CalendarRange {
     pub(crate) strict: bool,
     pub(crate) rng: CalendarRangeType,
