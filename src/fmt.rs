@@ -224,7 +224,11 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
         }
     }
 
-    (before, c.width as usize - before)
+    if c.long == LongLine::Simple {
+        (before, 1000)
+    } else {
+        (before, c.width as usize - before)
+    }
 }
 
 fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], widths: &[usize]) -> io::Result<()> {
