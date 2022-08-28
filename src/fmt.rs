@@ -355,14 +355,9 @@ fn color_for_threshold_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorS
     spc
 }
 
-fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) {
-    if let Err(e) = stdout.set_color(color) {
-        eprintln!("Failed to set color: {:?}", e);
-        return;
-    }
-    if let Err(e) = write!(stdout, "{}", msg) {
-        eprintln!("Failed to print to stdout: {:?}", e);
-    }
+fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) -> io::Result<()> {
+    stdout.set_color(color)?;
+    write!(stdout, "{}", msg)
 }
 
 fn done_str(task: &todotxt::Task) -> String {
@@ -432,7 +427,7 @@ fn print_done_val(
     task: &todotxt::Task,
     arg: &json::JsonValue,
     def_color: &termcolor::ColorSpec,
-) {
+) -> io::Result<()> {
     let mut s = done_str(task);
     if !arg.is_empty() {
         let tags = &arg[JSON_OPT];
@@ -440,10 +435,15 @@ fn print_done_val(
             s = format!("{:wid$.wid$}", v, wid = 2);
         }
     };
-    print_with_color(stdout, &s, def_color);
+    print_with_color(stdout, &s, def_color)
 }
 
-fn print_priority_val(stdout: &mut StandardStream, task: &todotxt::Task, arg: &json::JsonValue, c: &Conf) {
+fn print_priority_val(
+    stdout: &mut StandardStream,
+    task: &todotxt::Task,
+    arg: &json::JsonValue,
+    c: &Conf,
+) -> io::Result<()> {
     let mut s = priority_str(task);
     if !arg.is_empty() {
         let tags = &arg[JSON_OPT];
@@ -451,7 +451,7 @@ fn print_priority_val(stdout: &mut StandardStream, task: &todotxt::Task, arg: &j
             s = format!("{:wid$.wid$}", v, wid = 2);
         }
     }
-    print_with_color(stdout, &s, &color_for_priority(task, c));
+    print_with_color(stdout, &s, &color_for_priority(task, c))
 }
 
 fn print_date_val(
@@ -462,7 +462,7 @@ fn print_date_val(
     dt: Option<&chrono::NaiveDate>,
     def_color: termcolor::ColorSpec,
     widths: &[usize],
-) {
+) -> io::Result<()> {
     let width = field_width_cached(field, widths);
     let mut st = if let Some(d) = dt {
         if c.is_human(field) {
@@ -480,7 +480,7 @@ fn print_date_val(
             st = format!("{:wid$.wid$} ", v, wid = width);
         }
     }
-    print_with_color(stdout, &st, &def_color);
+    print_with_color(stdout, &st, &def_color)
 }
 
 fn print_line(
@@ -490,7 +490,7 @@ fn print_line(
     c: &Conf,
     fields: &[&str],
     widths: &[usize],
-) {
+) -> io::Result<()> {
     let id_width = field_width_cached("id", widths);
     let fg = if task.finished { c.colors.done.clone() } else { default_color() };
 
@@ -500,7 +500,7 @@ fn print_line(
         desc = task.subject.clone();
     }
 
-    print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg);
+    print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg)?;
 
     for f in FIELDS.iter() {
         let mut found = false;
@@ -517,20 +517,20 @@ fn print_line(
 
         match *f {
             "done" => {
-                print_done_val(stdout, task, &arg, &fg);
+                print_done_val(stdout, task, &arg, &fg)?;
             }
             "pri" => {
-                print_priority_val(stdout, task, &arg, c);
+                print_priority_val(stdout, task, &arg, c)?;
             }
             "created" => {
                 let clr = color_for_creation_date(task, c);
                 let dt = task.create_date.as_ref();
-                print_date_val(stdout, &arg, c, "created", dt, clr, widths);
+                print_date_val(stdout, &arg, c, "created", dt, clr, widths)?;
             }
             "finished" => {
                 let dt = task.finish_date.as_ref();
                 let clr = fg.clone();
-                print_date_val(stdout, &arg, c, "finished", dt, clr, widths);
+                print_date_val(stdout, &arg, c, "finished", dt, clr, widths)?;
             }
             "due" => {
                 let dt = task.due_date.as_ref();
@@ -539,7 +539,7 @@ fn print_line(
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_due_date(task, days, c);
                 }
-                print_date_val(stdout, &arg, c, "due", dt, clr, widths);
+                print_date_val(stdout, &arg, c, "due", dt, clr, widths)?;
             }
             "thr" => {
                 let dt = task.threshold_date.as_ref();
@@ -548,21 +548,21 @@ fn print_line(
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_threshold_date(task, days, c);
                 }
-                print_date_val(stdout, &arg, c, "thr", dt, clr, widths);
+                print_date_val(stdout, &arg, c, "thr", dt, clr, widths)?;
             }
             "spent" => {
                 print_with_color(
                     stdout,
                     &format!("{:wid$} ", &duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
                     &fg,
-                );
+                )?;
             }
             "uid" | "parent" => {
                 let width = field_width_cached(*f, widths);
                 let name = if *f == "uid" { "id" } else { *f };
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
-                print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg);
+                print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
             }
             _ => {}
         }
@@ -572,21 +572,19 @@ fn print_line(
         let (skip, subj_w) = calc_width(c, fields, widths);
         let lines = textwrap::wrap(&desc, subj_w);
         if c.long == LongLine::Cut || lines.len() == 1 {
-            print_with_color(stdout, &format!("{}\n", lines[0]), &fg);
+            print_with_color(stdout, &format!("{}\n", lines[0]), &fg)?;
         } else {
             for (i, line) in lines.iter().enumerate() {
                 if i != 0 {
-                    print_with_color(stdout, &format!("{:width$}", " ", width = skip), &fg);
+                    print_with_color(stdout, &format!("{:width$}", " ", width = skip), &fg)?;
                 }
-                print_with_color(stdout, &format!("{}\n", &line), &fg);
+                print_with_color(stdout, &format!("{}\n", &line), &fg)?;
             }
         }
     } else {
-        print_with_color(stdout, &format!("{}\n", &desc), &fg);
+        print_with_color(stdout, &format!("{}\n", &desc), &fg)?;
     }
-    if let Err(e) = stdout.set_color(&default_color()) {
-        eprintln!("Failed to set color: {:?}", e);
-    }
+    stdout.set_color(&default_color())
 }
 
 fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {
@@ -830,15 +828,16 @@ fn print_body_selected(
     updated: &todo::ChangedSlice,
     c: &Conf,
     widths: &[usize],
-) {
+) -> io::Result<()> {
     let flist = field_list(c);
     for (i, id) in selected.iter().enumerate() {
         let print = updated.is_empty() || (i < updated.len() && updated[i]);
         let print = print && (*id < tasks.len());
         if print {
-            print_line(stdout, &tasks[*id], *id + 1, c, &flist, widths);
+            print_line(stdout, &tasks[*id], *id + 1, c, &flist, widths)?;
         }
     }
+    Ok(())
 }
 
 fn print_body_all(
@@ -848,14 +847,15 @@ fn print_body_all(
     updated: &todo::ChangedSlice,
     c: &Conf,
     widths: &[usize],
-) {
+) -> io::Result<()> {
     let flist = field_list(c);
     for (i, t) in tasks.iter().enumerate() {
         let (id, print) = if i < selected.len() { (selected[i], updated[i]) } else { (0, false) };
         if print {
-            print_line(stdout, t, id + 1, c, &flist, widths);
+            print_line(stdout, t, id + 1, c, &flist, widths)?;
         }
     }
+    Ok(())
 }
 
 pub fn print_footer(
@@ -886,15 +886,15 @@ pub fn print_todos(
     c: &Conf,
     widths: &[usize],
     all: bool,
-) {
+) -> io::Result<()> {
     if tasks.is_empty() || select.is_empty() {
-        return;
+        return Ok(());
     }
 
     if all {
-        print_body_all(stdout, tasks, select, updated, c, widths);
+        print_body_all(stdout, tasks, select, updated, c, widths)
     } else {
-        print_body_selected(stdout, tasks, select, updated, c, widths);
+        print_body_selected(stdout, tasks, select, updated, c, widths)
     }
 }
 
