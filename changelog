@@ -1,3 +1,12 @@
+ttdl (3.4.3) unstable; urgency=medium
+
+  * On completing a recurrent todo copied creation date from an original todo.
+    Now the creation date of the new todo is set to today's date
+  * Command-line option '--all' now shows todos with a threshold date set in
+    the future
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 30 Aug 2022 15:38:35 -0700
+
 ttdl (3.4.2) unstable; urgency=medium
 
   * Fix the remaining error output on "Broken Pipe" (issue #59)
