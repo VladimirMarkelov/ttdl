@@ -1,3 +1,11 @@
+ttdl (3.4.5) unstable; urgency=medium
+
+  * Fixed: `postpone` did not change due date. Only `--dry-run` worked as
+    expected
+  * Upgrade dependencies
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 14 Oct 2022 21:09:18 -0700
+
 ttdl (3.4.3) unstable; urgency=medium
 
   * On completing a recurrent todo copied creation date from an original todo.

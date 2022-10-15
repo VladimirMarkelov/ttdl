@@ -542,7 +542,9 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             if *idx >= tasks.len() || tasks[*idx].finished {
                 updated.push(false);
             } else if let Some(dt) = tasks[*idx].due_date {
-                tasks[*idx].due_date = Some(rec.next_date(dt));
+                let new_due = rec.next_date(dt);
+                tasks[*idx].update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                tasks[*idx].due_date = Some(new_due);
                 updated.push(true);
             } else {
                 updated.push(false);
