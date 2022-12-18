@@ -97,8 +97,8 @@ impl Stats {
                 prj: prj.to_lowercase(),
                 ctx: ctx.to_lowercase(),
                 total: 1,
-                done: if done { 1 } else { 0 },
-                overdue: if overdue { 1 } else { 0 },
+                done: usize::from(done),
+                overdue: usize::from(overdue),
                 spent,
             };
             self.stats.push(s);

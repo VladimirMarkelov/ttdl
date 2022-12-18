@@ -220,7 +220,7 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
         }
 
         if found {
-            before += field_width_cached(*f, widths) + 1;
+            before += field_width_cached(f, widths) + 1;
         }
     }
 
@@ -244,7 +244,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], wid
         }
 
         if found {
-            let width = field_width_cached(*f, widths);
+            let width = field_width_cached(f, widths);
             match *f {
                 "done" => write!(stdout, "D ")?,
                 "pri" => write!(stdout, "P ")?,
@@ -252,7 +252,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], wid
                 "finished" => write!(stdout, "{:wid$} ", "Finished", wid = width)?,
                 "due" => write!(stdout, "{:wid$} ", "Due", wid = width)?,
                 "thr" => {
-                    if c.is_human(*f) && c.compact {
+                    if c.is_human(f) && c.compact {
                         write!(stdout, "{:wid$} ", "Thr", wid = width)?;
                     } else {
                         write!(stdout, "{:wid$} ", "Threshold", wid = width)?;
@@ -558,7 +558,7 @@ fn print_line(
                 )?;
             }
             "uid" | "parent" => {
-                let width = field_width_cached(*f, widths);
+                let width = field_width_cached(f, widths);
                 let name = if *f == "uid" { "id" } else { *f };
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
@@ -939,7 +939,7 @@ pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice)
 
 fn field_width_cached(field: &str, cached: &[usize]) -> usize {
     for (f, w) in FIELDS.iter().zip(cached.iter()) {
-        if default_caseless_match_str(*f, field) {
+        if default_caseless_match_str(f, field) {
             return *w;
         }
     }

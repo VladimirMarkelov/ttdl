@@ -125,9 +125,9 @@ fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
         if d == mxd || new_mxd < d {
             d = new_mxd
         }
-        NaiveDate::from_ymd(y as i32, m as u32, d as u32)
+        NaiveDate::from_ymd(y, m, d)
     } else {
-        NaiveDate::from_ymd(y as i32, m as u32, new_mxd as u32)
+        NaiveDate::from_ymd(y, m, new_mxd)
     }
 }
 
@@ -166,9 +166,9 @@ fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
                                 if new_mxd < d || d == mxd {
                                     d = new_mxd;
                                 }
-                                dt = NaiveDate::from_ymd(y as i32, m as u32, d as u32);
+                                dt = NaiveDate::from_ymd(y, m, d);
                             } else {
-                                dt = NaiveDate::from_ymd(y as i32, m as u32, new_mxd as u32);
+                                dt = NaiveDate::from_ymd(y, m, new_mxd);
                             }
                         }
                         _ => {}
@@ -475,7 +475,7 @@ pub(crate) fn human_to_range_with_none(
     human: &str,
     soon_days: u8,
 ) -> Result<tfilter::DateRange, terr::TodoError> {
-    let parts: Vec<&str> = if human.find(':') == None {
+    let parts: Vec<&str> = if human.find(':').is_none() {
         human.split("..").filter(|s| !s.is_empty()).collect()
     } else {
         human.split(':').filter(|s| !s.is_empty()).collect()
@@ -505,7 +505,7 @@ pub(crate) fn human_to_range_with_none(
 }
 
 pub(crate) fn is_range(human: &str) -> bool {
-    human.find("..") != None || human.find(':') != None
+    human.contains("..") || human.contains(':')
 }
 
 fn range_error(msg: &str) -> terr::TodoError {
@@ -517,7 +517,7 @@ pub(crate) fn human_to_range(
     human: &str,
     soon_days: u8,
 ) -> Result<tfilter::DateRange, terr::TodoError> {
-    let parts: Vec<&str> = if human.find(':') == None {
+    let parts: Vec<&str> = if human.find(':').is_none() {
         human.split("..").filter(|s| !s.is_empty()).collect()
     } else {
         human.split(':').filter(|s| !s.is_empty()).collect()
