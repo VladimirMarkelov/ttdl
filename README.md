@@ -139,7 +139,7 @@ Options can be at any position. ID range and subject are optional but if you are
 
 If a non-option starts with `+` or `@`, the option is considered as a filter by project or context respectively. Command line can contain as many projects and contexts as needed. In this case, all items of the same group are combined with OR. Example: if you execute `ttdl list +myproj +demo @docs`, it displays all todos that belongs to either `myproj` or `demo`, and have `docs` context.
 
-If the first non-option word contains only digits and dash character, it is treated as a single ID(only digits) or ID range(digits with a dash) or ID list(numbers separated with comma). ID is 1-based: a number between 1 and the number of todos in the entire list. It is OK to use ID out of that range: IDs that greater than the number of todos or lower than 1 are skipped. So, e.g, if you want to remove all todos starting from 10th todo, you can run the command `ttdl remove 10-999999 -a` - `-a` to delete both completed and incomplete todos.
+If the first non-option word contains only digits and dash character, it is treated as a single ID(only digits) or ID range(digits with a dash) or ID list(numbers separated with comma). ID is 1-based: a number between 1 and the number of todos in the entire list. It is OK to use ID out of that range: IDs that are greater than the number of todos or lower than 1 are skipped. So, e.g., if you want to remove all todos starting from 10th todo, you can run the command `ttdl remove 10-999999 -a` - `-a` to delete both completed and incomplete todos.
 
 The second non-option(or the first one if ID range is not defined) is a subject. Subject's usage depends on command:
 
@@ -149,7 +149,7 @@ The second non-option(or the first one if ID range is not defined) is a subject.
 
 NOTES:
 
-1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits)
+1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits, or ISO 8601 date format)
 2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
 
@@ -222,13 +222,13 @@ which names ends or starts with the word.
 
 - `ttdl list +proj` - show all incomplete todos that belong to project `proj`
 - `ttdl list @ctxA @ctxB` - show all incomplete todos that have either context `ctxA` or context `ctxB`
-- `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to project `projB`, **and** have context `ctx`
+- `ttdl list +projA +projB @ctx` - show all incomplete todos that belong either to project `projA` or to project `projB`, **and** have context `ctx` (`(projA ∨ projB) ∧ ctx`)
 - `ttdl list +*clientA` - show all incomplete todos which project names ends with `clientA`
 - `ttdl list @car*` - show all incomplete todos which have a context starting with `car`
 
 To exclude todos containing certain project or context, prepend `-`(minus sign) before `+` or `@`:
 
-`ttdl list +projA -@ctx` - show all incomplete todos that belongs to project `projA` and do not contains context `ctx`.
+`ttdl list +projA -@ctx` - show all incomplete todos that belongs to project `projA` and do not contains context `ctx`. (`projA ∧ ¬(ctx)`)
 
 ##### Classic CLI options
 
@@ -250,7 +250,7 @@ Any item can be a full name or a pattern to match as it is described in the [pre
 It is possible to exclude todos that contain given projects or contexts from the output.
 Minus sign `-` marks items to exclude:
 
-`ttdl list --project projA --context "any,-ctxB"` - list all todos that belong to project `projA` and have any context except `ctxB`.
+`ttdl list --project projA --context "any,-ctxB"` - list all todos that belong to project `projA` and have any context except `ctxB`. (`{∀x | (x ∈ projA) ∧ ¬(x ∈ ctxB) }`)
 
 #### Filter by date
 
