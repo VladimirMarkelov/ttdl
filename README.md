@@ -293,7 +293,7 @@ Examples (note the difference between ranges and single values):
 - `ttdl list --due today..` - show all todos that are due today or any day after today
 - `ttdl list --due today..tomorrow` - show todos that are due only today or tomorrow
 - `ttdl list --due tomorrow..today` - the same as above
-- `ttdl list --completed -1w.. -a` - show todos that were done withing the last 7 days(a week from today)
+- `ttdl list --completed -1w.. -a` - show todos that were done within the last 7 days(a week from today)
 - `ttdl list --completed -first.. -a` - show todos that were done this month(or the previous month if today is the 1st)
 - `ttdl list --due -first..last -a` - show todos that are due this month(including overdue ones); in corner cases(today is the 1st or the last day of month) it shows todos for 2 months range instead of a month range
 - `ttdl list --created -mon..` - show todos that were created this week(or the previous week if today is Monday)
@@ -321,15 +321,15 @@ In the long run a todo list gets full of completed tasks. They may slow down the
 Archiving completed todos makes the actual todo list loading faster. Though it has a few drawbacks:
 
 - archived todos cannot be modified (e.g, if you want to delete some archived todos, you have to do it manually in any text editor)
-- there is no way to show actual and archived todos at the same
+- there is no way to show actual and archived todos at the same time
 
 #### How to show archived todos
 
-To display archived todos, use option `--done`. The option enables "archive" mode: the only available command in this mode is `list` and TTDL loads `done.txt` instead of `todo.txt`. On entering this mode, the option `-A` is enabled automatically if neither `-a` nor `-A` is defined.
+To display archived todos, use option `--done`. The option enables "archive" mode: the only available command in this mode is `list` and TTDL loads `done.txt` instead of `todo.txt`. On entering this mode, the option `-A` is enabled automatically if neither `-a` nor `-A` is defined. Read the 1st paragraph of [Command line examples](#command-line-examples) to understand `-[A|a]`
 
 ### Supported commands
 
-The list of available command is short but the commands are powerful. All commands support group operations and dry run mode. Except `add` command that adds a new todo one at a time. Please, refer to section "Examples", it provides a handful of useful examples of how to filter and modify todo list.
+The list of available command is short but the commands are powerful. All commands support group operations and dry run mode, except `add` command that adds a new todo one at a time. Please, refer to section "Examples", it provides a handful of useful examples of how to filter and modify todo list.
 
 The application determines which command to execute with the following rules:
 
@@ -700,7 +700,6 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl l --due=none`        | show todos that does not have due date                                                                                           |
 | `ttdl l --due=today`       | show todos that are due today                                                                                                    |
 | `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context                                              |
-
 ### Add a new todo
 
 | Command                                                                       | Description                                                                     |
@@ -717,7 +716,7 @@ By default todos from a given range are processed only if they are incomplete. T
 
 | Command                 | Description                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `ttdl rm 2-5`           | delete incomplete todos with IDs from 2 thorough 5                                                  |
+| `ttdl rm 2-5`           | delete incomplete todos with IDs from 2 through 5                                                   |
 | `ttdl rm 2-5 -a`        | delete both done and incomplete todos with IDs from 2 through 5                                     |
 | `ttdl rm 2-5 -A`        | delete all done todos with IDs from 2 through 5                                                     |
 | `ttdl clean 2-5 --wipe` | delete all completed todos with IDs from 2 through 5. It does the same as the previous command does |
