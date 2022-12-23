@@ -15,6 +15,7 @@
     - [Supported commands](#supported-commands)
       - [Calendar](#calendar)
     - [Tags](#tags)
+    - [Hashtags](#hashtags)
     - [Time tracking](#time-tracking)
     - [Statistics](#statistics)
     - [Custom formatting](#custom-formatting)
@@ -429,6 +430,18 @@ TTDL supports a few custom tags:
 - `t` - a todo's threshold date. The tag value is in format YYYY-MM-DD;
 - `rec` - makes a todo recurrent. It makes sense only when using along with `due` tag. The tag value is the number of time intervals and one-character time interval name: `d` - every few days, `w` every few weeks, `m` - every few months, `y` - every few years. Examples: `1w` - a weekly todo, `5d` - every 5 days.
 - `h` - mark a task hidden if the value of the tag is not `0`. Hidden tasks are skipped by default by all commands except autocompletion support. It allows a user to keep a hidden task with all projects and contexts for shell auto-completion without spoiling the regular tasks with unrelated contexts and projects.
+
+You can add any number of arbitrary tags to a todo. To edit them, use `--set-tag`(add new tags or replace existing ones) or `--del-tag`(to remove tags from a todo) options.
+
+### Hashtags
+
+Sometimes you need to add one or few extra attributes to a todo, but you do not want to introduce any new contexts or projects.
+Tags do not work in this case as they require value: you cannot create a tag with empty value.
+To deal with it, use hashtags. Hashtags is a todo words that start with the symbol `#`.
+Example: in a todo `buy tickets to #hockey game` there is one hashtag `#hockey`.
+
+Use command-line options `--hashtag` to filter todo list, `--set-hashtag` to add new hashtags, `--del-hashtag` to remove hashtags, `--repl-hashtag`to replace existing hashtags.
+The command `--repl-hashtag` does not append a new hashtag if the todo does not include the hashtag to be replaced.
 
 ### Time tracking
 

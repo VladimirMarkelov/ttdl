@@ -1,3 +1,14 @@
+ttdl (3.5.0) unstable; urgency=medium
+
+  * Added command-line options to modify arbitrary tags: `--set-tag` and
+    `--del-tag`
+  * Added command-line options to manage hashtags: `--set-hashtag`,
+    `--del-hashtag`, and `--repl-hashtags`
+  * Added command-line option to filter by hashtags: `--hashtag`. Meta values
+    like `any` and `none` are supported as it is done for tags.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 22 Dec 2022 21:22:02 -0800
+
 ttdl (3.4.6) unstable; urgency=medium
 
   * Clippy fixes
