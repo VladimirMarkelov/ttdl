@@ -105,7 +105,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
         }
         Some(s) => s.clone(),
     };
-    let now = chrono::Local::now().date().naive_local();
+    let now = chrono::Local::now().date_naive();
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
         let widths = fmt::field_widths(&conf.fmt, &[t.clone()], &[tasks.len()]);
@@ -194,7 +194,7 @@ fn print_calendar_body(
     while from_date <= end_date {
         if from_date < start_date {
             write!(stdout, "   ")?;
-            from_date = from_date.succ();
+            from_date = from_date.succ_opt().unwrap_or(from_date);
             continue;
         }
         let bg = if from_date == today { Color::Blue } else { Color::Black };
@@ -219,7 +219,7 @@ fn print_calendar_body(
             reset_colors(stdout);
             let _ = stdout.write(b"\n");
         }
-        from_date = from_date.succ();
+        from_date = from_date.succ_opt().unwrap_or(from_date);
     }
     reset_colors(stdout);
     writeln!(stdout)
@@ -227,7 +227,7 @@ fn print_calendar_body(
 
 fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
     let todos = filter_tasks(tasks, conf);
-    let now = chrono::Local::now().date().naive_local();
+    let now = chrono::Local::now().date_naive();
     let rng = conf.calendar.expect("calendar range must be set");
     let start_date = calendar_first_day(now, &rng, conf.first_sunday);
     let end_date = calendar_last_day(now, &rng, conf.first_sunday);

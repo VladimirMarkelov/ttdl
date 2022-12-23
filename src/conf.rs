@@ -243,11 +243,11 @@ fn parse_filter_rec(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
 
 fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRange, terr::TodoError> {
     if human_date::is_range_with_none(val) {
-        let dt = Local::now().date().naive_local();
+        let dt = Local::now().date_naive();
         return human_date::human_to_range_with_none(dt, val, soon_days);
     }
     if human_date::is_range(val) {
-        let dt = Local::now().date().naive_local();
+        let dt = Local::now().date_naive();
         return human_date::human_to_range(dt, val, soon_days);
     }
 
@@ -439,7 +439,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                 return Err(terr::TodoError::InvalidValue(s, "set-due".to_string()));
             }
             _ => {
-                let dt = Local::now().date().naive_local();
+                let dt = Local::now().date_naive();
                 if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
                     c.due = Some(new_date);
                     c.due_act = todo::Action::Set;
@@ -467,7 +467,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
                 return Err(terr::TodoError::InvalidValue(s, "set-threshold".to_string()));
             }
             _ => {
-                let dt = Local::now().date().naive_local();
+                let dt = Local::now().date_naive();
                 if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
                     c.thr = Some(new_date);
                     c.thr_act = todo::Action::Set;
@@ -1072,7 +1072,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
             let project = arg.trim_start_matches("-+");
             conf.flt.exclude.projects.push(project.to_owned().to_lowercase());
         } else if edit_mode {
-            let dt = Local::now().date().naive_local();
+            let dt = Local::now().date_naive();
             let subj = match human_date::fix_date(dt, arg, "due:", soon_days) {
                 None => matches.free[idx].clone(),
                 Some(s) => s,

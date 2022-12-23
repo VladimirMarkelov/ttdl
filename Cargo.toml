@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "3.4.6"
+version = "3.5.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2018"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
@@ -15,21 +15,21 @@ lto = true
 strip = "debuginfo"
 
 [dependencies]
-todo_lib = "5"
-getopts = "0.2"
+todo_lib = "6"
+getopts = "^0.2"
 chrono = "^0.4"
-textwrap = "0.11"
-lazy_static = "1.0"
-caseless = "0.2.1"
-dirs = "1.0"
-toml = "0.4"
-atty = "0.2"
-term_size = "0.3.1"
-termcolor = "1.0.4"
-serde = "1.0"
-serde_derive = "1.0.84"
-json = "0.12"
-unicode-width="0.1"
+textwrap = "^0.11"
+lazy_static = "1"
+caseless = "^0.2"
+dirs = "1"
+toml = "^0.4"
+atty = "^0.2"
+term_size = "^0.3"
+termcolor = "1"
+serde = "1"
+serde_derive = "1"
+json = "^0.12"
+unicode-width="^0.1"
 
 [package.metadata.deb]
 section = "utility"

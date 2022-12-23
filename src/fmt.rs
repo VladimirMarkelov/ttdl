@@ -303,7 +303,7 @@ fn color_for_creation_date(task: &todotxt::Task, c: &Conf) -> ColorSpec {
     };
 
     if let Some(ref cd) = task.create_date {
-        let today = Local::now().date().naive_local();
+        let today = Local::now().date_naive();
         let mcreate = rec.next_date(*cd);
         if mcreate < today {
             return c.colors.old.clone();
@@ -765,7 +765,7 @@ fn format_days(num: i64, compact: bool) -> String {
 }
 
 fn format_relative_due_date(dt: NaiveDate, compact: bool) -> (String, i64) {
-    let today = Local::now().date().naive_local();
+    let today = Local::now().date_naive();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, compact);
     let v = if compact {
@@ -781,7 +781,7 @@ fn format_relative_due_date(dt: NaiveDate, compact: bool) -> (String, i64) {
 }
 
 fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
-    let today = Local::now().date().naive_local();
+    let today = Local::now().date_naive();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, false);
     if compact {

@@ -125,9 +125,9 @@ fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
         if d == mxd || new_mxd < d {
             d = new_mxd
         }
-        NaiveDate::from_ymd(y, m, d)
+        NaiveDate::from_ymd_opt(y, m, d).unwrap_or(dt)
     } else {
-        NaiveDate::from_ymd(y, m, new_mxd)
+        NaiveDate::from_ymd_opt(y, m, new_mxd).unwrap_or(dt)
     }
 }
 
@@ -166,9 +166,9 @@ fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
                                 if new_mxd < d || d == mxd {
                                     d = new_mxd;
                                 }
-                                dt = NaiveDate::from_ymd(y, m, d);
+                                dt = NaiveDate::from_ymd_opt(y, m, d).unwrap_or(base);
                             } else {
-                                dt = NaiveDate::from_ymd(y, m, new_mxd);
+                                dt = NaiveDate::from_ymd_opt(y, m, new_mxd).unwrap_or(base);
                             }
                         }
                         _ => {}
@@ -235,7 +235,7 @@ fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
                     }
                 }
                 d = if n >= days_in_month(y, m) || n >= bdays { days_in_month(y, m) } else { n };
-                Ok(NaiveDate::from_ymd(y, m, d))
+                Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap_or(base))
             }
         }
     }
@@ -270,12 +270,12 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
             }
         }
     };
-    let dt = NaiveDate::from_ymd(y, m, d);
+    let dt = NaiveDate::from_ymd_opt(y, m, d).unwrap_or(base);
     if dt < base {
         let y = y + 1;
         let mx = days_in_month(y, m);
         let d = if mx < d { mx } else { d };
-        Ok(NaiveDate::from_ymd(y, m, d))
+        Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap_or(base))
     } else {
         Ok(dt)
     }
@@ -294,8 +294,8 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
     }
     match s.as_str() {
         "today" => Ok(base),
-        "tomorrow" | "tmr" | "tm" => Ok(base.succ()),
-        "yesterday" => Ok(base.pred()),
+        "tomorrow" | "tmr" | "tm" => Ok(base.succ_opt().unwrap_or(base)),
+        "yesterday" => Ok(base.pred_opt().unwrap_or(base)),
         "overdue" => Ok(base + Duration::days(FAR_PAST)),
         "soon" => {
             let dur = Duration::days(soon_days as i64);
@@ -320,7 +320,7 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
                     m -= 1;
                 }
             }
-            Ok(NaiveDate::from_ymd(y, m, 1))
+            Ok(NaiveDate::from_ymd_opt(y, m, 1).unwrap_or(base))
         }
         "last" => {
             let mut y = base.year();
@@ -343,7 +343,7 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
                 }
             }
             d = days_in_month(y, m);
-            Ok(NaiveDate::from_ymd(y, m, d))
+            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap_or(base))
         }
         "monday" | "mon" | "mo" => {
             if back {
@@ -604,10 +604,10 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
                 if rng.strict {
                     return today;
                 }
-                return NaiveDate::from_ymd(today.year(), today.month(), 1);
+                return NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today);
             }
             let (today, diff) =
-                if rng.strict { (today, -n) } else { (NaiveDate::from_ymd(today.year(), today.month(), 1), -n - 1) };
+                if rng.strict { (today, -n) } else { (NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today), -n - 1) };
             let today = add_months(today, diff as u32, true);
             if rng.strict {
                 return today.checked_add_signed(Duration::days(1)).unwrap_or(today);
@@ -655,7 +655,7 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
                 return today.checked_add_signed(Duration::days(-1)).unwrap_or(today);
             }
             let last = days_in_month(today.year(), today.month());
-            let today = NaiveDate::from_ymd(today.year(), today.month(), last);
+            let today = NaiveDate::from_ymd_opt(today.year(), today.month(), last).unwrap_or(today);
             if n <= 1 {
                 return today;
             }
@@ -681,7 +681,7 @@ mod humandate_test {
 
     #[test]
     fn no_change() {
-        let dt = Local::now().date().naive_local();
+        let dt = Local::now().date_naive();
         let res = human_to_date(dt, "2010-10-10", 0);
         let must = Err(NO_CHANGE.to_string());
         assert_eq!(res, must)
@@ -689,26 +689,26 @@ mod humandate_test {
 
     #[test]
     fn month_day() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap();
         let tests: Vec<Test> = vec![
-            Test { txt: "7", val: NaiveDate::from_ymd(2020, 8, 7) },
-            Test { txt: "11", val: NaiveDate::from_ymd(2020, 7, 11) },
-            Test { txt: "31", val: NaiveDate::from_ymd(2020, 7, 31) },
+            Test { txt: "7", val: NaiveDate::from_ymd_opt(2020, 8, 7).unwrap() },
+            Test { txt: "11", val: NaiveDate::from_ymd_opt(2020, 7, 11).unwrap() },
+            Test { txt: "31", val: NaiveDate::from_ymd_opt(2020, 7, 31).unwrap() },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
 
-        let dt = NaiveDate::from_ymd(2020, 6, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 6, 9).unwrap();
         let nm = human_to_date(dt, "31", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 6, 30)));
-        let dt = NaiveDate::from_ymd(2020, 2, 4);
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 6, 30).unwrap()));
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 4).unwrap();
         let nm = human_to_date(dt, "31", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
-        let dt = NaiveDate::from_ymd(2020, 2, 29);
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 2, 29).unwrap()));
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
         let nm = human_to_date(dt, "29", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 3, 31).unwrap()));
 
         let nm = human_to_date(dt, "32", 0);
         assert!(nm.is_err());
@@ -718,41 +718,41 @@ mod humandate_test {
 
     #[test]
     fn month_and_day() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap();
         let nm = human_to_date(dt, "07-08", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 7, 8)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2021, 7, 8).unwrap()));
         let nm = human_to_date(dt, "07-11", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 7, 11)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 7, 11).unwrap()));
         let nm = human_to_date(dt, "02-31", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2021, 2, 28)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2021, 2, 28).unwrap()));
     }
 
     #[test]
     fn absolute() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap();
         let tests: Vec<Test> = vec![
-            Test { txt: "1w", val: NaiveDate::from_ymd(2020, 7, 16) },
-            Test { txt: "3d4d", val: NaiveDate::from_ymd(2020, 7, 16) },
-            Test { txt: "1y", val: NaiveDate::from_ymd(2021, 7, 9) },
-            Test { txt: "2w2d1m", val: NaiveDate::from_ymd(2020, 8, 25) },
-            Test { txt: "-1w", val: NaiveDate::from_ymd(2020, 7, 2) },
-            Test { txt: "-3d4d", val: NaiveDate::from_ymd(2020, 7, 2) },
-            Test { txt: "-1y", val: NaiveDate::from_ymd(2019, 7, 9) },
-            Test { txt: "-2w2d1m", val: NaiveDate::from_ymd(2020, 5, 23) },
+            Test { txt: "1w", val: NaiveDate::from_ymd_opt(2020, 7, 16).unwrap() },
+            Test { txt: "3d4d", val: NaiveDate::from_ymd_opt(2020, 7, 16).unwrap() },
+            Test { txt: "1y", val: NaiveDate::from_ymd_opt(2021, 7, 9).unwrap() },
+            Test { txt: "2w2d1m", val: NaiveDate::from_ymd_opt(2020, 8, 25).unwrap() },
+            Test { txt: "-1w", val: NaiveDate::from_ymd_opt(2020, 7, 2).unwrap() },
+            Test { txt: "-3d4d", val: NaiveDate::from_ymd_opt(2020, 7, 2).unwrap() },
+            Test { txt: "-1y", val: NaiveDate::from_ymd_opt(2019, 7, 9).unwrap() },
+            Test { txt: "-2w2d1m", val: NaiveDate::from_ymd_opt(2020, 5, 23).unwrap() },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt, 0);
             assert_eq!(nm, Ok(test.val), "{}", test.txt);
         }
 
-        let dt = NaiveDate::from_ymd(2021, 2, 28);
+        let dt = NaiveDate::from_ymd_opt(2021, 2, 28).unwrap();
         let tests: Vec<Test> = vec![
-            Test { txt: "1m", val: NaiveDate::from_ymd(2021, 3, 31) },
-            Test { txt: "1y", val: NaiveDate::from_ymd(2022, 2, 28) },
-            Test { txt: "3y", val: NaiveDate::from_ymd(2024, 2, 29) },
-            Test { txt: "-1m", val: NaiveDate::from_ymd(2021, 1, 31) },
-            Test { txt: "-1y", val: NaiveDate::from_ymd(2020, 2, 29) },
-            Test { txt: "-3y", val: NaiveDate::from_ymd(2018, 2, 28) },
+            Test { txt: "1m", val: NaiveDate::from_ymd_opt(2021, 3, 31).unwrap() },
+            Test { txt: "1y", val: NaiveDate::from_ymd_opt(2022, 2, 28).unwrap() },
+            Test { txt: "3y", val: NaiveDate::from_ymd_opt(2024, 2, 29).unwrap() },
+            Test { txt: "-1m", val: NaiveDate::from_ymd_opt(2021, 1, 31).unwrap() },
+            Test { txt: "-1y", val: NaiveDate::from_ymd_opt(2020, 2, 29).unwrap() },
+            Test { txt: "-3y", val: NaiveDate::from_ymd_opt(2018, 2, 28).unwrap() },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt, 0);
@@ -762,53 +762,53 @@ mod humandate_test {
 
     #[test]
     fn special() {
-        let dt = NaiveDate::from_ymd(2020, 2, 29);
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
         let nm = human_to_date(dt, "last", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 31)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 3, 31).unwrap()));
         let nm = human_to_date(dt, "-last", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 1, 31).unwrap()));
 
-        let dt = NaiveDate::from_ymd(2020, 2, 10);
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 10).unwrap();
         let nm = human_to_date(dt, "last", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 29)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 2, 29).unwrap()));
         let nm = human_to_date(dt, "-last", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 31)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 1, 31).unwrap()));
 
-        let dt = NaiveDate::from_ymd(2020, 2, 1);
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 1).unwrap();
         let nm = human_to_date(dt, "first", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 3, 1).unwrap()));
         let nm = human_to_date(dt, "-first", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 1, 1)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap()));
 
-        let dt = NaiveDate::from_ymd(2020, 2, 10);
+        let dt = NaiveDate::from_ymd_opt(2020, 2, 10).unwrap();
         let nm = human_to_date(dt, "first", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 3, 1)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 3, 1).unwrap()));
         let nm = human_to_date(dt, "-first", 0);
-        assert_eq!(nm, Ok(NaiveDate::from_ymd(2020, 2, 1)));
+        assert_eq!(nm, Ok(NaiveDate::from_ymd_opt(2020, 2, 1).unwrap()));
 
-        let dt = NaiveDate::from_ymd(2020, 7, 9); // thursday
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap(); // thursday
         let tests: Vec<Test> = vec![
-            Test { txt: "tmr", val: NaiveDate::from_ymd(2020, 7, 10) },
-            Test { txt: "tm", val: NaiveDate::from_ymd(2020, 7, 10) },
-            Test { txt: "tomorrow", val: NaiveDate::from_ymd(2020, 7, 10) },
-            Test { txt: "today", val: NaiveDate::from_ymd(2020, 7, 9) },
-            Test { txt: "first", val: NaiveDate::from_ymd(2020, 8, 1) },
-            Test { txt: "last", val: NaiveDate::from_ymd(2020, 7, 31) },
-            Test { txt: "mon", val: NaiveDate::from_ymd(2020, 7, 13) },
-            Test { txt: "tu", val: NaiveDate::from_ymd(2020, 7, 14) },
-            Test { txt: "wed", val: NaiveDate::from_ymd(2020, 7, 15) },
-            Test { txt: "thursday", val: NaiveDate::from_ymd(2020, 7, 16) },
-            Test { txt: "fri", val: NaiveDate::from_ymd(2020, 7, 10) },
-            Test { txt: "sa", val: NaiveDate::from_ymd(2020, 7, 11) },
-            Test { txt: "sunday", val: NaiveDate::from_ymd(2020, 7, 12) },
-            Test { txt: "yesterday", val: NaiveDate::from_ymd(2020, 7, 8) },
-            Test { txt: "-mon", val: NaiveDate::from_ymd(2020, 7, 6) },
-            Test { txt: "-tu", val: NaiveDate::from_ymd(2020, 7, 7) },
-            Test { txt: "-wed", val: NaiveDate::from_ymd(2020, 7, 8) },
-            Test { txt: "-thursday", val: NaiveDate::from_ymd(2020, 7, 2) },
-            Test { txt: "-fri", val: NaiveDate::from_ymd(2020, 7, 3) },
-            Test { txt: "-sa", val: NaiveDate::from_ymd(2020, 7, 4) },
-            Test { txt: "-sunday", val: NaiveDate::from_ymd(2020, 7, 5) },
+            Test { txt: "tmr", val: NaiveDate::from_ymd_opt(2020, 7, 10).unwrap() },
+            Test { txt: "tm", val: NaiveDate::from_ymd_opt(2020, 7, 10).unwrap() },
+            Test { txt: "tomorrow", val: NaiveDate::from_ymd_opt(2020, 7, 10).unwrap() },
+            Test { txt: "today", val: NaiveDate::from_ymd_opt(2020, 7, 9).unwrap() },
+            Test { txt: "first", val: NaiveDate::from_ymd_opt(2020, 8, 1).unwrap() },
+            Test { txt: "last", val: NaiveDate::from_ymd_opt(2020, 7, 31).unwrap() },
+            Test { txt: "mon", val: NaiveDate::from_ymd_opt(2020, 7, 13).unwrap() },
+            Test { txt: "tu", val: NaiveDate::from_ymd_opt(2020, 7, 14).unwrap() },
+            Test { txt: "wed", val: NaiveDate::from_ymd_opt(2020, 7, 15).unwrap() },
+            Test { txt: "thursday", val: NaiveDate::from_ymd_opt(2020, 7, 16).unwrap() },
+            Test { txt: "fri", val: NaiveDate::from_ymd_opt(2020, 7, 10).unwrap() },
+            Test { txt: "sa", val: NaiveDate::from_ymd_opt(2020, 7, 11).unwrap() },
+            Test { txt: "sunday", val: NaiveDate::from_ymd_opt(2020, 7, 12).unwrap() },
+            Test { txt: "yesterday", val: NaiveDate::from_ymd_opt(2020, 7, 8).unwrap() },
+            Test { txt: "-mon", val: NaiveDate::from_ymd_opt(2020, 7, 6).unwrap() },
+            Test { txt: "-tu", val: NaiveDate::from_ymd_opt(2020, 7, 7).unwrap() },
+            Test { txt: "-wed", val: NaiveDate::from_ymd_opt(2020, 7, 8).unwrap() },
+            Test { txt: "-thursday", val: NaiveDate::from_ymd_opt(2020, 7, 2).unwrap() },
+            Test { txt: "-fri", val: NaiveDate::from_ymd_opt(2020, 7, 3).unwrap() },
+            Test { txt: "-sa", val: NaiveDate::from_ymd_opt(2020, 7, 4).unwrap() },
+            Test { txt: "-sunday", val: NaiveDate::from_ymd_opt(2020, 7, 5).unwrap() },
         ];
         for test in tests.iter() {
             let nm = human_to_date(dt, test.txt, 0);
@@ -818,7 +818,7 @@ mod humandate_test {
 
     #[test]
     fn range_test() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap();
         let tests: Vec<TestRange> = vec![
             TestRange {
                 txt: "..tue",
@@ -906,7 +906,7 @@ mod humandate_test {
 
     #[test]
     fn date_replace() {
-        let dt = NaiveDate::from_ymd(2020, 7, 9);
+        let dt = NaiveDate::from_ymd_opt(2020, 7, 9).unwrap();
         let s = fix_date(dt, "error due:xxxx next week", "due:", 0);
         assert_eq!(s, None);
         let s = fix_date(dt, "due: next week", "due:", 0);
@@ -978,185 +978,185 @@ mod humandate_test {
         }
         let tests: Vec<TestCal> = vec![
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 27),
+                res: NaiveDate::from_ymd_opt(2022, 06, 27).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04), // Monday
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(), // Monday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04),
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 04),
+                res: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 27),
+                res: NaiveDate::from_ymd_opt(2022, 06, 27).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04), // Monday
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(), // Monday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04),
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 04),
+                res: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 27),
+                res: NaiveDate::from_ymd_opt(2022, 06, 27).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(15) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(15) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(15) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(15) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(-5) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 06, 29),
+                res: NaiveDate::from_ymd_opt(2022, 06, 29).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(-5) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 29),
+                res: NaiveDate::from_ymd_opt(2022, 06, 29).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(-5) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 06, 29),
+                res: NaiveDate::from_ymd_opt(2022, 06, 29).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(-5) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 29),
+                res: NaiveDate::from_ymd_opt(2022, 06, 29).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 01),
+                res: NaiveDate::from_ymd_opt(2022, 07, 01).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 01),
+                res: NaiveDate::from_ymd_opt(2022, 07, 01).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(-2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 05, 04),
+                res: NaiveDate::from_ymd_opt(2022, 05, 04).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(-2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 05, 04),
+                res: NaiveDate::from_ymd_opt(2022, 05, 04).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(-2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 06, 01),
+                res: NaiveDate::from_ymd_opt(2022, 06, 01).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(-2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 06, 01),
+                res: NaiveDate::from_ymd_opt(2022, 06, 01).unwrap(),
             },
             // ---
         ];
@@ -1175,179 +1175,179 @@ mod humandate_test {
         }
         let tests: Vec<TestCal> = vec![
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 10),
+                res: NaiveDate::from_ymd_opt(2022, 07, 10).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04), // Monday
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(), // Monday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04),
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(-1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 10),
+                res: NaiveDate::from_ymd_opt(2022, 07, 10).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 10),
+                res: NaiveDate::from_ymd_opt(2022, 07, 10).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04), // Monday
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(), // Monday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 04),
+                td: NaiveDate::from_ymd_opt(2022, 07, 04).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 10),
+                res: NaiveDate::from_ymd_opt(2022, 07, 10).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(1) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(1) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 09),
+                res: NaiveDate::from_ymd_opt(2022, 07, 09).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 05), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 05).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Weeks(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 16),
+                res: NaiveDate::from_ymd_opt(2022, 07, 16).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Weeks(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 16),
+                res: NaiveDate::from_ymd_opt(2022, 07, 16).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(15) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 17),
+                res: NaiveDate::from_ymd_opt(2022, 07, 17).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(15) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 17),
+                res: NaiveDate::from_ymd_opt(2022, 07, 17).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(15) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 17),
+                res: NaiveDate::from_ymd_opt(2022, 07, 17).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(15) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 17),
+                res: NaiveDate::from_ymd_opt(2022, 07, 17).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(-5) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Days(-5) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(-5) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Days(-5) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 09, 02),
+                res: NaiveDate::from_ymd_opt(2022, 09, 02).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 09, 02),
+                res: NaiveDate::from_ymd_opt(2022, 09, 02).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 08, 31),
+                res: NaiveDate::from_ymd_opt(2022, 08, 31).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 08, 31),
+                res: NaiveDate::from_ymd_opt(2022, 08, 31).unwrap(),
             },
             // ---
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(-2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: true, rng: CalendarRangeType::Months(-2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 03),
+                res: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03), // Sunday
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(), // Sunday
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(-2) },
                 sunday: true,
-                res: NaiveDate::from_ymd(2022, 07, 31),
+                res: NaiveDate::from_ymd_opt(2022, 07, 31).unwrap(),
             },
             TestCal {
-                td: NaiveDate::from_ymd(2022, 07, 03),
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
                 rng: CalendarRange { strict: false, rng: CalendarRangeType::Months(-2) },
                 sunday: false,
-                res: NaiveDate::from_ymd(2022, 07, 31),
+                res: NaiveDate::from_ymd_opt(2022, 07, 31).unwrap(),
             },
             // ---
         ];
