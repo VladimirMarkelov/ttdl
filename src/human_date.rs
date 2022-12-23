@@ -606,8 +606,11 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
                 }
                 return NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today);
             }
-            let (today, diff) =
-                if rng.strict { (today, -n) } else { (NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today), -n - 1) };
+            let (today, diff) = if rng.strict {
+                (today, -n)
+            } else {
+                (NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today), -n - 1)
+            };
             let today = add_months(today, diff as u32, true);
             if rng.strict {
                 return today.checked_add_signed(Duration::days(1)).unwrap_or(today);

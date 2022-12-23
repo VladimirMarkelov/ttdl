@@ -1,12 +1,14 @@
-use atty::Stream;
-use chrono::Local;
-use getopts::{Matches, Options};
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
+
+use atty::Stream;
+use chrono::Local;
+use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
 
 use crate::fmt;
@@ -104,13 +106,13 @@ fn print_usage(program: &str, opts: &Options) {
 ");
 
     let filter = r#"Filter options include:
-    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold, --hidden
+    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold, --hidden, --hashtag
     +project - select todos which are related to project "project"; if more than one project name is defined in command line, they are combined with OR;
     @context - select todos which have context "project"; if more than one context is set, they are combined with OR;
     "#;
 
     let newones = r#"Modifying options are:
-    --set-pri, --set-due, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold
+    --set-pri, --set-due, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold, --set-tag, --set-hashtag, --del-tag, --del-hashtag, --repl-hashtag
     "#;
 
     let extras = r#"Extra options:
@@ -366,6 +368,11 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
         c.include.tags = i;
         c.exclude.tags = e;
     };
+    if let Some(dstr) = matches.opt_str("hashtag") {
+        let (i, e) = comma_list_to_vec(&dstr);
+        c.include.hashtags = i;
+        c.exclude.hashtags = e;
+    };
 
     Ok(())
 }
@@ -526,6 +533,91 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             c.contexts.push(st.to_string());
         }
         c.context_act = todo::Action::Replace;
+    }
+
+    if let Some(s) = matches.opt_str("set-tag") {
+        let mut hmap: HashMap<String, String> = HashMap::new();
+        for st in s.split(',') {
+            if let Some((tag, val)) = todotxt::split_tag(st) {
+                if todo::is_tag_special(tag) {
+                    return Err(terr::TodoError::InvalidValue(
+                        tag.to_string(),
+                        "use designated option to change built-in tag".to_string(),
+                    ));
+                }
+                hmap.insert(tag.to_string(), val.to_string());
+            } else {
+                return Err(terr::TodoError::InvalidValue(st.to_string(), "tag-value pair".to_string()));
+            }
+        }
+        if !hmap.is_empty() {
+            c.tags = Some(hmap);
+            c.tags_act = todo::Action::Set;
+        }
+    }
+
+    if let Some(s) = matches.opt_str("del-tag") {
+        let mut hmap: HashMap<String, String> = HashMap::new();
+        for st in s.split(',') {
+            if let Some((tag, _)) = todotxt::split_tag(st) {
+                if todo::is_tag_special(tag) {
+                    return Err(terr::TodoError::InvalidValue(
+                        tag.to_string(),
+                        "use designated option to change built-in tag".to_string(),
+                    ));
+                }
+                hmap.insert(tag.to_string(), String::new());
+            } else {
+                if todo::is_tag_special(st) {
+                    return Err(terr::TodoError::InvalidValue(
+                        st.to_string(),
+                        "use designated option to change built-in tag".to_string(),
+                    ));
+                }
+                hmap.insert(st.to_string(), String::new());
+            }
+        }
+        if !hmap.is_empty() {
+            c.tags = Some(hmap);
+            c.tags_act = todo::Action::Delete;
+        }
+    }
+
+    if let Some(s) = matches.opt_str("set-hashtag") {
+        let mut v: Vec<String> = Vec::new();
+        for st in s.split(',') {
+            v.push(st.to_string());
+        }
+        if !v.is_empty() {
+            c.hashtags = Some(v);
+            c.hashtags_act = todo::Action::Set;
+        }
+    }
+
+    if let Some(s) = matches.opt_str("del-hashtag") {
+        let mut v: Vec<String> = Vec::new();
+        for st in s.split(',') {
+            v.push(st.to_string());
+        }
+        if !v.is_empty() {
+            c.hashtags = Some(v);
+            c.hashtags_act = todo::Action::Delete;
+        }
+    }
+
+    if let Some(s) = matches.opt_str("repl-hashtag") {
+        let mut v: Vec<String> = Vec::new();
+        for st in s.split(',') {
+            if st.contains(':') {
+                v.push(st.to_string());
+            } else {
+                return Err(terr::TodoError::InvalidValue(st.to_string(), "old-hashtag:new-hashtag pair".to_string()));
+            }
+        }
+        if !v.is_empty() {
+            c.hashtags = Some(v);
+            c.hashtags_act = todo::Action::Replace;
+        }
     }
 
     Ok(())
@@ -860,6 +952,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "TAG1,TAG2",
     );
     opts.optopt("", "pri", "Select todos without priority(none), with any priority(any), with a given priority, with a priority equal to or higher/lower than the given priority", "none | any | a | b+ | c-");
+    opts.optopt("", "hashtag", "Select only todos with any of hashtags", "HASHTAG1,HASHTAG2 | any | none");
     opts.optopt(
         "",
         "set-pri",
@@ -886,8 +979,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     );
     opts.optopt("", "set-proj", "Add projects to selected todos", "PROJ1,PROJ2");
     opts.optopt("", "set-ctx", "Add contexts to selected todos", "CTX1,CTX2");
+    opts.optopt("", "set-tag", "Add tags to selected todos", "TAG1:VALUE1,TAG2:VALUE2");
+    opts.optopt("", "set-hashtag", "Add hashtags to selected todos", "HASHTAG1,HASHTAG2");
     opts.optopt("", "del-proj", "Remove projects from selected todos", "PROJ");
     opts.optopt("", "del-ctx", "Remove contexts from selected todos", "CTX");
+    opts.optopt("", "del-tag", "Remove tags from selected todos", "TAG1,TAG2");
+    opts.optopt("", "del-hashtag", "Remove hashtags from selected todos", "HASHTAG1,HASHTAG2");
     opts.optopt(
         "",
         "repl-proj",
@@ -900,6 +997,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "Replace contexts for selected todos: a list of comma separated pairs of old and new context values. Old value and new value are separated with '@'",
         "CT1@CTX,CT2@ANOTHER",
     );
+    opts.optopt("", "repl-hashtag", "Replace hashtags for selected todos", "HASHTAG1:NEW1,HASHTAG2:NEW2");
     opts.optflag("", "short", "Show only ID, priority and subject for todos");
     opts.optflag("", "wrap", "Word wrap a long subject within subject column");
     opts.optopt("w", "width", "Set terminal width. The application detects terminal width automatically but it is possible to limit the output width manually", "WIDTH");
