@@ -28,7 +28,7 @@ struct RangeEnds {
 }
 const RANGE_END_SKIP: usize = 8_999_999_999_998;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RunMode {
     None,
     List,
@@ -1268,4 +1268,10 @@ fn color_from_str(s: &str) -> ColorSpec {
     }
 
     spc
+}
+
+/// Returns true if the mode is usable for the given `mode`.
+/// Most of the modes are available exclusively for `todo.txt`.
+pub fn can_run_for_done(mode: RunMode) -> bool {
+    matches!(mode, RunMode::List | RunMode::Stats)
 }

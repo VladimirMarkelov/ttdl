@@ -6,8 +6,23 @@ ttdl (3.5.0) unstable; urgency=medium
     `--del-hashtag`, and `--repl-hashtags`
   * Added command-line option to filter by hashtags: `--hashtag`. Meta values
     like `any` and `none` are supported as it is done for tags.
+  * Allow command `stats` to be used for `done.txt`. Now two commands works
+    with `done.txt`: list and stats
+  * Fixed incorrect calculation of overdue tasks: they were calculated only
+    for active todos, so completed and overdue todos were counted as
+    non-overdue ones
+  * Removed `missing threshold` from `stats`. It was a misleading value
+    because it was impossible to miss any threshold. Threshold is a date until
+    which the todo is omitted from the default `list` output
+  * Fixed incorrect detection of the number of overdue todos. The old
+    algorithm compared due date and today's date always. But for completed
+    todos it results in false positives. New detection algorithm for overdue:
+    - a todo is active and its due date is earlier than today's date
+    - a todo is done and it has finish date set, and the finish date goes
+      after todo's due date
+    In all other cases a todo is not considered an overdue one.
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 22 Dec 2022 21:22:02 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 26 Dec 2022 20:35:43 -0800
 
 ttdl (3.4.6) unstable; urgency=medium
 

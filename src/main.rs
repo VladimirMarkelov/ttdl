@@ -656,7 +656,7 @@ fn main() {
         }
     }
 
-    if conf.mode != conf::RunMode::List && conf.use_done {
+    if conf.use_done && !conf::can_run_for_done(conf.mode) {
         eprintln!("Invalid command: when using done.txt the only available command is `list`");
         exit(1);
     }

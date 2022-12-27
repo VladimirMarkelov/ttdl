@@ -11,6 +11,19 @@ const PRJ_WIDTH: usize = 15;
 const CTX_WIDTH: usize = 10;
 const NUM_WIDTH: usize = 10;
 
+fn is_task_overdue(task: &todotxt::Task, today: chrono::NaiveDate) -> bool {
+    match task.due_date {
+        None => false,
+        Some(d) => {
+            if let Some(f) = task.finish_date {
+                d > f
+            } else {
+                !task.finished && d < today
+            }
+        }
+    }
+}
+
 pub fn show_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &fmt::Conf) -> io::Result<()> {
     show_short_stats(stdout, tasks)?;
     if conf.fmt != fmt::Format::Short {
@@ -22,27 +35,20 @@ pub fn show_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &f
 
 fn show_short_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::Result<()> {
     let mut overdue: usize = 0;
-    let mut threshold: usize = 0;
     let mut recurrent: usize = 0;
     let mut done: usize = 0;
+    let today = chrono::Utc::now().naive_utc().date();
 
     for t in tasks.iter() {
+        if is_task_overdue(t, today) {
+            overdue += 1;
+        }
         if t.finished {
             done += 1;
             continue;
         }
         if t.recurrence.is_some() {
             recurrent += 1;
-        }
-        if let Some(d) = t.due_date {
-            if d < chrono::Utc::now().naive_utc().date() {
-                overdue += 1;
-            }
-        }
-        if let Some(d) = t.threshold_date {
-            if d < chrono::Utc::now().naive_utc().date() {
-                threshold += 1;
-            }
         }
     }
 
@@ -51,9 +57,6 @@ fn show_short_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io:
     writeln!(stdout, "{:wid$}{:4}", "Total todos:", length, wid = width)?;
     if done > 0 {
         writeln!(stdout, "{:wid$}{:>4} ({}%)", "Done:", done, done * 100 / length, wid = width)?;
-    }
-    if threshold > 0 {
-        writeln!(stdout, "{:wid$}{:4} ({}%)", "Missed threshold:", threshold, threshold * 100 / length, wid = width)?;
     }
     if overdue > 0 {
         writeln!(stdout, "{:wid$}{:4} ({}%)", "Overdue:", overdue, overdue * 100 / length, wid = width)?;
@@ -130,10 +133,11 @@ impl Stats {
 
 fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::Result<()> {
     let mut st = Stats { stats: Vec::new() };
+    let today = chrono::Utc::now().naive_utc().date();
 
     for t in tasks.iter() {
         let done = t.finished;
-        let overdue = if let Some(d) = t.due_date { d < chrono::Utc::now().naive_utc().date() } else { false };
+        let overdue = is_task_overdue(t, today);
         let spent = timer::spent_time(t);
         st.update_stat(TOTAL, TOTAL, done, overdue, spent);
         for p in t.projects.iter() {
