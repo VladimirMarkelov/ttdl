@@ -21,8 +21,18 @@ ttdl (3.5.0) unstable; urgency=medium
     - a todo is done and it has finish date set, and the finish date goes
       after todo's due date
     In all other cases a todo is not considered an overdue one.
+  * Add syntax highlighting for subject. The feature is disabled by default.
+    When enabled, the default colors for:
+    - tags = Cyan
+    - hashtags = Bright Cyan
+    - projects = Bright Green
+    - contexts = Green
+  * New command-line options `syntax` to enable syntax highlighting, and
+    `no-syntax` to disable it
+  * Updated example `ttdl.toml`: introduced a section `[syntax]` to tune up
+    subject syntax highlighting
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 26 Dec 2022 20:35:43 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 27 Dec 2022 16:50:41 -0800
 
 ttdl (3.4.6) unstable; urgency=medium
 

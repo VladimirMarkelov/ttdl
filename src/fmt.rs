@@ -45,6 +45,10 @@ pub struct Colors {
     pub soon: ColorSpec,
     pub done: ColorSpec,
     pub old: ColorSpec,
+    pub hashtag: ColorSpec,
+    pub tag: ColorSpec,
+    pub context: ColorSpec,
+    pub project: ColorSpec,
 
     pub important_limit: u8,
     pub soon_days: u8,
@@ -84,6 +88,28 @@ pub(crate) fn default_color() -> ColorSpec {
     spc.set_fg(Some(Color::White));
     spc
 }
+pub(crate) fn default_project_color() -> ColorSpec {
+    let mut spc = ColorSpec::new();
+    spc.set_fg(Some(Color::Green));
+    spc.set_intense(true);
+    spc
+}
+pub(crate) fn default_context_color() -> ColorSpec {
+    let mut spc = ColorSpec::new();
+    spc.set_fg(Some(Color::Green));
+    spc
+}
+pub(crate) fn default_tag_color() -> ColorSpec {
+    let mut spc = ColorSpec::new();
+    spc.set_fg(Some(Color::Cyan));
+    spc.set_intense(true);
+    spc
+}
+pub(crate) fn default_hashtag_color() -> ColorSpec {
+    let mut spc = ColorSpec::new();
+    spc.set_fg(Some(Color::Cyan));
+    spc
+}
 impl Default for Colors {
     fn default() -> Colors {
         Colors {
@@ -95,6 +121,10 @@ impl Default for Colors {
             soon: default_color(),
             done: default_done_color(),
             old: default_done_color(),
+            context: default_context_color(),
+            project: default_project_color(),
+            tag: default_tag_color(),
+            hashtag: default_hashtag_color(),
 
             important_limit: todotxt::NO_PRIORITY,
             soon_days: 0u8,
@@ -128,6 +158,7 @@ pub struct Conf {
     pub shell: Vec<String>,
     pub script_ext: String,
     pub script_prefix: String,
+    pub syntax: bool,
 }
 
 impl Default for Conf {
@@ -153,6 +184,7 @@ impl Default for Conf {
             script_ext: String::new(),
             script_prefix: String::new(),
             shell,
+            syntax: false,
         }
     }
 }
@@ -358,6 +390,28 @@ fn color_for_threshold_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorS
 fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) -> io::Result<()> {
     stdout.set_color(color)?;
     write!(stdout, "{}", msg)
+}
+
+fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpec, c: &Conf) -> io::Result<()> {
+    if !c.syntax {
+        return print_with_color(stdout, msg, color);
+    }
+    let words = parse_subj(msg);
+    for word in words.iter() {
+        if is_tag(word) {
+            stdout.set_color(&c.colors.tag)?;
+        } else if is_hashtag(word) {
+            stdout.set_color(&c.colors.hashtag)?;
+        } else if is_context(word) {
+            stdout.set_color(&c.colors.context)?;
+        } else if is_project(word) {
+            stdout.set_color(&c.colors.project)?;
+        } else {
+            stdout.set_color(color)?;
+        }
+        write!(stdout, "{}", word)?;
+    }
+    Ok(())
 }
 
 fn done_str(task: &todotxt::Task) -> String {
@@ -576,13 +630,13 @@ fn print_line(
         } else {
             for (i, line) in lines.iter().enumerate() {
                 if i != 0 {
-                    print_with_color(stdout, &format!("{:width$}", " ", width = skip), &fg)?;
+                    print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
                 }
-                print_with_color(stdout, &format!("{}\n", &line), &fg)?;
+                print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
             }
         }
     } else {
-        print_with_color(stdout, &format!("{}\n", &desc), &fg)?;
+        print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
     }
     stdout.set_color(&default_color())
 }
@@ -958,4 +1012,120 @@ fn tag_max_length(tasks: &todo::TaskSlice, selected: &todo::IDSlice, tag_name: &
         }
     }
     mx
+}
+
+fn is_hashtag(s: &str) -> bool {
+    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('#')
+}
+
+fn is_project(s: &str) -> bool {
+    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('+')
+}
+
+fn is_context(s: &str) -> bool {
+    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('@')
+}
+
+fn is_tag(s: &str) -> bool {
+    if s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+        return false;
+    }
+    match s.find(':') {
+        None => false,
+        Some(pos) => pos != 0 && pos < s.len() - 1,
+    }
+}
+
+fn is_syntax_word(s: &str) -> bool {
+    is_hashtag(s) || is_context(s) || is_project(s) || is_tag(s)
+}
+
+fn parse_subj(subj: &str) -> Vec<&str> {
+    let mut parts: Vec<&str> = Vec::new();
+    if !subj.contains(|c| c == ':' || c == '@' || c == '+' || c == '#') {
+        parts.push(subj);
+        return parts;
+    }
+    let mut curr = subj;
+    let mut part = subj;
+    let mut part_len = 0;
+    loop {
+        match curr.find(|c| c == ' ' || c == '\n' || c == '\r') {
+            Some(pos) => {
+                if is_syntax_word(&curr[..pos]) {
+                    if part_len == 0 {
+                        parts.push(&curr[..pos]);
+                        part = &curr[pos..]; // include space
+                        curr = &part[1..]; // skip space
+                        part_len = 1;
+                    } else {
+                        parts.push(&part[..part_len]);
+                        parts.push(&curr[..pos]);
+                        part = &curr[pos..]; // include space
+                        curr = &part[1..]; // skip space
+                        part_len = 1;
+                    }
+                } else {
+                    part_len += pos + 1; // word length + space
+                    curr = &curr[pos + 1..];
+                }
+            }
+            None => {
+                if is_syntax_word(curr) {
+                    parts.push(&part[..part_len]);
+                    parts.push(curr);
+                } else {
+                    parts.push(part);
+                }
+                break;
+            }
+        }
+    }
+    parts
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_subj_test() {
+        struct Test {
+            inp: &'static str,
+            res: Vec<&'static str>,
+        }
+        let tests: Vec<Test> = vec![
+            Test { inp: "short", res: vec!["short"] },
+            Test { inp: "      short   abdcd    ", res: vec!["      short   abdcd    "] },
+            Test { inp: "no any syntax", res: vec!["no any syntax"] },
+            Test {
+                inp: "# @ + : no an#y syntax# proj+ pro+j cont@ con@t :tag sometag:",
+                res: vec!["# @ + : no an#y syntax# proj+ pro+j cont@ con@t :tag sometag:"],
+            },
+            Test { inp: "some @project with in@valid", res: vec!["some ", "@project", " with in@valid"] },
+            Test { inp: "some +context with in+valid +", res: vec!["some ", "+context", " with in+valid +"] },
+            Test { inp: "a some # #hashtag with inv#alid #", res: vec!["a some # ", "#hashtag", " with inv#alid #"] },
+            Test {
+                inp: "here are some: good:tags and :bad tags",
+                res: vec!["here are some: ", "good:tags", " and :bad tags"],
+            },
+            Test { inp: "short rec:wrd", res: vec!["short ", "rec:wrd"] },
+            Test { inp: "short @proj", res: vec!["short ", "@proj"] },
+            Test { inp: "short #hash", res: vec!["short ", "#hash"] },
+            Test { inp: "short +ctx", res: vec!["short ", "+ctx"] },
+            Test { inp: "short +ctx\n", res: vec!["short ", "+ctx", "\n"] },
+            Test {
+                inp: "@NVIDIA free day due:2023-03-02\n",
+                res: vec!["@NVIDIA", " free day ", "due:2023-03-02", "\n"],
+            },
+        ];
+
+        for (idx, test) in tests.iter().enumerate() {
+            let parts = parse_subj(test.inp);
+            assert_eq!(parts.len(), test.res.len(), "{}. {:?} --- {:?}", idx, test.res, parts);
+            for (i, p) in parts.iter().enumerate() {
+                assert_eq!(p, &test.res[i], "{}. '{}' != '{}'", idx, p, test.res[i])
+            }
+        }
+    }
 }

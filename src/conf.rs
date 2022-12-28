@@ -116,7 +116,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let extras = r#"Extra options:
-    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors
+    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -781,6 +781,26 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 }
 
+fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) {
+    if let Some(ref cfg) = tc.syntax {
+        if let Some(b) = cfg.enabled {
+            conf.fmt.syntax = b;
+        }
+        if let Some(ref clr) = cfg.tag_color {
+            conf.fmt.colors.tag = color_from_str(clr);
+        }
+        if let Some(ref clr) = cfg.hashtag_color {
+            conf.fmt.colors.hashtag = color_from_str(clr);
+        }
+        if let Some(ref clr) = cfg.project_color {
+            conf.fmt.colors.project = color_from_str(clr);
+        }
+        if let Some(ref clr) = cfg.context_color {
+            conf.fmt.colors.context = color_from_str(clr);
+        }
+    }
+}
+
 fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(fname) = &tc.global.filename {
         if !fname.is_empty() {
@@ -871,6 +891,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
     update_colors_from_conf(&info_toml, conf);
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
+    update_syntax_from_config(&info_toml, conf);
     if let Some(strict) = info_toml.global.strict_mode {
         conf.strict_mode = strict;
     }
@@ -1038,6 +1059,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
         "Display a calendar with dates highlighted if any todo is due on that date(foreground color). Today is highlighted with background color, Default values for `NUMBER` is `1` and for `TYPE` is `d`(days). Valid values for type are `d`(days), `w`(weeks), and `m`(months). Pepending plus sign shows the selected interval starting from today, not from Monday or first day of the month",
         "[+][NUMBER][TYPE]",
     );
+    opts.optflag("", "syntax", "Enable keyword highlights when printing subject");
+    opts.optflag("", "no-syntax", "Disable keyword highlights when printing subject");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1083,6 +1106,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
         println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
+    }
+    if matches.opt_present("syntax") {
+        conf.fmt.syntax = true;
+    } else if matches.opt_present("no-syntax") {
+        conf.fmt.syntax = false;
     }
 
     let soon_days = conf.fmt.colors.soon_days;

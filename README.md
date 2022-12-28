@@ -23,6 +23,7 @@
       - [Plugin interaction](#plugin-interaction)
       - [Example](#example)
     - [Extra features](#extra-features)
+      - [Syntax highlight](#syntax-highlight)
     - [Human-readable dates](#human-readable-dates)
   - [Command line examples](#command-line-examples)
     - [List and filter](#list-and-filter)
@@ -650,6 +651,20 @@ By default TTDL outputs the todo list in long mode and uses colors. To disable c
 **NOTE**: the option `--fields` defines only a field visibility, but not its order. So, `--fields=pri,due` and `--fields=due,pri` result in the same output.
 
 For easier reading due date, there is an option `--human` that turns dates into relative dates. So, due date 2018-11-11 can turn into `in 3d` (if the current date is 2018-11-08) or into `3d overdue`(if the current date is 2018-11-14). Using an option `--compact` makes the output even shorter: it removes all `in`s and `overdue`s. To understand whether a todo is overdue or not, just check its color: overdue ones are drawn in red color(unless you used the option `--no-colors` or modified color in TTDL config). Option `--human` supports a list of fields to show as relative ones: `ttdl l --human="due"`.
+
+#### Syntax highlight
+
+For better readability you can enable syntax highlighting when printing todo's subject.
+The highlighting is disabled by default.
+To enable it, either pass `--syntax` option  in the command line or turn it on in TTDL configuration file (see example in provided `ttdl.toml`, section `[syntax]`).
+Also you can disable temporary syntax highlighting if it is enabled in the configuration by passing the command-line option `-no-syntax`.
+
+Besides turning highlighting on and off, the configuration allows tuning the keyword colors. Default colors for keywords are:
+
+- tag color is bright cyan
+- hashtag color is cyan
+- project color is bright green
+- context color is green
 
 ### Human-readable dates
 

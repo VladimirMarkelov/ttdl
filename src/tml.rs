@@ -32,8 +32,18 @@ pub struct Global {
 }
 
 #[derive(Deserialize)]
+pub struct Syntax {
+    pub enabled: Option<bool>,
+    pub tag_color: Option<String>,
+    pub hashtag_color: Option<String>,
+    pub project_color: Option<String>,
+    pub context_color: Option<String>,
+}
+
+#[derive(Deserialize)]
 pub struct Conf {
     pub colors: Colors,
     pub ranges: Ranges,
     pub global: Global,
+    pub syntax: Option<Syntax>,
 }

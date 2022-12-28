@@ -8,6 +8,12 @@ A CLI tool to manage todo lists in [todo.txt format](http://todotxt.org/). A sho
 
 <img src="./images/ttdl_demo.gif" alt="TTDL in action">
 
+For better readability, you can enable syntax highlighting (via command-line option `--syntax` or by enabling it in the configuration file).
+Colors for tags, projects, contexts, and hashtags are customizable: see details in the configuration file, section `[syntax]`.
+Example of the same todo output with default options and with syntax highlighting on:
+
+<img src="./images/ttdl-syntax-highlight.png" alt="TTDL syntax highlighting demo">
+
 ## Installation
 
 The application can be compiled from source, or installed using cargo:

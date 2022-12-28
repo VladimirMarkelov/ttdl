@@ -116,3 +116,12 @@ old = "1y"
 # argument must be a TTDL command. It may be useful to avoid adding incorrect
 # todos after making a type, e.g, `ttdl listt`
 # strict_mode = false
+
+[syntax]
+# Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
+#     inside the subject
+# enabled = false
+tag_color = "bright cyan"
+hashtag_color = "cyan"
+project_color = "bright green"
+context_color = "green"
