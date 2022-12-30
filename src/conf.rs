@@ -801,6 +801,38 @@ fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) {
     }
 }
 
+fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) {
+    match tc.fields {
+        None => {},
+        Some(ref fields) => {
+            for field in fields.iter() {
+                let mut cf = fmt::CustomField {
+                    rules: Vec::new(),
+                    name: field.name.clone(),
+                    title: field.title.clone(),
+                    kind: field.kind.clone(),
+                    width: field.width,
+                };
+                if let Some(ref rs) = field.rules {
+                    for rule in rs.iter() {
+                        let rcolor = color_from_str(&rule.color);
+                        if let Some((b, e)) = parse_range(&rule.range) {
+                            let r =
+                                fmt::FmtRule { color: rcolor, range: fmt::FmtSpec::Range(b.to_owned(), e.to_owned()) };
+                            cf.rules.push(r);
+                        } else {
+                            let v: Vec<String> = rule.range.split(',').map(|s| s.to_string()).collect();
+                            let r = fmt::FmtRule { color: rcolor, range: fmt::FmtSpec::List(v) };
+                            cf.rules.push(r);
+                        }
+                    }
+                }
+                conf.fmt.custom_fields.push(cf);
+            }
+        }
+    }
+}
+
 fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(fname) = &tc.global.filename {
         if !fname.is_empty() {
@@ -892,6 +924,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
     update_syntax_from_config(&info_toml, conf);
+    update_fields_from_config(&info_toml, conf);
     if let Some(strict) = info_toml.global.strict_mode {
         conf.strict_mode = strict;
     }
@@ -1298,8 +1331,36 @@ fn color_from_str(s: &str) -> ColorSpec {
     spc
 }
 
-/// Returns true if the mode is usable for the given `mode`.
+pub fn parse_range(s: &str) -> Option<(&str, &str)> {
+    s.find("..").map(|pos| (&s[..pos], &s[pos + "..".len()..]))
+}
+
+/// Returns true if the given `mode` can be used for `done.txt`.
 /// Most of the modes are available exclusively for `todo.txt`.
 pub fn can_run_for_done(mode: RunMode) -> bool {
     matches!(mode, RunMode::List | RunMode::Stats)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_range_test() {
+        struct Test {
+            input: &'static str,
+            res: Vec<&'static str>,
+        }
+        let tests: Vec<Test> = vec![
+            Test { input: "..right", res: vec!["", "right"] },
+            Test { input: "left..", res: vec!["left", ""] },
+            Test { input: "left..right", res: vec!["left", "right"] },
+            Test { input: "left..one..more..right", res: vec!["left", "one..more..right"] },
+        ];
+        for (idx, test) in tests.iter().enumerate() {
+            let (b, e) = parse_range(test.input).unwrap();
+            assert_eq!(b, test.res[0], "{}. '{}' != '{}'", idx, b, test.res[0]);
+            assert_eq!(e, test.res[1], "{}. '{}' != '{}'", idx, e, test.res[1]);
+        }
+    }
 }

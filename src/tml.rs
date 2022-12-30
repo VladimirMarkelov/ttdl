@@ -41,9 +41,25 @@ pub struct Syntax {
 }
 
 #[derive(Deserialize)]
+pub struct CustomRule {
+    pub range: String,
+    pub color: String,
+}
+
+#[derive(Deserialize)]
+pub struct CustomField {
+    pub name: String, // tag name, and internal name for `--fields` option
+    pub title: String,
+    pub kind: String, // string, integer, float, duration, date
+    pub width: u16,   // maximum width
+    pub rules: Option<Vec<CustomRule>>,
+}
+
+#[derive(Deserialize)]
 pub struct Conf {
     pub colors: Colors,
     pub ranges: Ranges,
     pub global: Global,
     pub syntax: Option<Syntax>,
+    pub fields: Option<Vec<CustomField>>,
 }

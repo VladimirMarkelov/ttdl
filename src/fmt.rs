@@ -141,6 +141,27 @@ pub enum TermColorType {
 }
 
 #[derive(Debug, Clone)]
+pub enum FmtSpec {
+    Range(String, String),
+    List(Vec<String>),
+}
+
+#[derive(Debug, Clone)]
+pub struct FmtRule {
+    pub range: FmtSpec,
+    pub color: ColorSpec,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CustomField {
+    pub name: String,
+    pub title: String,
+    pub width: u16,
+    pub kind: String,
+    pub rules: Vec<FmtRule>,
+}
+
+#[derive(Debug, Clone)]
 pub struct Conf {
     pub fmt: Format,
     pub width: u16,
@@ -159,6 +180,7 @@ pub struct Conf {
     pub script_ext: String,
     pub script_prefix: String,
     pub syntax: bool,
+    pub custom_fields: Vec<CustomField>,
 }
 
 impl Default for Conf {
@@ -185,6 +207,7 @@ impl Default for Conf {
             script_prefix: String::new(),
             shell,
             syntax: false,
+            custom_fields: Vec::new(),
         }
     }
 }
