@@ -199,6 +199,7 @@ pub struct Conf {
     pub script_prefix: String,
     pub syntax: bool,
     pub custom_fields: Vec<CustomField>,
+    pub custom_names: Vec<String>, // for performance
 }
 
 impl Default for Conf {
@@ -226,6 +227,7 @@ impl Default for Conf {
             shell,
             syntax: false,
             custom_fields: Vec::new(),
+            custom_names: Vec::new(),
         }
     }
 }
@@ -306,12 +308,8 @@ fn rel_date_width(field: &str, c: &Conf) -> usize {
 fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
     let mut before: usize = field_width_cached(c, "id", widths) + 1;
 
-    let mut custom_names: Vec<&str> = Vec::new();
-    for field in c.custom_fields.iter() {
-        custom_names.push(&field.name);
-    }
-
-    for f in FIELDS.iter().chain(custom_names.iter()) {
+    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
+    for f in FIELDS.iter().chain(cn.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -335,12 +333,8 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
 fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], widths: &[usize]) -> io::Result<()> {
     write!(stdout, "{:>wid$} ", "#", wid = field_width_cached(c, "id", widths))?;
 
-    let mut custom_names: Vec<&str> = Vec::new();
-    for field in c.custom_fields.iter() {
-        custom_names.push(&field.name);
-    }
-
-    for f in FIELDS.iter().chain(custom_names.iter()) {
+    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
+    for f in FIELDS.iter().chain(cn.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -635,12 +629,8 @@ fn print_line(
 
     print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg)?;
 
-    let mut custom_names: Vec<&str> = Vec::new();
-    for field in c.custom_fields.iter() {
-        custom_names.push(&field.name);
-    }
-
-    for f in FIELDS.iter().chain(custom_names.iter()) {
+    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
+    for f in FIELDS.iter().chain(cn.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -1051,12 +1041,8 @@ pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice)
     let id_width = number_of_digits(c.max);
     let dt_width = "2018-12-12".width();
 
-    let mut custom_names: Vec<&str> = Vec::new();
-    for field in c.custom_fields.iter() {
-        custom_names.push(&field.name);
-    }
-
-    for field in FIELDS.iter().chain(custom_names.iter()) {
+    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
+    for field in FIELDS.iter().chain(cn.iter()) {
         let w = match *field {
             "id" => id_width,
             "done" | "pri" => 1,
@@ -1091,11 +1077,8 @@ pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice)
 }
 
 fn field_width_cached(c: &Conf, field: &str, cached: &[usize]) -> usize {
-    let mut custom_names: Vec<&str> = Vec::new();
-    for field in c.custom_fields.iter() {
-        custom_names.push(&field.name);
-    }
-    for (f, w) in FIELDS.iter().chain(custom_names.iter()).zip(cached.iter()) {
+    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
+    for (f, w) in FIELDS.iter().chain(cn.iter()).zip(cached.iter()) {
         if default_caseless_match_str(f, field) {
             return *w;
         }

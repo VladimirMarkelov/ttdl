@@ -835,7 +835,11 @@ fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
             }
         }
     }
-    validate_custom_fields(conf)
+    validate_custom_fields(conf)?;
+    for fld in conf.fmt.custom_fields.iter() {
+        conf.fmt.custom_names.push(fld.name.to_string());
+    }
+    Ok(())
 }
 
 fn validate_custom_fields(conf: &Conf) -> Result<()> {
