@@ -17,6 +17,13 @@ const JSON_OPT: &str = "optional";
 const JSON_SPEC: &str = "specialTags";
 const PLUG_PREFIX: &str = "ttdl-";
 
+// Default sizes for custom field types
+const INT_LENGTH: usize = 12;
+const FLOAT_LENGTH: usize = 15;
+const DURATION_LENGTH: usize = 10;
+const STR_LENGTH: usize = 15;
+const BYTES_LENGTH: usize = 8;
+
 lazy_static! {
     static ref FIELDS: [&'static str; 10] =
         ["id", "done", "pri", "created", "finished", "due", "thr", "spent", "uid", "parent"];
@@ -110,6 +117,17 @@ pub(crate) fn default_hashtag_color() -> ColorSpec {
     spc.set_fg(Some(Color::Cyan));
     spc
 }
+fn cut_string(s: &str, max_width: usize) -> &str {
+    let w = s.width();
+    if max_width == 0 || w >= max_width {
+        return s;
+    }
+    match s.char_indices().nth(max_width) {
+        Some((pos, _)) => &s[..pos],
+        None => s,
+    }
+}
+
 impl Default for Colors {
     fn default() -> Colors {
         Colors {
@@ -230,6 +248,29 @@ impl Conf {
 
         false
     }
+    fn custom_field_width(&self, name: &str) -> usize {
+        for f in self.custom_fields.iter() {
+            if name != f.name.as_str() {
+                continue;
+            }
+            if f.width != 0 {
+                return usize::from(f.width);
+            }
+            match f.kind.as_str() {
+                "integer" | "int" => return INT_LENGTH,
+                "float" => return FLOAT_LENGTH,
+                "duration" => return DURATION_LENGTH,
+                "date" => return "2002-10-10".width(),
+                "bytes" => return BYTES_LENGTH,
+                "string" => return STR_LENGTH,
+                _ => return 0,
+            }
+        }
+        0
+    }
+    fn custom_field(&self, name: &str) -> Option<&CustomField> {
+        self.custom_fields.iter().find(|&f| name == f.name.as_str())
+    }
 }
 
 fn number_of_digits(val: usize) -> usize {
@@ -250,7 +291,7 @@ fn rel_due_date_width(field: &str, c: &Conf) -> usize {
             REL_WIDTH_DUE
         }
     } else {
-        "2018-12-12".len()
+        "2018-12-12".width()
     }
 }
 
@@ -258,14 +299,19 @@ fn rel_date_width(field: &str, c: &Conf) -> usize {
     if c.is_human(field) {
         REL_WIDTH_DATE
     } else {
-        "2018-12-12".len()
+        "2018-12-12".width()
     }
 }
 
 fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
-    let mut before: usize = field_width_cached("id", widths) + 1;
+    let mut before: usize = field_width_cached(c, "id", widths) + 1;
 
-    for f in FIELDS.iter() {
+    let mut custom_names: Vec<&str> = Vec::new();
+    for field in c.custom_fields.iter() {
+        custom_names.push(&field.name);
+    }
+
+    for f in FIELDS.iter().chain(custom_names.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -275,7 +321,7 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
         }
 
         if found {
-            before += field_width_cached(f, widths) + 1;
+            before += field_width_cached(c, f, widths) + 1;
         }
     }
 
@@ -287,9 +333,14 @@ fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
 }
 
 fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], widths: &[usize]) -> io::Result<()> {
-    write!(stdout, "{:>wid$} ", "#", wid = field_width_cached("id", widths))?;
+    write!(stdout, "{:>wid$} ", "#", wid = field_width_cached(c, "id", widths))?;
 
-    for f in FIELDS.iter() {
+    let mut custom_names: Vec<&str> = Vec::new();
+    for field in c.custom_fields.iter() {
+        custom_names.push(&field.name);
+    }
+
+    for f in FIELDS.iter().chain(custom_names.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -298,25 +349,30 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], wid
             }
         }
 
-        if found {
-            let width = field_width_cached(f, widths);
-            match *f {
-                "done" => write!(stdout, "D ")?,
-                "pri" => write!(stdout, "P ")?,
-                "created" => write!(stdout, "{:wid$} ", "Created", wid = width)?,
-                "finished" => write!(stdout, "{:wid$} ", "Finished", wid = width)?,
-                "due" => write!(stdout, "{:wid$} ", "Due", wid = width)?,
-                "thr" => {
-                    if c.is_human(f) && c.compact {
-                        write!(stdout, "{:wid$} ", "Thr", wid = width)?;
-                    } else {
-                        write!(stdout, "{:wid$} ", "Threshold", wid = width)?;
-                    }
+        if !found {
+            continue;
+        }
+        let width = field_width_cached(c, f, widths);
+        match *f {
+            "done" => write!(stdout, "D ")?,
+            "pri" => write!(stdout, "P ")?,
+            "created" => write!(stdout, "{:wid$} ", "Created", wid = width)?,
+            "finished" => write!(stdout, "{:wid$} ", "Finished", wid = width)?,
+            "due" => write!(stdout, "{:wid$} ", "Due", wid = width)?,
+            "thr" => {
+                if c.is_human(f) && c.compact {
+                    write!(stdout, "{:wid$} ", "Thr", wid = width)?;
+                } else {
+                    write!(stdout, "{:wid$} ", "Threshold", wid = width)?;
                 }
-                "spent" => write!(stdout, "{:wid$} ", "Spent", wid = SPENT_WIDTH)?,
-                "uid" => write!(stdout, "{:wid$}", "UID", wid = width + 1)?,
-                "parent" => write!(stdout, "{:wid$}", "Parent", wid = width + 1)?,
-                _ => {}
+            }
+            "spent" => write!(stdout, "{:wid$} ", "Spent", wid = SPENT_WIDTH)?,
+            "uid" => write!(stdout, "{:wid$}", "UID", wid = width + 1)?,
+            "parent" => write!(stdout, "{:wid$}", "Parent", wid = width + 1)?,
+            n => {
+                if let Some(f) = c.custom_field(n) {
+                    write!(stdout, "{:wid$}", f.title, wid = width + 1)?;
+                }
             }
         }
     }
@@ -540,7 +596,7 @@ fn print_date_val(
     def_color: termcolor::ColorSpec,
     widths: &[usize],
 ) -> io::Result<()> {
-    let width = field_width_cached(field, widths);
+    let width = field_width_cached(c, field, widths);
     let mut st = if let Some(d) = dt {
         if c.is_human(field) {
             let (s, _) = format_relative_date(*d, c.compact);
@@ -568,7 +624,7 @@ fn print_line(
     fields: &[&str],
     widths: &[usize],
 ) -> io::Result<()> {
-    let id_width = field_width_cached("id", widths);
+    let id_width = field_width_cached(c, "id", widths);
     let fg = if task.finished { c.colors.done.clone() } else { default_color() };
 
     let (mut desc, arg) =
@@ -579,7 +635,12 @@ fn print_line(
 
     print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg)?;
 
-    for f in FIELDS.iter() {
+    let mut custom_names: Vec<&str> = Vec::new();
+    for field in c.custom_fields.iter() {
+        custom_names.push(&field.name);
+    }
+
+    for f in FIELDS.iter().chain(custom_names.iter()) {
         let mut found = false;
         for pf in fields.iter() {
             if default_caseless_match_str(pf, f) {
@@ -635,13 +696,23 @@ fn print_line(
                 )?;
             }
             "uid" | "parent" => {
-                let width = field_width_cached(f, widths);
+                let width = field_width_cached(c, f, widths);
                 let name = if *f == "uid" { "id" } else { *f };
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
                 print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
             }
-            _ => {}
+            n => {
+                if let Some(f) = c.custom_field(n) {
+                    let width = c.custom_field_width(n);
+                    let value = match task.tags.get(&f.name) {
+                        None => String::new(),
+                        Some(s) => s.to_string(),
+                    };
+                    let value = cut_string(value.as_str(), width);
+                    print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
+                }
+            }
         }
     }
 
@@ -889,7 +960,7 @@ fn field_list(c: &Conf) -> Vec<&str> {
 
 fn header_len(c: &Conf, flist: &[&str], widths: &[usize]) -> usize {
     let (other, _) = calc_width(c, flist, widths);
-    other + "Subject".len() + 1
+    other + "Subject".width() + 1
 }
 
 pub fn print_header(stdout: &mut StandardStream, c: &Conf, widths: &[usize]) -> io::Result<()> {
@@ -978,9 +1049,14 @@ pub fn print_todos(
 pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> Vec<usize> {
     let mut ws = Vec::new();
     let id_width = number_of_digits(c.max);
-    let dt_width = "2018-12-12".len();
+    let dt_width = "2018-12-12".width();
 
-    for field in FIELDS.iter() {
+    let mut custom_names: Vec<&str> = Vec::new();
+    for field in c.custom_fields.iter() {
+        custom_names.push(&field.name);
+    }
+
+    for field in FIELDS.iter().chain(custom_names.iter()) {
         let w = match *field {
             "id" => id_width,
             "done" | "pri" => 1,
@@ -1001,21 +1077,25 @@ pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice)
             "spent" => SPENT_WIDTH,
             tag @ "uid" | tag @ "parent" => {
                 let ww = tag_max_length(tasks, selected, tag);
-                if ww > tag.len() {
+                if ww > tag.width() {
                     ww
                 } else {
-                    tag.len()
+                    tag.width()
                 }
             }
-            _ => 0,
+            _ => c.custom_field_width(field),
         };
         ws.push(w);
     }
     ws
 }
 
-fn field_width_cached(field: &str, cached: &[usize]) -> usize {
-    for (f, w) in FIELDS.iter().zip(cached.iter()) {
+fn field_width_cached(c: &Conf, field: &str, cached: &[usize]) -> usize {
+    let mut custom_names: Vec<&str> = Vec::new();
+    for field in c.custom_fields.iter() {
+        custom_names.push(&field.name);
+    }
+    for (f, w) in FIELDS.iter().chain(custom_names.iter()).zip(cached.iter()) {
         if default_caseless_match_str(f, field) {
             return *w;
         }

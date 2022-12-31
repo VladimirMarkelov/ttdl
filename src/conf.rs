@@ -854,7 +854,7 @@ fn validate_custom_fields(conf: &Conf) -> Result<()> {
         }
         match field.kind.as_str() {
             "" => return Err(anyhow!("Field '{}' type is empty", field.name)),
-            "string" | "integer" | "int" | "float" | "date" | "duration" => {}
+            "string" | "integer" | "int" | "float" | "date" | "duration" | "bytes" => {}
             _ => return Err(anyhow!("Field '{}' has unknown type '{}'", field.name, field.kind)),
         }
     }
