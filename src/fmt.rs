@@ -401,6 +401,18 @@ pub struct CustomField {
     pub rules: Vec<FmtRule>,
 }
 
+impl CustomField {
+    fn matches(&self, val: &str) -> Option<ColorSpec> {
+        for rule in self.rules.iter() {
+            let clr = rule.matches(val, &self.kind);
+            if clr.is_some() {
+                return clr;
+            }
+        }
+        None
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Conf {
     pub fmt: Format,
@@ -921,8 +933,9 @@ fn print_line(
                         None => String::new(),
                         Some(s) => s.to_string(),
                     };
-                    let value = conv::cut_string(value.as_str(), width);
-                    print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
+                    let value = conv::cut_string(&value, width);
+                    let clr = f.matches(value).unwrap_or_else(|| fg.clone());
+                    print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &clr)?;
                 }
             }
         }
