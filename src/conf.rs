@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use atty::Stream;
 use chrono::Local;
 use getopts::{Matches, Options};
@@ -725,24 +726,24 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     }
 }
 
-fn read_color(clr: &Option<String>) -> ColorSpec {
+fn read_color(clr: &Option<String>) -> Result<ColorSpec> {
     let s = match clr {
         Some(ss) => ss,
-        None => return fmt::default_color(),
+        None => return Ok(fmt::default_color()),
     };
 
     color_from_str(s)
 }
 
-fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) {
-    conf.fmt.colors.overdue = read_color(&tc.colors.overdue);
-    conf.fmt.colors.top = read_color(&tc.colors.top);
-    conf.fmt.colors.important = read_color(&tc.colors.important);
-    conf.fmt.colors.today = read_color(&tc.colors.today);
-    conf.fmt.colors.soon = read_color(&tc.colors.soon);
-    conf.fmt.colors.done = read_color(&tc.colors.done);
-    conf.fmt.colors.threshold = read_color(&tc.colors.threshold);
-    conf.fmt.colors.old = read_color(&tc.colors.old);
+fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
+    conf.fmt.colors.overdue = read_color(&tc.colors.overdue)?;
+    conf.fmt.colors.top = read_color(&tc.colors.top)?;
+    conf.fmt.colors.important = read_color(&tc.colors.important)?;
+    conf.fmt.colors.today = read_color(&tc.colors.today)?;
+    conf.fmt.colors.soon = read_color(&tc.colors.soon)?;
+    conf.fmt.colors.done = read_color(&tc.colors.done)?;
+    conf.fmt.colors.threshold = read_color(&tc.colors.threshold)?;
+    conf.fmt.colors.old = read_color(&tc.colors.old)?;
 
     if conf.fmt.color_term == fmt::TermColorType::Auto {
         if let Some(cs) = &tc.colors.color_term {
@@ -753,6 +754,7 @@ fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) {
             }
         }
     }
+    Ok(())
 }
 
 fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
@@ -781,29 +783,30 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     }
 }
 
-fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) {
+fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     if let Some(ref cfg) = tc.syntax {
         if let Some(b) = cfg.enabled {
             conf.fmt.syntax = b;
         }
         if let Some(ref clr) = cfg.tag_color {
-            conf.fmt.colors.tag = color_from_str(clr);
+            conf.fmt.colors.tag = color_from_str(clr)?;
         }
         if let Some(ref clr) = cfg.hashtag_color {
-            conf.fmt.colors.hashtag = color_from_str(clr);
+            conf.fmt.colors.hashtag = color_from_str(clr)?;
         }
         if let Some(ref clr) = cfg.project_color {
-            conf.fmt.colors.project = color_from_str(clr);
+            conf.fmt.colors.project = color_from_str(clr)?;
         }
         if let Some(ref clr) = cfg.context_color {
-            conf.fmt.colors.context = color_from_str(clr);
+            conf.fmt.colors.context = color_from_str(clr)?;
         }
     }
+    Ok(())
 }
 
-fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) {
+fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     match tc.fields {
-        None => {},
+        None => {}
         Some(ref fields) => {
             for field in fields.iter() {
                 let mut cf = fmt::CustomField {
@@ -815,7 +818,7 @@ fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) {
                 };
                 if let Some(ref rs) = field.rules {
                     for rule in rs.iter() {
-                        let rcolor = color_from_str(&rule.color);
+                        let rcolor = color_from_str(&rule.color)?;
                         if let Some((b, e)) = parse_range(&rule.range) {
                             let r =
                                 fmt::FmtRule { color: rcolor, range: fmt::FmtSpec::Range(b.to_owned(), e.to_owned()) };
@@ -831,6 +834,7 @@ fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) {
             }
         }
     }
+    Ok(())
 }
 
 fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
@@ -889,7 +893,7 @@ fn detect_conf_file_path() -> PathBuf {
     }
 }
 
-fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
+fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     let path: PathBuf = match conf_path {
         Some(p) => p,
         None => detect_conf_file_path(),
@@ -899,35 +903,25 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) {
         println!("Loading configuration from: {:?}", path);
     }
     if !path.exists() {
-        return;
+        return Ok(());
     }
 
-    let inp = match File::open(path) {
-        Err(_) => return,
-        Ok(f) => f,
-    };
+    let inp = File::open(path)?;
     let mut buffered = BufReader::new(inp);
     let mut data = String::new();
-    if buffered.read_to_string(&mut data).is_err() {
-        return;
-    }
+    buffered.read_to_string(&mut data)?;
 
-    let info_toml: tml::Conf = match toml::from_str(&data) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("Failed to parse config file: {:?}", e);
-            return;
-        }
-    };
+    let info_toml: tml::Conf = toml::from_str(&data)?;
 
-    update_colors_from_conf(&info_toml, conf);
+    update_colors_from_conf(&info_toml, conf)?;
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
-    update_syntax_from_config(&info_toml, conf);
-    update_fields_from_config(&info_toml, conf);
+    update_syntax_from_config(&info_toml, conf)?;
+    update_fields_from_config(&info_toml, conf)?;
     if let Some(strict) = info_toml.global.strict_mode {
         conf.strict_mode = strict;
     }
+    Ok(())
 }
 
 fn preprocess_args(args: &[String]) -> Vec<String> {
@@ -942,7 +936,7 @@ fn preprocess_args(args: &[String]) -> Vec<String> {
     res
 }
 
-pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
+pub fn parse_args(args: &[String]) -> Result<Conf> {
     let args = preprocess_args(args);
     let program = args[0].clone();
     let mut conf = Conf::new();
@@ -1115,7 +1109,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     }
     let conf_file = if matches.opt_present("config") { matches.opt_str("config").map(PathBuf::from) } else { None };
 
-    load_from_config(&mut conf, conf_file);
+    load_from_config(&mut conf, conf_file)?;
     parse_todo(&matches, &mut conf.todo)?;
     parse_sort(&matches, &mut conf.sort);
     parse_fmt(&matches, &mut conf.fmt);
@@ -1160,7 +1154,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf, terr::TodoError> {
     if conf.mode != RunMode::None {
         idx += 1;
     } else if conf.strict_mode {
-        return Err(terr::TodoError::NotCommand);
+        return Err(anyhow!(terr::TodoError::NotCommand));
     }
     if idx >= matches.free.len() {
         // TODO: validity check
@@ -1278,14 +1272,13 @@ fn is_id_range(s: &str) -> bool {
     s.contains(|c: char| c == '-' || c == ':')
 }
 
-fn color_from_str(s: &str) -> ColorSpec {
+fn color_from_str(s: &str) -> Result<ColorSpec> {
     let mut spc = ColorSpec::new();
 
     if s.find(' ').is_none() {
-        if let Ok(c) = Color::from_str(s) {
-            spc.set_fg(Some(c));
-        }
-        return spc;
+        let c = Color::from_str(s)?;
+        spc.set_fg(Some(c));
+        return Ok(spc);
     }
 
     let lows = s.to_lowercase();
@@ -1324,11 +1317,11 @@ fn color_from_str(s: &str) -> ColorSpec {
             "bold" => {
                 spc.set_bold(true);
             }
-            _ => {}
+            _ => return Err(anyhow!("Unknown color '{}'", clr)),
         };
     }
 
-    spc
+    Ok(spc)
 }
 
 pub fn parse_range(s: &str) -> Option<(&str, &str)> {

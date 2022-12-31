@@ -30,6 +30,7 @@ serde = "1"
 serde_derive = "1"
 json = "^0.12"
 unicode-width="^0.1"
+anyhow = "1"
 
 [package.metadata.deb]
 section = "utility"
