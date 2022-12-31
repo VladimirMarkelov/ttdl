@@ -11,6 +11,7 @@ use atty::Stream;
 use chrono::Local;
 use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
+use unicode_width::UnicodeWidthStr;
 
 use crate::fmt;
 use crate::human_date;
@@ -832,6 +833,29 @@ fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
                 }
                 conf.fmt.custom_fields.push(cf);
             }
+        }
+    }
+    validate_custom_fields(conf)
+}
+
+fn validate_custom_fields(conf: &Conf) -> Result<()> {
+    for field in conf.fmt.custom_fields.iter() {
+        if field.name.is_empty() {
+            return Err(anyhow!("Field name cannot be empty"));
+        }
+        if field.title.is_empty() {
+            return Err(anyhow!("Field '{}' title cannot be empty", field.name));
+        }
+        if field.width != 0 && field.title.width() > usize::from(field.width) {
+            return Err(anyhow!("Field '{}' width is smaller than its title length", field.name));
+        }
+        if field.width > 20 {
+            return Err(anyhow!("Field '{}' length is too long '{}', maximum is 20", field.name, field.width));
+        }
+        match field.kind.as_str() {
+            "" => return Err(anyhow!("Field '{}' type is empty", field.name)),
+            "string" | "integer" | "int" | "float" | "date" | "duration" => {}
+            _ => return Err(anyhow!("Field '{}' has unknown type '{}'", field.name, field.kind)),
         }
     }
     Ok(())
