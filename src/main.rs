@@ -4,6 +4,7 @@ extern crate lazy_static;
 extern crate serde_derive;
 
 mod conf;
+mod conv;
 mod fmt;
 mod human_date;
 mod stats;

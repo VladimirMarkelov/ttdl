@@ -1,0 +1,154 @@
+use unicode_width::UnicodeWidthStr;
+
+const KB: usize = 1024;
+const MB: usize = KB * 1024;
+const GB: usize = MB * 1024;
+const TB: usize = GB * 1024;
+const PB: usize = TB * 1024;
+const EB: usize = PB * 1024;
+
+const SEC_IN_MINUTE: i64 = 60;
+const SEC_IN_HOUR: i64 = SEC_IN_MINUTE * 60;
+const SEC_IN_DAY: i64 = SEC_IN_HOUR * 24;
+const SEC_IN_WEEK: i64 = SEC_IN_DAY * 7;
+
+struct ByteSize {
+    s: &'static str,
+    m: usize,
+}
+
+lazy_static! {
+    static ref BYTES: [ByteSize; 18] = [
+        ByteSize { s: "eib", m: EB },
+        ByteSize { s: "eb", m: EB },
+        ByteSize { s: "e", m: EB },
+        ByteSize { s: "pib", m: PB },
+        ByteSize { s: "pb", m: PB },
+        ByteSize { s: "p", m: PB },
+        ByteSize { s: "tib", m: TB },
+        ByteSize { s: "tb", m: TB },
+        ByteSize { s: "t", m: TB },
+        ByteSize { s: "gib", m: GB },
+        ByteSize { s: "gb", m: GB },
+        ByteSize { s: "g", m: GB },
+        ByteSize { s: "mib", m: MB },
+        ByteSize { s: "mb", m: MB },
+        ByteSize { s: "m", m: MB },
+        ByteSize { s: "kib", m: KB },
+        ByteSize { s: "kb", m: KB },
+        ByteSize { s: "k", m: KB },
+    ];
+}
+
+pub fn cut_string(s: &str, max_width: usize) -> &str {
+    let w = s.width();
+    if max_width == 0 || w >= max_width {
+        return s;
+    }
+    match s.char_indices().nth(max_width) {
+        Some((pos, _)) => &s[..pos],
+        None => s,
+    }
+}
+pub fn str_to_bytes(s: &str) -> Option<usize> {
+    let l = s.to_lowercase();
+    for sz in BYTES.iter() {
+        if l.ends_with(sz.s) {
+            let lv = l.trim_end_matches(sz.s);
+            let sb = lv.parse::<usize>().ok()?;
+            return Some(sb * sz.m);
+        }
+    }
+    s.parse::<usize>().ok()
+}
+pub fn str_to_duration(s: &str) -> Option<i64> {
+    let l = s.to_lowercase();
+    let s = l.as_str();
+    let mut dur: i64 = 0;
+    let (sgn, mut s) = if s.starts_with('-') { (-1i64, s.trim_start_matches('-')) } else { (1i64, s) };
+    loop {
+        if s.is_empty() {
+            return Some(dur * sgn);
+        }
+        match s.find(|c| !('0'..='9').contains(&c)) {
+            None => {
+                let v = s.parse::<u32>().ok()?;
+                dur = (dur + v as i64) * sgn;
+                return Some(dur);
+            }
+            Some(pos) => {
+                let vs = &s[..pos];
+                let value = vs.parse::<u32>().ok()?;
+                s = &s[pos..];
+                let suffix = match s.find(|c| ('0'..='9').contains(&c)) {
+                    None => {
+                        let save = s;
+                        s = &s[..0];
+                        save
+                    }
+                    Some(pos) => {
+                        let save = &s[..pos];
+                        s = &s[pos..];
+                        save
+                    }
+                };
+                let value: i64 = match suffix {
+                    "w" => value as i64 * SEC_IN_WEEK,
+                    "d" => value as i64 * SEC_IN_DAY,
+                    "h" => value as i64 * SEC_IN_HOUR,
+                    "m" => value as i64 * SEC_IN_MINUTE,
+                    "s" | "" => value as i64,
+                    _ => return None,
+                };
+                dur += value;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bytes_test() {
+        struct Test {
+            s: &'static str,
+            v: usize,
+        }
+        let tests: Vec<Test> = vec![
+            Test { s: "4789", v: 4789 },
+            Test { s: "5k", v: 5 * KB },
+            Test { s: "2MiB", v: 2 * MB },
+            Test { s: "188Gb", v: 188 * GB },
+            Test { s: "24P", v: 24 * PB },
+        ];
+        for test in tests.iter() {
+            let v = str_to_bytes(test.s).unwrap();
+            assert_eq!(v, test.v, "\n{}: {} != {}", test.s, test.v, v);
+        }
+    }
+
+    #[test]
+    fn duration_test() {
+        struct Test {
+            s: &'static str,
+            d: i64,
+        }
+        let tests: Vec<Test> = vec![
+            Test { s: "7829", d: 7829 },
+            Test { s: "1d89", d: SEC_IN_DAY + 89 },
+            Test { s: "21h44m", d: SEC_IN_MINUTE * 44 + SEC_IN_HOUR * 21 },
+            Test { s: "3w2s", d: SEC_IN_WEEK * 3 + 2 },
+            Test { s: "-1m5s", d: -SEC_IN_MINUTE - 5 },
+            Test {
+                s: "11d12w13m14h10s",
+                d: SEC_IN_WEEK * 12 + SEC_IN_DAY * 11 + SEC_IN_HOUR * 14 + SEC_IN_MINUTE * 13 + 10,
+            },
+        ];
+        for test in tests.iter() {
+            let v = str_to_duration(test.s).unwrap();
+            assert_eq!(v, test.d, "\n{}: {} != {}", test.s, test.d, v);
+        }
+    }
+}

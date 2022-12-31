@@ -8,6 +8,8 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
+use crate::conv;
+
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
 const REL_COMPACT_WIDTH: usize = 3;
@@ -117,16 +119,6 @@ pub(crate) fn default_hashtag_color() -> ColorSpec {
     spc.set_fg(Some(Color::Cyan));
     spc
 }
-fn cut_string(s: &str, max_width: usize) -> &str {
-    let w = s.width();
-    if max_width == 0 || w >= max_width {
-        return s;
-    }
-    match s.char_indices().nth(max_width) {
-        Some((pos, _)) => &s[..pos],
-        None => s,
-    }
-}
 
 impl Default for Colors {
     fn default() -> Colors {
@@ -168,6 +160,236 @@ pub enum FmtSpec {
 pub struct FmtRule {
     pub range: FmtSpec,
     pub color: ColorSpec,
+}
+
+impl FmtRule {
+    fn matches_int(&self, value: &str) -> Option<ColorSpec> {
+        let v = value.parse::<i64>().ok()?;
+        match &self.range {
+            FmtSpec::List(l) => {
+                for item in l.iter() {
+                    if let Ok(vv) = item.parse::<i64>() {
+                        if vv == v {
+                            return Some(self.color.clone());
+                        }
+                    }
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    let e = e.parse::<i64>().ok()?;
+                    if v <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    let b = b.parse::<i64>().ok()?;
+                    if v >= b {
+                        return Some(self.color.clone());
+                    }
+                } else {
+                    let e = e.parse::<i64>().ok()?;
+                    let b = b.parse::<i64>().ok()?;
+                    if e >= b && (b..=e).contains(&v) {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+        }
+    }
+    fn matches_float(&self, value: &str) -> Option<ColorSpec> {
+        let v = value.parse::<f64>().ok()?;
+        match &self.range {
+            FmtSpec::List(l) => {
+                for item in l.iter() {
+                    if let Ok(vv) = item.parse::<f64>() {
+                        if vv == v {
+                            return Some(self.color.clone());
+                        }
+                    }
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    let e = e.parse::<f64>().ok()?;
+                    if v <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    let b = b.parse::<f64>().ok()?;
+                    if v >= b {
+                        return Some(self.color.clone());
+                    }
+                } else {
+                    let e = e.parse::<f64>().ok()?;
+                    let b = b.parse::<f64>().ok()?;
+                    if v >= b && v <= e {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+        }
+    }
+    fn matches_str(&self, value: &str) -> Option<ColorSpec> {
+        match &self.range {
+            FmtSpec::List(l) => {
+                if l.iter().any(|s| s.as_str() == value) {
+                    return Some(self.color.clone());
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    if value <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    if value >= b {
+                        return Some(self.color.clone());
+                    }
+                } else if value >= b && value <= e {
+                    return Some(self.color.clone());
+                }
+                None
+            }
+        }
+    }
+    fn matches_date(&self, value: &str) -> Option<ColorSpec> {
+        let today = Local::now().date_naive();
+        let v = todotxt::parse_date(value, today).ok()?;
+        match &self.range {
+            FmtSpec::List(l) => {
+                for item in l.iter() {
+                    let vv = todotxt::parse_date(item, today).ok()?;
+                    if vv == v {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    let e = todotxt::parse_date(e, today).ok()?;
+                    if v <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    let b = todotxt::parse_date(b, today).ok()?;
+                    if v >= b {
+                        return Some(self.color.clone());
+                    }
+                } else {
+                    let e = todotxt::parse_date(e, today).ok()?;
+                    let b = todotxt::parse_date(b, today).ok()?;
+                    if v >= b && v <= e {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+        }
+    }
+    fn matches_bytes(&self, value: &str) -> Option<ColorSpec> {
+        let v = conv::str_to_bytes(value)?;
+        match &self.range {
+            FmtSpec::List(l) => {
+                for item in l.iter() {
+                    let vv = conv::str_to_bytes(item)?;
+                    if vv == v {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    let e = conv::str_to_bytes(e)?;
+                    if v <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    let b = conv::str_to_bytes(b)?;
+                    if v >= b {
+                        return Some(self.color.clone());
+                    }
+                } else {
+                    let e = conv::str_to_bytes(e)?;
+                    let b = conv::str_to_bytes(b)?;
+                    if e >= b && (b..=e).contains(&v) {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+        }
+    }
+    fn matches_duration(&self, value: &str) -> Option<ColorSpec> {
+        let v = conv::str_to_duration(value)?;
+        match &self.range {
+            FmtSpec::List(l) => {
+                for item in l.iter() {
+                    let vv = conv::str_to_duration(item)?;
+                    if vv == v {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+            FmtSpec::Range(b, e) => {
+                if b.is_empty() && e.is_empty() {
+                    return Some(self.color.clone());
+                }
+                if b.is_empty() {
+                    let e = conv::str_to_duration(e)?;
+                    if v <= e {
+                        return Some(self.color.clone());
+                    }
+                } else if e.is_empty() {
+                    let b = conv::str_to_duration(b)?;
+                    if v >= b {
+                        return Some(self.color.clone());
+                    }
+                } else {
+                    let e = conv::str_to_duration(e)?;
+                    let b = conv::str_to_duration(b)?;
+                    if e >= b && (b..=e).contains(&v) {
+                        return Some(self.color.clone());
+                    }
+                }
+                None
+            }
+        }
+    }
+
+    fn matches(&self, value: &str, kind: &str) -> Option<ColorSpec> {
+        match kind {
+            "int" | "integer" => self.matches_int(value),
+            "float" => self.matches_float(value),
+            "date" => self.matches_date(value),
+            "duration" => self.matches_duration(value),
+            "bytes" => self.matches_bytes(value),
+            "str" | "string" => self.matches_str(value),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -264,7 +486,7 @@ impl Conf {
                 "duration" => return DURATION_LENGTH,
                 "date" => return "2002-10-10".width(),
                 "bytes" => return BYTES_LENGTH,
-                "string" => return STR_LENGTH,
+                "str" | "string" => return STR_LENGTH,
                 _ => return 0,
             }
         }
@@ -699,7 +921,7 @@ fn print_line(
                         None => String::new(),
                         Some(s) => s.to_string(),
                     };
-                    let value = cut_string(value.as_str(), width);
+                    let value = conv::cut_string(value.as_str(), width);
                     print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
                 }
             }

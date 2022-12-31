@@ -2,7 +2,7 @@
 name = "ttdl"
 version = "3.6.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
-edition = "2018"
+edition = "2021"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
 license = "MIT"
 description = "TTDL - Terminal ToDo List manager"
