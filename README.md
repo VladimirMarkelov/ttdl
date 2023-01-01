@@ -734,7 +734,7 @@ Custom field quirks and limitations
 Let's assume, you manage a team that includes you(`me`), technical writer(`Tina`), two junior developers(`Mike` and `Andy`), and a few middle developers.
 A task can have an estimation time and contain a day when you should check how the task is going (it is not the same as due date).
 
-For person responsible for a task you choose a tag `who:`(kind `string`), for estimation time - a tag `est:`(kind `duration`), and for check date - a tag `chk:`(kind `date`). 
+For person responsible for a task you choose a tag `who:`(kind `string`), for estimation time - a tag `est:`(kind `duration`), and for check date - a tag `chk:`(kind `date`).
 
 Now let's add colors to quickly read todos. You want to mark your tasks with red color, juniors' with bright blue color, documentation tasks are green color, the rest tasks has default color.
 Let's also separate tasks by estimated time:

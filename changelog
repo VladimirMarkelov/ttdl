@@ -1,8 +1,8 @@
-ttdl (3.5.0) unstable; urgency=medium
+ttdl (3.6.0) unstable; urgency=medium
 
-  * New feature: custom columns: define custom columns with hightlight rules
+  * New feature: custom columns: define custom columns with highlight rules
     in `ttdl.toml` and display them with `--fields=field-name` option.
-    Custom fields can show only values of a selected tag.
+    Custom columns shows values of selected tags.
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 31 Dec 2022 12:08:30 -0800
 
