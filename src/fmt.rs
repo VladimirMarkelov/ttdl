@@ -9,6 +9,7 @@ use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
 use crate::conv;
+use crate::human_date;
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -272,7 +273,7 @@ impl FmtRule {
         match &self.range {
             FmtSpec::List(l) => {
                 for item in l.iter() {
-                    let vv = todotxt::parse_date(item, today).ok()?;
+                    let vv = human_date::human_to_date(today, item, 7).ok()?;
                     if vv == v {
                         return Some(self.color.clone());
                     }
@@ -284,18 +285,18 @@ impl FmtRule {
                     return Some(self.color.clone());
                 }
                 if b.is_empty() {
-                    let e = todotxt::parse_date(e, today).ok()?;
+                    let e = human_date::human_to_date(today, e, 7).ok()?;
                     if v <= e {
                         return Some(self.color.clone());
                     }
                 } else if e.is_empty() {
-                    let b = todotxt::parse_date(b, today).ok()?;
+                    let b = human_date::human_to_date(today, b, 7).ok()?;
                     if v >= b {
                         return Some(self.color.clone());
                     }
                 } else {
-                    let e = todotxt::parse_date(e, today).ok()?;
-                    let b = todotxt::parse_date(b, today).ok()?;
+                    let e = human_date::human_to_date(today, e, 7).ok()?;
+                    let b = human_date::human_to_date(today, b, 7).ok()?;
                     if v >= b && v <= e {
                         return Some(self.color.clone());
                     }

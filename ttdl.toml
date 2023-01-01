@@ -125,3 +125,17 @@ tag_color = "bright cyan"
 hashtag_color = "cyan"
 project_color = "bright green"
 context_color = "green"
+
+# Example of a custom field of `date` type with conditional highlight.
+# [[fields]]
+# name = "chk" # tag name
+# title = "Check" # column title in the output
+# width = 0A # auto-width
+# kind = "date"
+# ### the following subarray is optional and can be omitted
+# [[fields.rules]]
+# range = "..yesterday" # overdue todo, i.e, check date is before today
+# color = "red"
+# [[fields.rules]]
+# range = "today..soon" # check must be done soon: between today and today+7 days, inclusive
+# color = "bright yellow"

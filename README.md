@@ -25,6 +25,8 @@
     - [Extra features](#extra-features)
       - [Syntax highlight](#syntax-highlight)
     - [Human-readable dates](#human-readable-dates)
+    - [Custom columns](#custom-columns)
+      - [Custom column example]($custom-column-example)
   - [Command line examples](#command-line-examples)
     - [List and filter](#list-and-filter)
     - [Add a new todo](#add-a-new-todo)
@@ -701,6 +703,109 @@ The list of supported abbreviations (more can be added in the future if needed):
    if current date is the last day of the month, the new date is the end of the month as well. E.g., `due:1m` when current date is `2020-02-29` sets due date to `2020-03-31`.
 4. `#` and `#-#` never sets the date in the past. So, if `#` is less than the current day of month, the resulting date is in the next, otherwise it is in the current period(month for `#`, year for `#-#`). The same rule about the last day of month as in `3.` is applied here: `due:29` for current date `2020-02-29` sets due date to `2020-03-31`.
 5. `#` and `#-#` accept values for a day in a range `[1..31]`, bigger numbers cause errors. If day number is greater than the number days in a month, the last day of the month is set. So, it is safe to use `due:31` for any month to set due date to the last day of the month. Examples: `due:31` for date `2020-02-05` sets the due date to `2020-02-29`, and `due:02-31` sets due date to `2020-02-29`.
+
+### Custom columns
+
+Tags are useful to keep extra information but even with syntax highlighting it may be hard to spot a certain tag inside a long subject.
+Custom columns allows you to display values of selected tags in a separate columns for better readability.
+In addition, it is possible to define rules to set the output color depending on a tag value.
+
+Two steps to enable custom columns:
+
+1. Define all custom columns in the configuration file: add an array of `[[fields]]` to the configuration. Optionally, add highlight rules for columns as an array `[[fields.rules]]`.
+2. New columns are hidden by default. To show them, pass `--fields=field1,field2` in the command line.
+
+Custom field quirks and limitations
+
+- Every column has 5 properties: name, title, kind, width, and highlight rules. All of them, except highlight rules are mandatory. The property `width` can be set to `0` - in this case its width is chosen by TTDL
+- At this moment, automatic width does not check all values of a tag to calculate its maximal width. It just sets the width depending on the column kind. So, except  columns of `date` kind, the other column widths probably would be too wide or too short most of the time
+- TTDL does basic check for custom columns properties: the `color` must be valid; the `kind` must be one of `str`(its alias is `string`), `int`(its alias is `integer`), `float`, `date`, `duration`, and `bytes`; if `width` is not `0`, the length of `title` must be equal to or less than `width`
+- If a value is too long, it is truncated to the column `width` - no word wrap for custom columns
+- Custom columns are always displayed after the built-in ones and the order is the same in which they are defined in the configuration file
+- Highlight rules provide two properties: `range` and `color`. The property `range` can be on of three types: empty string - it matches any value, list of values separated with a comma - a tag value must equal any of the list values, range - two values separated with `..`(open ranges like `..5` or `5..` are allowed)
+- All rules are tested in the order of their declaration in the configuration file
+- Both ends of a range are inclusive. But because of the previous bullet point, you can simulate non-inclusive ends. E.g, defining `4..` rule before `0..4` makes the latter rule non-inclusive(i.e, it becomes equal to `>=0 && < 4` because `4` always matches the former rule `>= 4`)
+- For columns of `duration` kind you can set human-readable duration and TTDL compares them correctly. Available suffixes: `w` - a week, `d` - a day, `h` - an hour, `m` - a minute, `s` - a second. As a rule, `s` can be omitted - a value without any suffixes is considered as a value in seconds. A tag value can include any number of intervals in any order, e.g, `89m1d5` is the same as `1d1h29m5s` or one day and one hour and 29 minutes and 5 seconds
+- For columns of `bytes` kind you can standard suffixes. One letter ones: `k`, `m`, `g`, `t`, `p`, `e`. Two letter ones: `kb`, `mb`, `gb`, `tb`, `pb` , `eb`. Three letter ones: `kib`, `mib`, `gib`, `tib`, `pib`, `eib`. Note: at this moment all suffixes are multiple of `1024`, so `k` = `kb` = `kib` = `1024 bytes`. A value without suffixes is in bytes. In opposite to `duration`, this kind of values can have only one suffix. So, e.g., `1mb2kb` is invalid value and it is treated as an empty value
+- Rules for `date` columns can include special dates: `yesterday`, `today`, `tomorrow`, `soon`(currently it is today + 7 days), `last` - the last day of the month, `first` - the first day of the month, day of week(`friday` - this upcoming Friday). It makes rules more flexible.
+
+#### Custom column example
+
+Let's assume, you manage a team that includes you(`me`), technical writer(`Tina`), two junior developers(`Mike` and `Andy`), and a few middle developers.
+A task can have an estimation time and contain a day when you should check how the task is going (it is not the same as due date).
+
+For person responsible for a task you choose a tag `who:`(kind `string`), for estimation time - a tag `est:`(kind `duration`), and for check date - a tag `chk:`(kind `date`). 
+
+Now let's add colors to quickly read todos. You want to mark your tasks with red color, juniors' with bright blue color, documentation tasks are green color, the rest tasks has default color.
+Let's also separate tasks by estimated time:
+
+- green color for tiny tasks (less than or equal to 1 hour)
+- blue color for small tasks (between 1 hour and 4 hours)
+- red color for huge tasks (1 week or longer)
+
+The last highlight is for check date. Overdue checks are red.
+Checks that should be done first(i.e, they are coming today or `soon`) are bright yellow.
+
+Now open `ttdl.toml` and add the custom columns with rules to it:
+
+```toml
+[[fields]]
+name = "who" # tag name
+title = "Who" # Title of the column in the output
+kind = "string" # type of the tag value. If you are not going to use `fields.rules`
+                # for coloring, it is safe to set `string` kind for every column.
+width = 8 # column width
+[[fields.rules]]
+range = "Tina"
+color = "green"
+[[fields.rules]]
+range = "Andy,Mike" # either of juniors: Andy or Mike
+color = "bright blue"
+[[fields.rules]]
+range = "me" # my tasks
+color = "red"
+
+[[fields]]
+name = "est"
+title = "Estimate"
+kind = "duration"
+width = 8
+[[fields.rules]]
+range = "..1h"  # shorter than or equal to 1 hour
+color = "green"
+[[fields.rules]]
+range = "1h..4h" # >= 1 hour and <= 4 hours
+color = "blue"
+[[fields.rules]]
+range = "1w.." # 1 week or longer
+color = "red"
+
+[[fields]]
+name = "chk"
+title = "Check"
+width = 0
+kind = "date"
+[[fields.rules]]
+range = "..yesterday" # overdue check
+color = "red"
+[[fields.rules]]
+range = "today..soon" # between today and today+7 days, inclusive
+color = "bright yellow"
+```
+
+Let's assume that today is `2022-12-31` and your `todo.txt` looks like this:
+
+```
+2022-10-10 update docs est:1w who:Tina chk:2023-01-09
+2022-07-20 design mail server who:me est:1d4h
+2022-07-25 fix crash in logger est:2h who:John
+2022-10-10 upgrade dependencies who:Mike est:4h chk:2022-12-27
+2022-10-11 write test for new API call who:Andy est:1h chk:2023-01-03
+```
+
+After that, if your the command `ttdl --fields=who,est,chk`, you'll see this output in the terminal window:
+
+<img src="./images/custom-columns.png" alt="Custom columns">
 
 ## Command line examples
 

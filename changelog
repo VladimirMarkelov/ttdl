@@ -1,5 +1,13 @@
 ttdl (3.5.0) unstable; urgency=medium
 
+  * New feature: custom columns: define custom columns with hightlight rules
+    in `ttdl.toml` and display them with `--fields=field-name` option.
+    Custom fields can show only values of a selected tag.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 31 Dec 2022 12:08:30 -0800
+
+ttdl (3.5.0) unstable; urgency=medium
+
   * Added command-line options to modify arbitrary tags: `--set-tag` and
     `--del-tag`
   * Added command-line options to manage hashtags: `--set-hashtag`,
