@@ -727,7 +727,8 @@ Custom field quirks and limitations
 - Both ends of a range are inclusive. But because of the previous bullet point, you can simulate non-inclusive ends. E.g, defining `4..` rule before `0..4` makes the latter rule non-inclusive(i.e, it becomes equal to `>=0 && < 4` because `4` always matches the former rule `>= 4`)
 - For columns of `duration` kind you can set human-readable duration and TTDL compares them correctly. Available suffixes: `w` - a week, `d` - a day, `h` - an hour, `m` - a minute, `s` - a second. As a rule, `s` can be omitted - a value without any suffixes is considered as a value in seconds. A tag value can include any number of intervals in any order, e.g, `89m1d5` is the same as `1d1h29m5s` or one day and one hour and 29 minutes and 5 seconds
 - For columns of `bytes` kind you can standard suffixes. One letter ones: `k`, `m`, `g`, `t`, `p`, `e`. Two letter ones: `kb`, `mb`, `gb`, `tb`, `pb` , `eb`. Three letter ones: `kib`, `mib`, `gib`, `tib`, `pib`, `eib`. Note: at this moment all suffixes are multiple of `1024`, so `k` = `kb` = `kib` = `1024 bytes`. A value without suffixes is in bytes. In opposite to `duration`, this kind of values can have only one suffix. So, e.g., `1mb2kb` is invalid value and it is treated as an empty value
-- Rules for `date` columns can include special dates: `yesterday`, `today`, `tomorrow`, `soon`(currently it is today + 7 days), `last` - the last day of the month, `first` - the first day of the month, day of week(`friday` - this upcoming Friday). It makes rules more flexible.
+- Rules for `date` columns can include special dates: `yesterday`, `today`, `tomorrow`, `soon`(currently it is today + 7 days), `last` - the last day of the month, `first` - the first day of the month, day of week(`friday` - this upcoming Friday). It makes rules more flexible
+- While rules for `date` column support special dates, the tag value must be a date in format `YYYY-MM-DD`.
 
 #### Custom column example
 
