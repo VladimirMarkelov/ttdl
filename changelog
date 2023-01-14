@@ -3,6 +3,7 @@ ttdl (3.6.0) unstable; urgency=medium
   * New feature: custom columns: define custom columns with highlight rules
     in `ttdl.toml` and display them with `--fields=field-name` option.
     Custom columns shows values of selected tags.
+  * Switch to 2021 Rust edition
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 31 Dec 2022 12:08:30 -0800
 
