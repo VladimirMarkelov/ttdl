@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "3.6.1"
+version = "3.6.2"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2021"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
