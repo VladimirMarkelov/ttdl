@@ -101,7 +101,7 @@ impl Conf {
 }
 
 fn print_usage(program: &str, opts: &Options) {
-    let brief = format!("Usage: {} command [ID or ID range] [subject] [filter] [new values] [extra options]", program);
+    let brief = format!("Usage: {program} command [ID or ID range] [subject] [filter] [new values] [extra options]");
     print!("{}", opts.usage(&brief));
 
     println!("\n\n[ID or ID range] - ID is the order number of a todo starting from 1. The range is inclusive. It is OK to use non-existing IDs - all invalid IDs are skipped while processing the command
@@ -175,7 +175,7 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl stats --short` - displays only the number of total, active, done, overdue, and recurrent todos
         `ttdl stats` - detailed view with additional grouping by project and displaying total time spent on each group
     "#;
-    println!("{}\n\n{}\n\n{}\n\n{}", commands, filter, newones, extras);
+    println!("{commands}\n\n{filter}\n\n{newones}\n\n{extras}");
 }
 
 fn str_to_mode(s: &str) -> RunMode {
@@ -928,7 +928,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     };
 
     if conf.verbose {
-        println!("Loading configuration from: {:?}", path);
+        println!("Loading configuration from: {path:?}");
     }
     if !path.exists() {
         return Ok(());
@@ -1120,7 +1120,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => {
-            println!("{}", e);
+            println!("{e}");
             print_usage(&program, &opts);
             exit(1);
         }
@@ -1128,7 +1128,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
 
     if matches.opt_present("version") {
         let version = env!("CARGO_PKG_VERSION");
-        println!("TTDL Version {}", version);
+        println!("TTDL Version {version}");
         exit(0);
     }
     if matches.opt_present("h") {

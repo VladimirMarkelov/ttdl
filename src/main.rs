@@ -69,10 +69,10 @@ fn process_tasks(
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
         } else {
             let widths = fmt::field_widths(&c.fmt, tasks, &todos);
-            writeln!(stdout, "Todos to be {}:", action)?;
+            writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &c.fmt, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &widths, false)?;
             writeln!(stdout, "\nReplace with:")?;
@@ -85,7 +85,7 @@ fn process_tasks(
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
             Ok(false)
         } else {
             let widths = fmt::field_widths(&c.fmt, tasks, &todos);
@@ -118,7 +118,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
 
     let id = todo::add(tasks, &conf.todo);
     if id == todo::INVALID_ID {
-        writeln!(stdout, "Failed to add: parse error '{}'", subj)?;
+        writeln!(stdout, "Failed to add: parse error '{subj}'")?;
         std::process::exit(1);
     }
 
@@ -127,7 +127,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     fmt::print_header(stdout, &conf.fmt, &widths)?;
     fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &widths, false)?;
     if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-        writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+        writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
         std::process::exit(1);
     }
     Ok(())
@@ -243,7 +243,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
     let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-            eprintln!("Failed to save to '{:?}': {}", &conf.todo_file, e);
+            eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
             std::process::exit(1);
         }
     }
@@ -259,7 +259,7 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", todo::undone)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
-            writeln!(stdout, "Failed to save to '{:?}': {}", &flt_conf.todo_file, e)?;
+            writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
             std::process::exit(1);
         }
     }
@@ -288,7 +288,7 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
             let removed = todo::remove(tasks, Some(&todos));
             if calculate_updated(&removed) != 0 {
                 if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
-                    writeln!(stdout, "Failed to save to '{:?}': {}", &flt_conf.todo_file, e)?;
+                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
                     std::process::exit(1);
                 }
             }
@@ -317,14 +317,14 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
             let cloned = todo::clone_tasks(tasks, &todos);
             if !conf.wipe {
                 if let Err(e) = todo::archive(&cloned, &conf.done_file) {
-                    eprintln!("{:?}", e);
+                    eprintln!("{e:?}");
                     exit(1);
                 }
             }
             let removed = todo::remove(tasks, Some(&todos));
             if calculate_updated(&removed) != 0 {
                 if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                    writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                     std::process::exit(1);
                 }
             }
@@ -344,10 +344,10 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
         } else {
             let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
-            writeln!(stdout, "Todos to be {}:", action)?;
+            writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &conf.fmt, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
@@ -359,7 +359,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
         } else {
             let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
             writeln!(stdout, "Changed todos:")?;
@@ -367,7 +367,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
             }
         }
@@ -440,7 +440,7 @@ fn task_add_text(
         fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-            writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+            writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
             std::process::exit(1);
         }
     }
@@ -456,17 +456,17 @@ fn task_start_stop(
     let todos = filter_tasks(tasks, conf);
     let action = if start { "started" } else { "stopped" };
     if todos.is_empty() {
-        writeln!(stdout, "No todo {}", action)?
+        writeln!(stdout, "No todo {action}")?
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let updated = if start { todo::start(&mut clones, None) } else { todo::stop(&mut clones, None) };
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
         } else {
             let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
-            writeln!(stdout, "Todos to be {}:", action)?;
+            writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &conf.fmt, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
@@ -478,7 +478,7 @@ fn task_start_stop(
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
-            writeln!(stdout, "No todo was {}", action)?;
+            writeln!(stdout, "No todo was {action}")?;
         } else {
             let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
             writeln!(stdout, "Changed todos:")?;
@@ -486,7 +486,7 @@ fn task_start_stop(
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
             }
         }
@@ -505,7 +505,7 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
     let rec = match todotxt::Recurrence::from_str(subj) {
         Ok(r) => r,
         Err(e) => {
-            writeln!(stdout, "Invalid recurrence format: {:?}", e)?;
+            writeln!(stdout, "Invalid recurrence format: {e:?}")?;
             return Ok(());
         }
     };
@@ -561,7 +561,7 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{:?}': {}", &conf.todo_file, e)?;
+                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
             }
         }
@@ -601,7 +601,7 @@ fn task_list_projects(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     // would mess up the alphabetical output sort
 
     for item in collect_unique_items(tasks, &todos, |task| &task.projects) {
-        writeln!(stdout, "{}", item)?;
+        writeln!(stdout, "{item}")?;
     }
     Ok(())
 }
@@ -614,7 +614,7 @@ fn task_list_contexts(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     // would mess up the alphabetical output sort
 
     for item in collect_unique_items(tasks, &todos, |task| &task.contexts) {
-        writeln!(stdout, "{}", item)?;
+        writeln!(stdout, "{item}")?;
     }
     Ok(())
 }
@@ -625,7 +625,7 @@ fn main() {
     let mut conf = match conf::parse_args(&args) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             exit(1);
         }
     };
@@ -634,7 +634,7 @@ fn main() {
         match todo::load(Path::new(&conf.done_file)) {
             Ok(tlist) => tlist,
             Err(e) => {
-                eprintln!("Failed to load todo list: {:?}", e);
+                eprintln!("Failed to load todo list: {e:?}");
                 exit(1);
             }
         }
@@ -642,7 +642,7 @@ fn main() {
         match todo::load(Path::new(&conf.todo_file)) {
             Ok(tlist) => tlist,
             Err(e) => {
-                eprintln!("Failed to load done list: {:?}", e);
+                eprintln!("Failed to load done list: {e:?}");
                 exit(1);
             }
         }
@@ -694,7 +694,7 @@ fn main() {
     };
     if let Err(e) = err {
         if e.kind() != io::ErrorKind::BrokenPipe {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
     }

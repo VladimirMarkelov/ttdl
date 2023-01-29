@@ -181,7 +181,7 @@ fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
     }
     if base == dt {
         // bad due date
-        return Err(format!("invalid date '{}'", human));
+        return Err(format!("invalid date '{human}'"));
     }
     Ok(dt)
 }
@@ -217,10 +217,10 @@ pub(crate) fn prev_weekday(base: NaiveDate, wd: Weekday) -> NaiveDate {
 //      today=2022-06-20, human="19" --> 2022-07-19
 fn day_of_first_month(base: NaiveDate, human: &str) -> HumanResult {
     match human.parse::<u32>() {
-        Err(e) => Err(format!("invalid day of month: {:?}", e)),
+        Err(e) => Err(format!("invalid day of month: {e:?}")),
         Ok(n) => {
             if n == 0 || n > 31 {
-                Err(format!("Day number too big: {}", n))
+                Err(format!("Day number too big: {n}"))
             } else {
                 let mut m = base.month();
                 let mut y = base.year();
@@ -251,7 +251,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
         Err(_) => return Err(format!("invalid month number: {}", parts[0])),
         Ok(n) => {
             if !(1..=12).contains(&n) {
-                return Err(format!("month number must be between 1 and 12 ({})", n));
+                return Err(format!("month number must be between 1 and 12 ({n})"));
             }
             n
         }
@@ -260,7 +260,7 @@ fn no_year_date(base: NaiveDate, human: &str) -> HumanResult {
         Err(_) => return Err(format!("invalid day number: {}", parts[1])),
         Ok(n) => {
             if !(1..=31).contains(&n) {
-                return Err(format!("day number must be between 1 and 31 ({})", n));
+                return Err(format!("day number must be between 1 and 31 ({n})"));
             }
             let mx = days_in_month(y, m);
             if n > mx {
@@ -290,7 +290,7 @@ fn is_absolute(name: &str) -> bool {
 fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -> HumanResult {
     let s = human.replace(&['-', '_'][..], "").to_lowercase();
     if back && is_absolute(human) {
-        return Err(format!("'{}' cannot be back", human));
+        return Err(format!("'{human}' cannot be back"));
     }
     match s.as_str() {
         "today" => Ok(base),
@@ -394,7 +394,7 @@ fn special_time_point(base: NaiveDate, human: &str, back: bool, soon_days: u8) -
                 Ok(next_weekday(base, Weekday::Sun))
             }
         }
-        _ => Err(format!("invalid date '{}'", human)),
+        _ => Err(format!("invalid date '{human}'")),
     }
 }
 
@@ -451,7 +451,7 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str, soon_days: u8) -> O
     match human_to_date(base, human, soon_days) {
         Err(e) => {
             if e != NO_CHANGE {
-                eprintln!("invalid due date: {}", human);
+                eprintln!("invalid due date: {human}");
             }
             None
         }

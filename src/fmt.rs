@@ -697,7 +697,7 @@ fn color_for_threshold_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorS
 
 fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) -> io::Result<()> {
     stdout.set_color(color)?;
-    write!(stdout, "{}", msg)
+    write!(stdout, "{msg}")
 }
 
 fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpec, c: &Conf) -> io::Result<()> {
@@ -717,7 +717,7 @@ fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpe
         } else {
             stdout.set_color(color)?;
         }
-        write!(stdout, "{}", word)?;
+        write!(stdout, "{word}")?;
     }
     Ok(())
 }
@@ -749,7 +749,7 @@ pub fn duration_str(d: Duration) -> String {
     }
 
     if s < 60 {
-        format!("{}s", s)
+        format!("{s}s")
     } else if s < 60 * 60 {
         format!("{:.1}m", (s as f64) / 60.0)
     } else if s < 60 * 60 * 24 {
@@ -829,7 +829,7 @@ fn print_date_val(
     let mut st = if let Some(d) = dt {
         if c.is_human(field) {
             let (s, _) = format_relative_date(*d, c.compact);
-            format!("{:wid$} ", s, wid = width)
+            format!("{s:width$} ")
         } else {
             format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
         }
@@ -839,7 +839,7 @@ fn print_date_val(
     if !arg.is_empty() {
         let tags = if field == "created" || field == "finished" { &arg[JSON_OPT] } else { &arg[JSON_SPEC] };
         if let Some(v) = arg_field_as_str(tags, field) {
-            st = format!("{:wid$.wid$} ", v, wid = width);
+            st = format!("{v:width$.width$} ");
         }
     }
     print_with_color(stdout, &st, &def_color)
@@ -862,7 +862,7 @@ fn print_line(
         desc = task.subject.clone();
     }
 
-    print_with_color(stdout, &format!("{:>wid$} ", id, wid = id_width), &fg)?;
+    print_with_color(stdout, &format!("{id:>id_width$} "), &fg)?;
 
     let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
     for f in FIELDS.iter().chain(cn.iter()) {
@@ -925,7 +925,7 @@ fn print_line(
                 let name = if *f == "uid" { "id" } else { *f };
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
-                print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &fg)?;
+                print_with_color(stdout, &format!("{value:width$} "), &fg)?;
             }
             n => {
                 if let Some(f) = c.custom_field(n) {
@@ -936,7 +936,7 @@ fn print_line(
                     };
                     let value = conv::cut_string(&value, width);
                     let clr = f.matches(value).unwrap_or_else(|| fg.clone());
-                    print_with_color(stdout, &format!("{:wid$} ", value, wid = width), &clr)?;
+                    print_with_color(stdout, &format!("{value:width$} "), &clr)?;
                 }
             }
         }
@@ -977,18 +977,18 @@ fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {
         if !command_in_json(&arg, &cmd) {
             continue;
         }
-        let bin_name = format!("{}{}", PLUG_PREFIX, cmd.trim_start_matches('!'));
+        let bin_name = format!("{PLUG_PREFIX}{0}", cmd.trim_start_matches('!'));
         let args = json::stringify(arg);
         let output = exec_plugin(c, &bin_name, &args);
         match output {
             Err(e) => {
-                eprintln!("Failed to execute plugin '{}': {}", bin_name, e);
+                eprintln!("Failed to execute plugin '{bin_name}': {e}");
                 return None;
             }
             Ok(s) => match json::parse(&s) {
                 Ok(j) => arg = j,
                 Err(e) => {
-                    eprintln!("Failed to parse output of plugin {}: {}\nOutput: {}", bin_name, e, s);
+                    eprintln!("Failed to parse output of plugin {bin_name}: {e}\nOutput: {s}");
                     return None;
                 }
             },
@@ -1021,7 +1021,7 @@ fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json:
                 continue;
             }
             if let Some(st) = val.as_str() {
-                res += &(format!(" {}:{}", key, st));
+                res += &(format!(" {key}:{st}"));
             }
         }
     }
@@ -1033,7 +1033,7 @@ fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json:
 fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
     let mut plugin_bin = plugin.to_string();
     if !c.script_prefix.is_empty() {
-        plugin_bin = format!("{}{}", c.script_prefix, plugin_bin);
+        plugin_bin = format!("{0}{plugin_bin}", c.script_prefix);
     }
     if !c.script_ext.is_empty() {
         if c.script_ext.starts_with('.') {
@@ -1054,21 +1054,21 @@ fn exec_plugin(c: &Conf, plugin: &str, args: &str) -> Result<String, String> {
 
     let mut proc = match cmd.spawn() {
         Ok(p) => p,
-        Err(e) => return Err(format!("Failed to execute {}: {}", plugin, e)),
+        Err(e) => return Err(format!("Failed to execute {plugin}: {e}")),
     };
     {
         let stdin = match proc.stdin.as_mut() {
             Some(si) => si,
-            None => return Err(format!("Failed to open stdin for {}", plugin)),
+            None => return Err(format!("Failed to open stdin for {plugin}")),
         };
         if let Err(e) = stdin.write_all(args.as_bytes()) {
-            return Err(format!("Failed to write to {} stdin: {}", plugin, e));
+            return Err(format!("Failed to write to {plugin} stdin: {e}"));
         }
     }
 
     let out = match proc.wait_with_output() {
         Ok(o) => o,
-        Err(e) => return Err(format!("Failed to read {} stdout: {}", plugin, e)),
+        Err(e) => return Err(format!("Failed to read {plugin} stdout: {e}")),
     };
     Ok(String::from_utf8_lossy(&out.stdout).to_string())
 }
@@ -1131,7 +1131,7 @@ fn format_days(num: i64, compact: bool) -> String {
                 "today".to_string()
             }
         }
-        days @ 1..=6 => format!("{}d", days),
+        days @ 1..=6 => format!("{days}d"),
         days @ 7..=29 => format!("{}w", days / 7),
         days @ 30..=364 => format!("{}m", days / 30),
         days => format!("{}y", days / 365),
@@ -1145,11 +1145,11 @@ fn format_relative_due_date(dt: NaiveDate, compact: bool) -> (String, i64) {
     let v = if compact {
         dstr
     } else if diff < 0 {
-        format!("{} overdue", dstr)
+        format!("{dstr} overdue")
     } else if diff == 0 {
         dstr
     } else {
-        format!("in {}", dstr)
+        format!("in {dstr}")
     };
     (v, diff)
 }
@@ -1163,9 +1163,9 @@ fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
     }
 
     let v = match diff.cmp(&0) {
-        Ordering::Less => format!("{} ago", dstr),
+        Ordering::Less => format!("{dstr} ago"),
         Ordering::Equal => dstr,
-        Ordering::Greater => format!("in {}", dstr),
+        Ordering::Greater => format!("in {dstr}"),
     };
     (v, diff)
 }

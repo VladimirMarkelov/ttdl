@@ -165,14 +165,14 @@ fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::
         cw = CTX_WIDTH,
         nw = NUM_WIDTH
     );
-    writeln!(stdout, "{}", header)?;
+    writeln!(stdout, "{header}")?;
     let sep = "-".repeat(header.len());
 
     for s in st.stats.iter() {
         let prj = if s.prj == last_prj {
             String::new()
         } else {
-            writeln!(stdout, "{}", sep)?;
+            writeln!(stdout, "{sep}")?;
             last_prj = s.prj.clone();
             proj_total = s.total;
             if s.prj.len() > PRJ_WIDTH {
@@ -181,10 +181,10 @@ fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::
                 s.prj.clone()
             }
         };
-        write!(stdout, "{:w$} ", prj, w = PRJ_WIDTH)?;
+        write!(stdout, "{prj:PRJ_WIDTH$} ")?;
 
         let ctx = if s.ctx.len() > CTX_WIDTH { format!("{:.w$}", s.ctx, w = CTX_WIDTH) } else { s.ctx.clone() };
-        write!(stdout, "{:w$} ", ctx, w = CTX_WIDTH)?;
+        write!(stdout, "{ctx:CTX_WIDTH$} ")?;
 
         let div_by = if s.ctx.is_empty() { length } else { proj_total };
         let sn = format!("{}({:>3}%)", s.total, s.total * 100 / div_by);
