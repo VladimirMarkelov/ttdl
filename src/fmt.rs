@@ -946,7 +946,7 @@ fn print_line(
         let (skip, subj_w) = calc_width(c, fields, widths);
         let lines = textwrap::wrap(&desc, subj_w);
         if c.long == LongLine::Cut || lines.len() == 1 {
-            print_with_color(stdout, &format!("{}\n", lines[0]), &fg)?;
+            print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
         } else {
             for (i, line) in lines.iter().enumerate() {
                 if i != 0 {
