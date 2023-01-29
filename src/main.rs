@@ -300,7 +300,16 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
 fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     let mut conf = conf.clone();
     conf.flt = tfilter::Conf { all: tfilter::TodoStatus::Done, ..conf.flt.clone() };
-    let todos = filter_tasks(tasks, &conf);
+    let mut todos = filter_tasks(tasks, &conf);
+    let done_todos = todos.clone();
+    if !conf.keep_empty {
+        let mut empty_conf = conf.clone();
+        empty_conf.flt = tfilter::Conf { all: tfilter::TodoStatus::Empty, ..conf.flt.clone() };
+        let mut empty_todos = filter_tasks(tasks, &empty_conf);
+        for et in empty_todos.drain(..) {
+            todos.push(et);
+        }
+    }
     if todos.is_empty() {
         writeln!(stdout, "No todo archived")?
     } else {
@@ -314,7 +323,7 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
         fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &widths)?;
         if !conf.dry {
-            let cloned = todo::clone_tasks(tasks, &todos);
+            let cloned = todo::clone_tasks(tasks, &done_todos);
             if !conf.wipe {
                 if let Err(e) = todo::archive(&cloned, &conf.done_file) {
                     eprintln!("{e:?}");

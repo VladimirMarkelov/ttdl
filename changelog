@@ -1,3 +1,12 @@
+ttdl (3.6.2) unstable; urgency=medium
+
+  * Empy todos are hidden by default. To show empty todos, use the
+    command-line option `--all`
+  * Command `clean`(`archive`) removes empty todos as well. To keep
+    empty todos, pass the command-line option `--keep-empty`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 29 Jan 2023 14:11:01 -0800
+
 ttdl (3.6.1) unstable; urgency=medium
 
   * The command-line option `--syntax` did not work in `--compact` mode

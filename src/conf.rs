@@ -62,6 +62,7 @@ pub struct Conf {
     pub show_hidden: bool,
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
+    pub keep_empty: bool,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -84,6 +85,7 @@ impl Default for Conf {
             show_hidden: false,
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
+            keep_empty: false,
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -1116,6 +1118,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     );
     opts.optflag("", "syntax", "Enable keyword highlights when printing subject");
     opts.optflag("", "no-syntax", "Disable keyword highlights when printing subject");
+    opts.optflag("", "keep-empty", "do not remove empty todos when cleaning up(archiving) the list");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1169,6 +1172,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     }
 
     let soon_days = conf.fmt.colors.soon_days;
+    conf.keep_empty = matches.opt_present("keep-empty");
     parse_filter(&matches, &mut conf.flt, soon_days)?;
 
     let mut idx: usize = 0;

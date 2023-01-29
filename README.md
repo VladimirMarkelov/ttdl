@@ -320,7 +320,12 @@ Use command-line option `-e` to enable fuzzy regular expression based filter.
 
 ### Archive
 
-In the long run a todo list gets full of completed tasks. They may slow down the todo list management. If you do not need to keep completed stuff, you can delete them using command `remove`. But if completed tasks must be kept for a while, you can archive them. Execute `clean`(or `archive`) command and completed tasks will be moved from the actual todo list to its archive.
+In the long run a todo list gets full of completed tasks. They may slow down the todo list management.
+If you do not need to keep completed stuff, you can delete them using command `remove`.
+But if completed tasks must be kept for a while, you can archive them.
+Execute `clean`(or `archive`) command and completed tasks will be moved from the actual todo list to its archive.
+Cleaning up automatically removes also all empty todos.
+To keep empty todos, pass the command-line option `--keep-empty`.
 
 Archiving completed todos makes the actual todo list loading faster. Though it has a few drawbacks:
 
@@ -355,7 +360,7 @@ Commands:
 - done - mark selected todos completed. If a todo is recurrent and contains due or threshold date(or both) the todo is marked completed and new one is created with due and threshold dates moved to the future;
 - undone - remove `finished` mark from completed todos;
 - remove - deletes the selected todos;
-- clean - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located;
+- clean - moves completed todos from main file to `done.txt`. The file `done.txt` is created(if it does not exist) in the same directory where main todo list file is located. By default, the command also removes all empty todos;
 - edit - modify one or few properties for the selected todos. One exception: modifying todo's subject changes only the first selected todo, others are skipped;
 - append - adds a text to the end of the selected todos (space between old text and new one is added automatically);
 - prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically);
@@ -847,13 +852,15 @@ By default todos from a given range are processed only if they are incomplete. T
 
 ### Clean up the list
 
-| Command                 | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `ttdl rm 2-5`           | delete incomplete todos with IDs from 2 through 5                                                   |
-| `ttdl rm 2-5 -a`        | delete both done and incomplete todos with IDs from 2 through 5                                     |
-| `ttdl rm 2-5 -A`        | delete all done todos with IDs from 2 through 5                                                     |
-| `ttdl clean 2-5 --wipe` | delete all completed todos with IDs from 2 through 5. It does the same as the previous command does |
-| `ttdl clean 2-5`        | move all completed todos with IDs from 2 through 5 to done.txt                                      |
+| Command                   | Description                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ttdl rm 2-5`             | delete incomplete todos with IDs from 2 through 5                                                   |
+| `ttdl rm 2-5 -a`          | delete both done and incomplete todos with IDs from 2 through 5                                     |
+| `ttdl rm 2-5 -A`          | delete all done todos with IDs from 2 through 5                                                     |
+| `ttdl clean 2-5 --wipe`   | delete all completed todos with IDs from 2 through 5. It does the same as the previous command does |
+| `ttdl clean 2-5`          | move all completed todos with IDs from 2 through 5 to done.txt                                      |
+| `ttdl clean --keep-empty` | move all completed todos to done.txt and erase empty todos from todo.txt                            |
+| `ttdl clean --keep-empty` | move all completed todos to done.txt and keep empty todos in todo.txt                               |
 
 ### Modify todo list
 
