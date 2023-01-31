@@ -28,7 +28,7 @@ struct RangeEnds {
     l: usize,
     r: usize,
 }
-const RANGE_END_SKIP: usize = 8_999_999_999_998;
+const RANGE_END_SKIP: usize = 1_999_999_999;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RunMode {
