@@ -1,11 +1,11 @@
 use unicode_width::UnicodeWidthStr;
 
-const KB: usize = 1024;
-const MB: usize = KB * 1024;
-const GB: usize = MB * 1024;
-const TB: usize = GB * 1024;
-const PB: usize = TB * 1024;
-const EB: usize = PB * 1024;
+const KB: u64 = 1024;
+const MB: u64 = KB * 1024;
+const GB: u64 = MB * 1024;
+const TB: u64 = GB * 1024;
+const PB: u64 = TB * 1024;
+const EB: u64 = PB * 1024;
 
 const SEC_IN_MINUTE: i64 = 60;
 const SEC_IN_HOUR: i64 = SEC_IN_MINUTE * 60;
@@ -14,7 +14,7 @@ const SEC_IN_WEEK: i64 = SEC_IN_DAY * 7;
 
 struct ByteSize {
     s: &'static str,
-    m: usize,
+    m: u64,
 }
 
 lazy_static! {
@@ -50,16 +50,16 @@ pub fn cut_string(s: &str, max_width: usize) -> &str {
         None => s,
     }
 }
-pub fn str_to_bytes(s: &str) -> Option<usize> {
+pub fn str_to_bytes(s: &str) -> Option<u64> {
     let l = s.to_lowercase();
     for sz in BYTES.iter() {
         if l.ends_with(sz.s) {
             let lv = l.trim_end_matches(sz.s);
-            let sb = lv.parse::<usize>().ok()?;
+            let sb = lv.parse::<u64>().ok()?;
             return Some(sb * sz.m);
         }
     }
-    s.parse::<usize>().ok()
+    s.parse::<u64>().ok()
 }
 pub fn str_to_duration(s: &str) -> Option<i64> {
     let l = s.to_lowercase();
@@ -114,7 +114,7 @@ mod tests {
     fn bytes_test() {
         struct Test {
             s: &'static str,
-            v: usize,
+            v: u64,
         }
         let tests: Vec<Test> = vec![
             Test { s: "4789", v: 4789 },
