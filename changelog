@@ -1,3 +1,9 @@
+ttdl (3.6.3) unstable; urgency=medium
+
+  * Improve 32-bit compiler support
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 31 Jan 2023 22:00:33 -0800
+
 ttdl (3.6.2) unstable; urgency=medium
 
   * Empy todos are hidden by default. To show empty todos, use the
