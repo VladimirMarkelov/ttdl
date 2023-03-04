@@ -109,10 +109,10 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     let now = chrono::Local::now().date_naive();
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
-        let widths = fmt::field_widths(&conf.fmt, &[t.clone()], &[tasks.len()]);
+        let widths = fmt::field_widths(&conf.fmt, &[t.clone()], &[0]);
         writeln!(stdout, "To be added: ")?;
         fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, &[t], &[tasks.len()], &[true], &conf.fmt, &widths, true)?;
+        fmt::print_todos(stdout, &[t], &[0], &[true], &conf.fmt, &widths, true)?;
         return Ok(());
     }
 

@@ -1,3 +1,9 @@
+ttdl (3.6.5) unstable; urgency=medium
+
+  * Fix crashing `add` command when command-line option `--dry-run` is used
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 04 Mar 2023 11:12:21 -0800
+
 ttdl (3.6.3) unstable; urgency=medium
 
   * Improve 32-bit compiler support
