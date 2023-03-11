@@ -1132,7 +1132,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
 
     if matches.opt_present("version") {
         let version = env!("CARGO_PKG_VERSION");
-        println!("TTDL Version {version}");
+        println!("Terminal Todo List Manager(TTDL) Version {version}");
         exit(0);
     }
     if matches.opt_present("h") {
