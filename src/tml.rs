@@ -9,6 +9,7 @@ pub struct Colors {
     pub today: Option<String>,
     pub soon: Option<String>,
     pub old: Option<String>,
+    pub default_fg: Option<String>,
 }
 
 #[derive(Deserialize)]

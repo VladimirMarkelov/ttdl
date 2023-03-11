@@ -59,6 +59,7 @@ pub struct Colors {
     pub tag: ColorSpec,
     pub context: ColorSpec,
     pub project: ColorSpec,
+    pub default_fg: ColorSpec,
 
     pub important_limit: u8,
     pub soon_days: u8,
@@ -95,7 +96,7 @@ fn default_threshold_color() -> ColorSpec {
 }
 pub(crate) fn default_color() -> ColorSpec {
     let mut spc = ColorSpec::new();
-    spc.set_fg(Some(Color::White));
+    spc.set_fg(None);
     spc
 }
 pub(crate) fn default_project_color() -> ColorSpec {
@@ -136,6 +137,7 @@ impl Default for Colors {
             project: default_project_color(),
             tag: default_tag_color(),
             hashtag: default_hashtag_color(),
+            default_fg: default_color(),
 
             important_limit: todotxt::NO_PRIORITY,
             soon_days: 0u8,
@@ -624,11 +626,11 @@ fn color_for_priority(task: &todotxt::Task, c: &Conf) -> ColorSpec {
         }
     }
 
-    default_color()
+    c.colors.default_fg.clone()
 }
 
 fn color_for_creation_date(task: &todotxt::Task, c: &Conf) -> ColorSpec {
-    let spc = default_color();
+    let spc = c.colors.default_fg.clone();
     if task.finished {
         return c.colors.done.clone();
     }
@@ -654,7 +656,7 @@ fn color_for_creation_date(task: &todotxt::Task, c: &Conf) -> ColorSpec {
 }
 
 fn color_for_due_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorSpec {
-    let spc = default_color();
+    let spc = c.colors.default_fg.clone();
     if task.finished {
         return c.colors.done.clone();
     }
@@ -679,7 +681,7 @@ fn color_for_due_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorSpec {
 }
 
 fn color_for_threshold_date(task: &todotxt::Task, days: i64, c: &Conf) -> ColorSpec {
-    let spc = default_color();
+    let spc = c.colors.default_fg.clone();
     if task.finished {
         return c.colors.done.clone();
     }
@@ -854,7 +856,7 @@ fn print_line(
     widths: &[usize],
 ) -> io::Result<()> {
     let id_width = field_width_cached(c, "id", widths);
-    let fg = if task.finished { c.colors.done.clone() } else { default_color() };
+    let fg = if task.finished { c.colors.done.clone() } else { c.colors.default_fg.clone() };
 
     let (mut desc, arg) =
         if let Some(tpl) = external_reconstruct(task, c) { tpl } else { (String::new(), json::JsonValue::Null) };
@@ -897,7 +899,7 @@ fn print_line(
             }
             "due" => {
                 let dt = task.due_date.as_ref();
-                let mut clr = if task.finished { c.colors.done.clone() } else { default_color() };
+                let mut clr = if task.finished { c.colors.done.clone() } else { c.colors.default_fg.clone() };
                 if let Some(d) = task.due_date.as_ref() {
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_due_date(task, days, c);
@@ -906,7 +908,7 @@ fn print_line(
             }
             "thr" => {
                 let dt = task.threshold_date.as_ref();
-                let mut clr = if task.finished { c.colors.done.clone() } else { default_color() };
+                let mut clr = if task.finished { c.colors.done.clone() } else { c.colors.default_fg.clone() };
                 if let Some(d) = task.threshold_date.as_ref() {
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_threshold_date(task, days, c);
@@ -958,7 +960,7 @@ fn print_line(
     } else {
         print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
     }
-    stdout.set_color(&default_color())
+    stdout.set_color(&c.colors.default_fg)
 }
 
 fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {

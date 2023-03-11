@@ -747,6 +747,7 @@ fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     conf.fmt.colors.done = read_color(&tc.colors.done)?;
     conf.fmt.colors.threshold = read_color(&tc.colors.threshold)?;
     conf.fmt.colors.old = read_color(&tc.colors.old)?;
+    conf.fmt.colors.default_fg = read_color(&tc.colors.default_fg)?;
 
     if conf.fmt.color_term == fmt::TermColorType::Auto {
         if let Some(cs) = &tc.colors.color_term {

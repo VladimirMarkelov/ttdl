@@ -133,13 +133,19 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     Ok(())
 }
 
-fn task_list(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
+fn print_task_table(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
     let mut todos = filter_tasks(tasks, conf);
     let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
     tsort::sort(&mut todos, tasks, &conf.sort);
     fmt::print_header(stdout, &conf.fmt, &widths)?;
     fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &widths, false)?;
     fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &widths)
+}
+
+fn task_list(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
+    let err = print_task_table(stdout, tasks, conf);
+    reset_colors(stdout);
+    err
 }
 
 fn fill_calendar(
@@ -170,8 +176,9 @@ fn print_calendar_header(stdout: &mut StandardStream, conf: &conf::Conf) -> io::
 
 fn reset_colors(stdout: &mut StandardStream) {
     let mut clr = ColorSpec::new();
-    clr.set_fg(Some(Color::White));
-    clr.set_bg(Some(Color::Black));
+    clr.set_fg(None);
+    clr.set_bg(None);
+    clr.set_reset(true);
     let _ = stdout.set_color(&clr);
 }
 
@@ -198,21 +205,19 @@ fn print_calendar_body(
             from_date = from_date.succ_opt().unwrap_or(from_date);
             continue;
         }
-        let bg = if from_date == today { Color::Blue } else { Color::Black };
-        let fg = match counter.get(&from_date) {
-            None => Color::White,
-            Some(n) => {
-                if n > &1 {
-                    Color::Red
-                } else {
-                    Color::Magenta
-                }
-            }
-        };
+        let mut clr = conf.fmt.colors.default_fg.clone();
+        if from_date == today {
+            clr.set_bg(Some(Color::Blue));
+        }
+        if let Some(n) = counter.get(&from_date) {
+            let fg = if n > &1 {
+                Color::Red
+            } else {
+                Color::Magenta
+            };
+            clr.set_fg(Some(fg));
+        }
         let st = format!(" {:>2}", from_date.day());
-        let mut clr = ColorSpec::new();
-        clr.set_fg(Some(fg));
-        clr.set_bg(Some(bg));
         let _ = stdout.set_color(&clr);
         let _ = stdout.write(st.as_bytes());
         let wd = from_date.weekday();
@@ -222,7 +227,6 @@ fn print_calendar_body(
         }
         from_date = from_date.succ_opt().unwrap_or(from_date);
     }
-    reset_colors(stdout);
     writeln!(stdout)
 }
 
@@ -235,8 +239,13 @@ fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     let counter = fill_calendar(start_date, end_date, tasks, &todos);
 
     print_calendar_header(stdout, conf)?;
-    print_calendar_body(stdout, now, start_date, end_date, &counter, conf)?;
-    writeln!(stdout)
+    let res = print_calendar_body(stdout, now, start_date, end_date, &counter, conf);
+    reset_colors(stdout);
+    if res.is_err() {
+        res
+    } else {
+        writeln!(stdout)
+    }
 }
 
 fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
