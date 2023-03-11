@@ -225,7 +225,7 @@ fn parse_filter_pri(val: &str, c: &mut tfilter::Conf) -> Result<(), terr::TodoEr
                 return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
             }
             let p = s.as_bytes()[0];
-            if !(b'a'..=b'z').contains(&p) {
+            if !p.is_ascii_lowercase() {
                 return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
             }
             c.pri = Some(tfilter::Priority { value: p - b'a', span: modif });
@@ -414,7 +414,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
             _ => {
                 let p = s.as_bytes()[0];
-                if !(b'a'..=b'z').contains(&p) {
+                if !p.is_ascii_lowercase() {
                     return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
                 }
                 c.priority = p - b'a';

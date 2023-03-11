@@ -210,11 +210,7 @@ fn print_calendar_body(
             clr.set_bg(Some(Color::Blue));
         }
         if let Some(n) = counter.get(&from_date) {
-            let fg = if n > &1 {
-                Color::Red
-            } else {
-                Color::Magenta
-            };
+            let fg = if n > &1 { Color::Red } else { Color::Magenta };
             clr.set_fg(Some(fg));
         }
         let st = format!(" {:>2}", from_date.day());

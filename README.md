@@ -109,6 +109,7 @@ First, TTDL looks for a configuration file in the current working directory. And
 
 The configuration file contains options that cannot be set in command line:
 
+- default foreground color(usually it is white color for dark-themed terminal). By default, the option is not in the configuration file that means `None` = terminal default color.
 - colors for special kinds of todos: overdue, due today, due soon, top priority, high priority, and completed
 - ranges for cases "due soon" and "high priority". By default both option are disabled. To enable "due soon", set it to the number of days, so todos that are due in equal to or less than that number(except overdue and due today todos) will be displayed with `soon` color. To enable high priority highlight, set `important` to a priority - all todos with this priority or higher(except top priority ones) will be displayed with `important` color.
 - `filename` - the path to global todo file (can point to directory, TTDL adds `todo.txt` automatically if `filename` is a directory). To override the option, you can set environment variable `TTDL_FILENAME` or use command line option `--local` if you need to load todo list from current working directory

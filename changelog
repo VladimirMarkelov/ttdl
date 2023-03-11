@@ -1,3 +1,12 @@
+ttdl (3.7.0) unstable; urgency=medium
+
+  * Use `None` as a default foreground color - better support for light
+    teminal colorschemes
+  * Add a setting `default_fg` to `colors` section. It allows a user to define
+    a custom default foreground color
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 11 Mar 2023 15:27:34 -0800
+
 ttdl (3.6.5) unstable; urgency=medium
 
   * Fix crashing `add` command when command-line option `--dry-run` is used

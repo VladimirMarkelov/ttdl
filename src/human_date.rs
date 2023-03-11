@@ -30,7 +30,7 @@ impl Default for CalendarRange {
 fn parse_int(s: &str) -> (&str, String) {
     let mut res = String::new();
     for c in s.chars() {
-        if !('0'..='9').contains(&c) {
+        if !c.is_ascii_digit() {
             break;
         }
         res.push(c);
@@ -407,13 +407,13 @@ pub fn human_to_date(base: NaiveDate, human: &str, soon_days: u8) -> HumanResult
     let back = human.starts_with('-');
     let human = if back { &human[1..] } else { human };
 
-    if human.find(|c: char| !('0'..='9').contains(&c)).is_none() {
+    if human.find(|c: char| !c.is_ascii_digit()).is_none() {
         if back {
             return Err("negative day of month".to_string());
         }
         return day_of_first_month(base, human);
     }
-    if human.find(|c: char| !('0'..='9').contains(&c) && c != '-').is_none() {
+    if human.find(|c: char| !c.is_ascii_digit() && c != '-').is_none() {
         if back {
             return Err("negative absolute date".to_string());
         }

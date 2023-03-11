@@ -70,7 +70,7 @@ pub fn str_to_duration(s: &str) -> Option<i64> {
         if s.is_empty() {
             return Some(dur * sgn);
         }
-        match s.find(|c| !('0'..='9').contains(&c)) {
+        match s.find(|c: char| !c.is_ascii_digit()) {
             None => {
                 let v = s.parse::<u32>().ok()?;
                 dur = (dur + v as i64) * sgn;
@@ -80,7 +80,7 @@ pub fn str_to_duration(s: &str) -> Option<i64> {
                 let vs = &s[..pos];
                 let value = vs.parse::<u32>().ok()?;
                 s = &s[pos..];
-                let suffix = match s.find(|c| ('0'..='9').contains(&c)) {
+                let suffix = match s.find(|c: char| c.is_ascii_digit()) {
                     None => {
                         let save = s;
                         s = &s[..0];
