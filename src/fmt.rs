@@ -255,14 +255,14 @@ impl FmtRule {
                     return Some(self.color.clone());
                 }
                 if b.is_empty() {
-                    if value <= e {
+                    if value <= e.as_str() {
                         return Some(self.color.clone());
                     }
                 } else if e.is_empty() {
-                    if value >= b {
+                    if value >= b.as_str() {
                         return Some(self.color.clone());
                     }
-                } else if value >= b && value <= e {
+                } else if value >= b.as_str() && value <= e.as_str() {
                     return Some(self.color.clone());
                 }
                 None

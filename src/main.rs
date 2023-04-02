@@ -102,7 +102,7 @@ fn process_tasks(
             if old_len < tasks.len() {
                 writeln!(stdout, "\nAdded todos:")?;
                 for idx in old_len..tasks.len() {
-                    fmt::print_body_single(stdout, &tasks, idx, idx + 1, &c.fmt, &widths)?;
+                    fmt::print_body_single(stdout, tasks, idx, idx + 1, &c.fmt, &widths)?;
                 }
             }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &widths)?;
