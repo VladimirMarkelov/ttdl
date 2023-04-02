@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "3.7.0"
+version = "3.7.1"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2021"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
@@ -21,8 +21,8 @@ chrono = "^0.4"
 textwrap = "^0.11"
 lazy_static = "1"
 caseless = "^0.2"
-dirs = "1"
-toml = "^0.4"
+dirs = "5"
+toml = "^0.7"
 atty = "^0.2"
 term_size = "^0.3"
 termcolor = "1"

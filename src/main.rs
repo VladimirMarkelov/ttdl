@@ -65,6 +65,7 @@ fn process_tasks(
 
     if c.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
+        let old_len = clones.len();
         let updated = f(&mut clones, None);
         let updated_cnt = calculate_updated(&updated);
 
@@ -77,10 +78,16 @@ fn process_tasks(
             fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &widths, false)?;
             writeln!(stdout, "\nReplace with:")?;
             fmt::print_todos(stdout, &clones, &todos, &updated, &c.fmt, &widths, true)?;
+            if clones.len() > old_len {
+                for idx in old_len..clones.len() {
+                    fmt::print_body_single(stdout, &clones, idx, tasks.len() + idx - old_len + 1, &c.fmt, &widths)?;
+                }
+            }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &widths)?;
         }
         Ok(false)
     } else {
+        let old_len = tasks.len();
         let updated = f(tasks, Some(&todos));
         let updated_cnt = calculate_updated(&updated);
 
@@ -92,6 +99,12 @@ fn process_tasks(
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &c.fmt, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &widths, false)?;
+            if old_len < tasks.len() {
+                writeln!(stdout, "\nAdded todos:")?;
+                for idx in old_len..tasks.len() {
+                    fmt::print_body_single(stdout, &tasks, idx, idx + 1, &c.fmt, &widths)?;
+                }
+            }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &widths)?;
             Ok(true)
         }

@@ -1197,6 +1197,19 @@ pub fn print_header(stdout: &mut StandardStream, c: &Conf, widths: &[usize]) -> 
     writeln!(stdout, "{}", "-".repeat(header_len(c, &flist, widths)))
 }
 
+pub fn print_body_single(
+    stdout: &mut StandardStream,
+    tasks: &todo::TaskSlice,
+    idx: usize,
+    id: usize,
+    c: &Conf,
+    widths: &[usize],
+) -> io::Result<()> {
+    let flist = field_list(c);
+    print_line(stdout, &tasks[idx], id, c, &flist, widths)?;
+    Ok(())
+}
+
 fn print_body_selected(
     stdout: &mut StandardStream,
     tasks: &todo::TaskSlice,
