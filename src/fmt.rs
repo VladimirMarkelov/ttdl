@@ -708,13 +708,13 @@ fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpe
     }
     let words = parse_subj(msg);
     for word in words.iter() {
-        if is_tag(word) {
+        if is_project(word) {
             stdout.set_color(&c.colors.tag)?;
         } else if is_hashtag(word) {
             stdout.set_color(&c.colors.hashtag)?;
         } else if is_context(word) {
             stdout.set_color(&c.colors.context)?;
-        } else if is_project(word) {
+        } else if is_tag(word) {
             stdout.set_color(&c.colors.project)?;
         } else {
             stdout.set_color(color)?;
