@@ -1,3 +1,12 @@
+ttdl (3.8.0) unstable; urgency=medium
+
+  * Now `--calendar` prints in more human-friendly way: with month names, week
+    nubmers and each month is printed in its own column
+  * Flag `--calendar` now accept wider interval for months. The current limit
+    of months to print is `24` (increased for the previous value `3`)
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 23 Apr 2023 15:15:58 -0700
+
 ttdl (3.7.0) unstable; urgency=medium
 
   * Use `None` as a default foreground color - better support for light

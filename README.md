@@ -394,9 +394,9 @@ So, `--calendar=1w` and `--calendar=-1w` both display the current week.
 
 Supported range types:
 
-- `d` - days
-- `w` - weeks
-- `m` - months
+- `d` - days (in a range `-100..=100`)
+- `w` - weeks (in a range `-16..=16`)
+- `m` - months (in a range `-24..=24`)
 
 Also you can use some short-cuts:
 
@@ -414,6 +414,7 @@ The latter prints out 7 days *ending* with today.
 
 Color legend:
 
+- green foreground - week number (it is ISO week number: https://en.wikipedia.org/wiki/ISO_week_date)
 - regular Black and White colors - "empty" day when you do not have any todo due
 - Blue background - today's date
 - Magenta foreground - on this day you have one todo due
@@ -425,9 +426,9 @@ Example:
 
 In the picture:
 
-- Today's date is 7th
-- There is one todo is due on 20th
-- There are more than one todo due on 6th
+- Today's date is 23rd of April
+- There is one todo is due on 25th
+- There are more than one todo that are due on 27th
 
 ### Tags
 
