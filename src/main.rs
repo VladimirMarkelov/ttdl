@@ -3,6 +3,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 
+mod cal;
 mod conf;
 mod conv;
 mod fmt;
@@ -17,10 +18,11 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 
-use chrono::{Datelike, NaiveDate, Weekday};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use chrono::NaiveDate;
+use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::human_date::{calendar_first_day, calendar_last_day, prev_weekday};
+use crate::cal::CalPrinter;
+use crate::human_date::{calendar_first_day, calendar_last_day};
 use todo_lib::*;
 
 const TASK_HIDDEN_OFF: &str = "0";
@@ -179,14 +181,6 @@ fn fill_calendar(
     res
 }
 
-fn print_calendar_header(stdout: &mut StandardStream, conf: &conf::Conf) -> io::Result<()> {
-    if conf.first_sunday {
-        writeln!(stdout, " Su Mo Tu We Th Fr Sa")
-    } else {
-        writeln!(stdout, " Mo Tu We Th Fr Sa Su")
-    }
-}
-
 fn reset_colors(stdout: &mut StandardStream) {
     let mut clr = ColorSpec::new();
     clr.set_fg(None);
@@ -203,38 +197,17 @@ fn print_calendar_body(
     counter: &HashMap<NaiveDate, u32>,
     conf: &conf::Conf,
 ) -> io::Result<()> {
-    let is_first = (start_date.weekday() == Weekday::Sun && conf.first_sunday)
-        || (start_date.weekday() == Weekday::Mon && !conf.first_sunday);
-    let mut from_date = if is_first {
-        start_date
-    } else if conf.first_sunday {
-        prev_weekday(start_date, Weekday::Sun)
-    } else {
-        prev_weekday(start_date, Weekday::Mon)
-    };
-    while from_date <= end_date {
-        if from_date < start_date {
-            write!(stdout, "   ")?;
-            from_date = from_date.succ_opt().unwrap_or(from_date);
-            continue;
+    let (w, _) = term_size::dimensions().unwrap_or((0, 0));
+    if w == 0 {
+        eprintln!("Failed to detect terminal dimensions");
+        return Ok(());
+    }
+    let mut cp = CalPrinter::new(start_date, end_date, w as u16);
+    loop {
+        let done = cp.print_next_line(stdout, counter, today, conf)?;
+        if done {
+            break;
         }
-        let mut clr = conf.fmt.colors.default_fg.clone();
-        if from_date == today {
-            clr.set_bg(Some(Color::Blue));
-        }
-        if let Some(n) = counter.get(&from_date) {
-            let fg = if n > &1 { Color::Red } else { Color::Magenta };
-            clr.set_fg(Some(fg));
-        }
-        let st = format!(" {:>2}", from_date.day());
-        let _ = stdout.set_color(&clr);
-        let _ = stdout.write(st.as_bytes());
-        let wd = from_date.weekday();
-        if (wd == Weekday::Sun && !conf.first_sunday) || (wd == Weekday::Sat && conf.first_sunday) {
-            reset_colors(stdout);
-            let _ = stdout.write(b"\n");
-        }
-        from_date = from_date.succ_opt().unwrap_or(from_date);
     }
     writeln!(stdout)
 }
@@ -247,7 +220,6 @@ fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     let end_date = calendar_last_day(now, &rng, conf.first_sunday);
     let counter = fill_calendar(start_date, end_date, tasks, &todos);
 
-    print_calendar_header(stdout, conf)?;
     let res = print_calendar_body(stdout, now, start_date, end_date, &counter, conf);
     reset_colors(stdout);
     if res.is_err() {

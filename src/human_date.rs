@@ -68,8 +68,8 @@ impl CalendarRange {
                 CalendarRangeType::Weeks(num)
             }
             "m" | "M" => {
-                if num.abs() > 3 {
-                    return Err(terr::TodoError::InvalidValue(num_str, "number of months(range -3..3)".to_string()));
+                if num.abs() > 24 {
+                    return Err(terr::TodoError::InvalidValue(num_str, "number of months(range -24..24)".to_string()));
                 }
                 CalendarRangeType::Months(num)
             }
