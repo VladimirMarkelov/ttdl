@@ -18,7 +18,7 @@ pub struct CalPrinter {
 }
 
 const MONTH_WIDTH: u16 = 3 + 7 * 3; // week # + 7 days and a space in-between
-const MONTH_NAMES: [&'static str; 12] = [
+const MONTH_NAMES: [&str; 12] = [
     "January",
     "February",
     "March",
@@ -71,7 +71,7 @@ impl CalPrinter {
         true
     }
     fn is_done(&self) -> bool {
-        return self.is_bunch_done() && (self.first_idx as usize + self.cols.len() >= self.total_months as usize);
+        self.is_bunch_done() && (self.first_idx as usize + self.cols.len() >= self.total_months as usize)
     }
     fn next_page(&mut self) -> bool {
         if self.is_done() {
@@ -215,7 +215,7 @@ impl CalPrinter {
                         stdout.set_color(&clr)?;
 
                         write!(stdout, "{:>3}", dt.day())?;
-                        dt = dt.succ_opt().expect(&format!("the next date must exist for {}", dt));
+                        dt = dt.succ_opt().unwrap_or_else(|| panic!("the next date must exist for {}", dt));
                         if dt > self.end_date {
                             break;
                         }
@@ -239,10 +239,8 @@ impl CalPrinter {
             }
         }
         writeln!(stdout)?;
-        if self.is_bunch_done() {
-            if self.next_page() {
-                self.print_header(stdout, conf)?;
-            }
+        if self.is_bunch_done() && self.next_page() {
+            self.print_header(stdout, conf)?;
         }
         Ok(self.is_done())
     }
@@ -256,7 +254,7 @@ impl CalPrinter {
         }
         writeln!(stdout)?;
         let wdays = if conf.first_sunday { " Su Mo Tu We Th Fr Sa" } else { " Mo Tu We Th Fr Sa Su" };
-        for _i in 0..self.cols.len() as usize {
+        for _i in 0..self.cols.len() {
             write!(stdout, "   {}", wdays)?;
         }
         writeln!(stdout)?;
