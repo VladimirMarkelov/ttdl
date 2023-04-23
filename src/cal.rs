@@ -296,11 +296,31 @@ mod tests {
             d: u32,
         }
         let tests: Vec<Test> = vec![
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2000, 1, 8), d: 1 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 8), e: NaiveDate::from_ymd(2000, 1, 6), d: 0 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 8), e: NaiveDate::from_ymd(2000, 2, 6), d: 2 },
-            Test { b: NaiveDate::from_ymd(2000, 2, 8), e: NaiveDate::from_ymd(2001, 1, 6), d: 12 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 8), e: NaiveDate::from_ymd(2001, 2, 6), d: 14 },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 1, 8).unwrap(),
+                d: 1,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 8).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                d: 0,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 8).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 2, 6).unwrap(),
+                d: 2,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 2, 8).unwrap(),
+                e: NaiveDate::from_ymd_opt(2001, 1, 6).unwrap(),
+                d: 12,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 8).unwrap(),
+                e: NaiveDate::from_ymd_opt(2001, 2, 6).unwrap(),
+                d: 14,
+            },
         ];
         for test in tests.iter() {
             let d = months_between(test.b, test.e);
@@ -315,11 +335,31 @@ mod tests {
             e: NaiveDate,
         }
         let tests: Vec<Test> = vec![
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2000, 1, 6), m: 0 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2000, 2, 1), m: 1 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2000, 6, 1), m: 5 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2001, 4, 1), m: 15 },
-            Test { b: NaiveDate::from_ymd(2000, 1, 6), e: NaiveDate::from_ymd(2002, 2, 1), m: 25 },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                m: 0,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 2, 1).unwrap(),
+                m: 1,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2000, 6, 1).unwrap(),
+                m: 5,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2001, 4, 1).unwrap(),
+                m: 15,
+            },
+            Test {
+                b: NaiveDate::from_ymd_opt(2000, 1, 6).unwrap(),
+                e: NaiveDate::from_ymd_opt(2002, 2, 1).unwrap(),
+                m: 25,
+            },
         ];
         for test in tests.iter() {
             let e = next_month(test.b, test.m);
