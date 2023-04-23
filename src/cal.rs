@@ -9,12 +9,14 @@ use crate::conf;
 pub struct CalPrinter {
     start_date: NaiveDate,
     end_date: NaiveDate,
-    page_size: u32,
-    first_idx: u32,
-    total_months: u32,
-    started: bool,
-
-    cols: Vec<Option<NaiveDate>>,
+    page_size: u32,    // The number of months fits into screen width
+    total_months: u32, // How many months between start and end dates, rounded up
+    first_idx: u32,    // the index(between 0..total_months) of the month displayes in the
+    // first column
+    started: bool, // false = the struct intialized but there was no call to print_next_line
+    // yet
+    cols: Vec<Option<NaiveDate>>, // The current dates for every month column displayed. If
+                                  // it is None, the month is finished
 }
 
 const MONTH_WIDTH: u16 = 3 + 7 * 3; // week # + 7 days and a space in-between
@@ -59,6 +61,8 @@ impl CalPrinter {
 
         cp
     }
+    // Returns true if the current line of months (page_size months at most) are printed
+    // completely.
     fn is_bunch_done(&self) -> bool {
         if self.page_size == 0 {
             return true;
@@ -70,9 +74,11 @@ impl CalPrinter {
         }
         true
     }
+    // Return true if the given range is displayed in full
     fn is_done(&self) -> bool {
         self.is_bunch_done() && (self.first_idx as usize + self.cols.len() >= self.total_months as usize)
     }
+    // Prepare the next page_size months to print
     fn next_page(&mut self) -> bool {
         if self.is_done() {
             return false;
@@ -94,6 +100,8 @@ impl CalPrinter {
         true
     }
 
+    // Display `s` centered within space of `w` charcters. Spaces are added from both sides.
+    // If the lenght of `s` is longer than `w`, the string is printed in full.
     fn print_centered(&self, stdout: &mut StandardStream, s: &str, w: u16) -> io::Result<()> {
         let l = s.chars().count();
         if w as usize <= l {
@@ -103,6 +111,7 @@ impl CalPrinter {
         let first = d / 2;
         write!(stdout, "{0}{1}{2}", " ".repeat(first), s, " ".repeat(d - first))
     }
+    // How many days passed since the beginning of a week until `dt`.
     fn days_since_start(&self, dt: NaiveDate, conf: &conf::Conf) -> usize {
         match dt.weekday() {
             Weekday::Mon => {
@@ -159,6 +168,10 @@ impl CalPrinter {
     fn is_first_day_of_week(&self, dt: NaiveDate, conf: &conf::Conf) -> bool {
         (dt.weekday() == Weekday::Sun && conf.first_sunday) || (dt.weekday() == Weekday::Mon && !conf.first_sunday)
     }
+    // The main loop function that does everything:
+    // - print the current line of month columns
+    // - if all months are completed, it prints the next header and intializes
+    //   the next months to print
     pub fn print_next_line(
         &mut self,
         stdout: &mut StandardStream,
@@ -244,6 +257,7 @@ impl CalPrinter {
         }
         Ok(self.is_done())
     }
+    // Prints month and weekday names before a new months page
     fn print_header(&self, stdout: &mut StandardStream, conf: &conf::Conf) -> io::Result<()> {
         for i in 0..self.cols.len() {
             write!(stdout, "   ")?;
@@ -262,6 +276,8 @@ impl CalPrinter {
     }
 }
 
+// Returns the first day of a month advancing `m_delta` months ahead.
+// If `m_delta` is `0`, the date is returned unchanged.
 fn next_month(dt: NaiveDate, m_delta: u32) -> NaiveDate {
     if m_delta == 0 {
         return dt;
@@ -275,6 +291,7 @@ fn next_month(dt: NaiveDate, m_delta: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(y, m, 1).expect("Failed to calculate the next month date")
 }
 
+// How many months to print for the given date range.
 pub fn months_between(b_day: NaiveDate, e_day: NaiveDate) -> u32 {
     if e_day < b_day {
         return 0;
