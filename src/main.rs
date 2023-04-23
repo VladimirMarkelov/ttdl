@@ -209,7 +209,7 @@ fn print_calendar_body(
             break;
         }
     }
-    writeln!(stdout)
+    Ok(())
 }
 
 fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {

@@ -74,10 +74,10 @@ impl CalPrinter {
         return self.is_bunch_done() && (self.first_idx + self.cols.len() >= self.total_months as usize);
     }
     fn next_page(&mut self) -> bool {
-        self.first_idx += self.page_size as usize;
         if self.is_done() {
             return false;
         }
+        self.first_idx += self.page_size as usize;
         self.cols = Vec::new();
         let cnt = if self.total_months - self.first_idx as u32 >= self.page_size {
             self.page_size
@@ -247,7 +247,7 @@ impl CalPrinter {
         Ok(self.is_done())
     }
     fn print_header(&self, stdout: &mut StandardStream, conf: &conf::Conf) -> io::Result<()> {
-        for i in 0..self.page_size as usize {
+        for i in 0..self.cols.len() as usize {
             write!(stdout, "   ")?;
             let idx = self.cols[i].unwrap().month() as usize - 1; // TODO:
             let m_name = MONTH_NAMES[idx];
@@ -255,7 +255,7 @@ impl CalPrinter {
         }
         writeln!(stdout)?;
         let wdays = if conf.first_sunday { " Su Mo Tu We Th Fr Sa" } else { " Mo Tu We Th Fr Sa Su" };
-        for _i in 0..self.page_size as usize {
+        for _i in 0..self.cols.len() as usize {
             write!(stdout, "   {}", wdays)?;
         }
         writeln!(stdout)?;
