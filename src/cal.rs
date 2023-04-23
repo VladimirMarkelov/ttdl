@@ -10,7 +10,7 @@ pub struct CalPrinter {
     start_date: NaiveDate,
     end_date: NaiveDate,
     page_size: u32,
-    first_idx: usize,
+    first_idx: u32,
     total_months: u32,
     started: bool,
 
@@ -71,24 +71,24 @@ impl CalPrinter {
         true
     }
     fn is_done(&self) -> bool {
-        return self.is_bunch_done() && (self.first_idx + self.cols.len() >= self.total_months as usize);
+        return self.is_bunch_done() && (self.first_idx as usize + self.cols.len() >= self.total_months as usize);
     }
     fn next_page(&mut self) -> bool {
         if self.is_done() {
             return false;
         }
-        self.first_idx += self.page_size as usize;
+        self.first_idx += self.page_size;
         self.cols = Vec::new();
-        let cnt = if self.total_months - self.first_idx as u32 >= self.page_size {
+        let cnt = if self.total_months - self.first_idx >= self.page_size {
             self.page_size
         } else {
-            self.total_months - self.first_idx as u32
+            self.total_months - self.first_idx
         };
         if cnt == 0 {
             return false;
         }
         for idx in 0..cnt {
-            let delta = self.first_idx as u32 + idx;
+            let delta = self.first_idx + idx;
             self.cols.push(Some(next_month(self.start_date, delta)));
         }
         true
@@ -215,7 +215,7 @@ impl CalPrinter {
                         stdout.set_color(&clr)?;
 
                         write!(stdout, "{:>3}", dt.day())?;
-                        dt = dt.succ_opt().unwrap(); // TODO:
+                        dt = dt.succ_opt().expect(&format!("the next date must exist for {}", dt));
                         if dt > self.end_date {
                             break;
                         }
@@ -247,9 +247,10 @@ impl CalPrinter {
         Ok(self.is_done())
     }
     fn print_header(&self, stdout: &mut StandardStream, conf: &conf::Conf) -> io::Result<()> {
-        for i in 0..self.cols.len() as usize {
+        for i in 0..self.cols.len() {
             write!(stdout, "   ")?;
-            let idx = self.cols[i].unwrap().month() as usize - 1; // TODO:
+            let dt = next_month(self.start_date, self.first_idx + i as u32);
+            let idx = (dt.month() - 1) as usize;
             let m_name = MONTH_NAMES[idx];
             self.print_centered(stdout, m_name, MONTH_WIDTH - 3)?;
         }
