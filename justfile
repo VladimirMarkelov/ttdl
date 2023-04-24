@@ -12,13 +12,13 @@ pkg-win:
 	7z a "{{win_name}}" -tzip .\target\release\ttdl.exe .\README.md .\changelog .\LICENSE .\ttdl.toml
 
 pkg-musl:
-	/// check file does not exist
+	if [ -s "./target/pkg/{{lin_name}}" ]; then echo "./target/pkg/{{lin_name}} already exists" && exit 1; fi
 	@echo "Packaging {{id}} for Linux(musl)..."
-	rm -rf .\target\pkg
-	mkdir .\target\pkg
-	cp .\README.md .\target\pkg\
-	cp .\changelog .\target\pkg\
-	cp .\LICENSE .\target\pkg\
-	cp .\ttdl.toml .\target\pkg\
-	(?)cp .\target\musl????\release\ttdl .\target\pkg\
-	cd .\target\pkg && tar -czvf "{{lin_name}}" ttdl README.md changelog ttdl.toml LICENSE
+	rm -rf ./target/pkg
+	mkdir ./target/pkg
+	cp ./README.md ./target/pkg/
+	cp ./changelog ./target/pkg/
+	cp ./LICENSE ./target/pkg/
+	cp ./ttdl.toml ./target/pkg/
+	cp ./target/x86_64-unknown-linux-musl/release/ttdl ./target/pkg/
+	cd ./target/pkg && tar -czvf "{{lin_name}}" ttdl README.md changelog ttdl.toml LICENSE
