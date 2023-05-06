@@ -245,6 +245,8 @@ impl CalPrinter {
                     } else {
                         self.cols[i] = Some(dt);
                     }
+                    clr.set_bg(None);
+                    stdout.set_color(&clr)?;
                     if printed != 7 && m != dt.month() {
                         write!(stdout, "{}", " ".repeat((7 - printed - 1) * 3))?;
                     }
