@@ -28,8 +28,8 @@ const STR_LENGTH: usize = 15;
 const BYTES_LENGTH: usize = 8;
 
 lazy_static! {
-    static ref FIELDS: [&'static str; 10] =
-        ["id", "done", "pri", "created", "finished", "due", "thr", "spent", "uid", "parent"];
+    static ref FIELDS: [&'static str; 12] =
+        ["id", "done", "pri", "created", "finished", "due", "thr", "spent", "uid", "parent", "prj", "ctx"];
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -600,6 +600,8 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], wid
             "spent" => write!(stdout, "{:wid$} ", "Spent", wid = SPENT_WIDTH)?,
             "uid" => write!(stdout, "{:wid$}", "UID", wid = width + 1)?,
             "parent" => write!(stdout, "{:wid$}", "Parent", wid = width + 1)?,
+            "prj" => write!(stdout, "{:wid$}", "Project", wid = width + 1)?,
+            "ctx" => write!(stdout, "{:wid$}", "Context", wid = width + 1)?,
             n => {
                 if let Some(f) = c.custom_field(n) {
                     write!(stdout, "{:wid$}", f.title, wid = width + 1)?;
@@ -928,6 +930,28 @@ fn print_line(
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
                 print_with_color(stdout, &format!("{value:width$} "), &fg)?;
+            }
+            "prj" => {
+                let width = field_width_cached(c, f, widths);
+                let mut v = String::new();
+                for prj in &task.projects {
+                    if !v.is_empty() {
+                        v += ",";
+                    }
+                    v += prj;
+                }
+                print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+            }
+            "ctx" => {
+                let width = field_width_cached(c, f, widths);
+                let mut v = String::new();
+                for ctx in &task.contexts {
+                    if !v.is_empty() {
+                        v += ",";
+                    }
+                    v += ctx;
+                }
+                print_with_color(stdout, &format!("{v:width$} "), &fg)?;
             }
             n => {
                 if let Some(f) = c.custom_field(n) {
@@ -1312,6 +1336,8 @@ pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice)
                 }
             }
             "spent" => SPENT_WIDTH,
+            "prj" => project_max_selected(tasks, selected),
+            "ctx" => context_max_selected(tasks, selected),
             tag @ "uid" | tag @ "parent" => {
                 let ww = tag_max_length(tasks, selected, tag);
                 if ww > tag.width() {
@@ -1346,6 +1372,36 @@ fn tag_max_length(tasks: &todo::TaskSlice, selected: &todo::IDSlice, tag_name: &
             if w > mx {
                 mx = w;
             }
+        }
+    }
+    mx
+}
+
+fn project_max_selected(tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> usize {
+    let mut mx = "Project".width();
+    for id in selected.iter() {
+        let t = &tasks[*id];
+        let mut l = if t.projects.is_empty() { 0 } else { t.projects.len() - 1 };
+        for p in &t.projects {
+            l += p.width();
+        }
+        if l > mx {
+            mx = l
+        }
+    }
+    mx
+}
+
+fn context_max_selected(tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> usize {
+    let mut mx = "Context".width();
+    for id in selected.iter() {
+        let t = &tasks[*id];
+        let mut l = if t.contexts.is_empty() { 0 } else { t.contexts.len() - 1 };
+        for c in &t.contexts {
+            l += c.width();
+        }
+        if l > mx {
+            mx = l
         }
     }
     mx
