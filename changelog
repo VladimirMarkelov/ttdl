@@ -6,8 +6,12 @@ ttdl (3.9.0) unstable; urgency=medium
   * Added missing color reset when printing calendar: sometimes today's
     background was applied to an empty line after the month and sometimes
     month names were printed with week number color
+  * New available columns `Project` and `Context`. They display task's
+    projects and contexts respectively. Both are hidden by default.
+    They can be shown by changing config or passing in command-line:
+    `ttdl --fields=prj,ctx`
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 06 May 2023 13:04:00 -0700
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 06 May 2023 15:47:09 -0700
 
 ttdl (3.8.0) unstable; urgency=medium
 

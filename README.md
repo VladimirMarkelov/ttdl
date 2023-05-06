@@ -660,7 +660,20 @@ the description from the last collected output. It joins description with all ta
 Each command that modifies todo list supports dry run mode. The mode is enabled with an option `--dry-run`. When executing `ttdl` with the option, it finds out which todos would be changed after the command completes, then displays existing todos and their new values.
 
 By default TTDL outputs the todo list in long mode and uses colors. To disable colors, use an option `--no-colors`. To make the output shorter, use an option `--short` to show only a few the most important fields(ID, completion mark, priority, and subject), or choose which fields to display with an option `--fields`: a comma-separated list of fields.
-**NOTE**: the option `--fields` defines only a field visibility, but not its order. So, `--fields=pri,due` and `--fields=due,pri` result in the same output.
+**NOTE**: the option `--fields` defines only a field visibility, but not its order. So, `--fields=pri,due` and `--fields=due,pri` result in the same output. A list of available field(column) names:
+
+- `id` - task's ID column
+- `done` - column with `x` marks for done tasks
+- `pri` - priority column
+- `created` - column with task creation date
+- `finished` - column with task finish date
+- `due` - column with due date
+- `thr` - column with threshold date
+- `spent` - column with total time spent on the task
+- `uid` - column to display user-defined tag `id` value (e.g, for task `do not forget to register online with id:ABD-245`, TTDL displays `ABD-245` in `UID` column)
+- `parent` - task parent's ID column
+- `prj` - columns with task projects (comma-separated list)
+- `ctx` - columns with task contexts (comma-separated list)
 
 For easier reading due date, there is an option `--human` that turns dates into relative dates. So, due date 2018-11-11 can turn into `in 3d` (if the current date is 2018-11-08) or into `3d overdue`(if the current date is 2018-11-14). Using an option `--compact` makes the output even shorter: it removes all `in`s and `overdue`s. To understand whether a todo is overdue or not, just check its color: overdue ones are drawn in red color(unless you used the option `--no-colors` or modified color in TTDL config). Option `--human` supports a list of fields to show as relative ones: `ttdl l --human="due"`.
 
