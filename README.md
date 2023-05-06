@@ -382,12 +382,14 @@ NOTE: `done` moves a recurrent todo's due date to the next one, but it does not 
 
 By default, the list of todos is displayed as a table.
 Command-line switch `--calendar=<range>` allows you to peek what is on your plate in a convenient way.
-The displayed calendar always includes today's date.
-The `range` is a single value, like `recurrence`, denotes how far in the future or or in the past (negative value) the first or the last date of the range.
+The `range` can be either a single value or a date interval.
+In case of a single value, the calendar always includes today's date.
+Interval values, like `recurrence`, denote how far in the future or or in the past (negative value) the first or the last date of the range.
 The calendar displays only dates on which you have something due, i.e, the calendar filters only todos that has `due` tag.
-The full `range` form is `number + range type`, e.g. `2w` - show this and the next week.
+The full `range` form for a single value is `number + range type`, e.g. `2w` - show this and the next week.
 The range can be negative. In this case, TTDL displays the past weeks.
 E.g, `--calendar=-2w` prints out the current and the previous week.
+For an interval, the `range` must be in a form `number + range type .. number + range type`, e.g. `-2m..2m` - shows from the previous month up to the next month.
 
 Note: when printing by full weeks and months, numbers `1`, `-1`, and `0` works the same and always shows only the current week or month.
 So, `--calendar=1w` and `--calendar=-1w` both display the current week.
@@ -397,6 +399,7 @@ Supported range types:
 - `d` - days (in a range `-100..=100`)
 - `w` - weeks (in a range `-16..=16`)
 - `m` - months (in a range `-24..=24`)
+- `y` - years (in a range `-2..=2`)
 
 Also you can use some short-cuts:
 

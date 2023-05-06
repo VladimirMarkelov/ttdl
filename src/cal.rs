@@ -209,6 +209,8 @@ impl CalPrinter {
                     clr.set_fg(Some(Color::Green));
                     stdout.set_color(&clr)?;
                     write!(stdout, "{wk:>3}")?;
+                    clr.set_fg(None);
+                    stdout.set_color(&clr)?;
 
                     let since = self.days_since_start(dt, conf);
                     if since != 0 {

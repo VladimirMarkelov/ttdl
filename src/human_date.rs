@@ -14,6 +14,11 @@ pub enum CalendarRangeType {
     Days(i8),
     Weeks(i8),
     Months(i8),
+    Years(i8),
+    DayRange(i8, i8),
+    WeekRange(i8, i8),
+    MonthRange(i8, i8),
+    YearRange(i8, i8),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct CalendarRange {
@@ -40,40 +45,107 @@ fn parse_int(s: &str) -> (&str, String) {
 
 impl CalendarRange {
     pub(crate) fn parse(s: &str) -> Result<CalendarRange, terr::TodoError> {
-        let mut rng = CalendarRange::default();
-        let (s, strict) = if s.starts_with('+') { (&s["+".len()..], true) } else { (s, false) };
-        let (s, sgn) = if s.starts_with('-') { (&s["-".len()..], -1) } else { (s, 1) };
-        rng.strict = strict;
+        if s.contains("..") || s.contains(':') {
+            CalendarRange::parse_range(s)
+        } else {
+            CalendarRange::parse_single(s)
+        }
+    }
+
+    fn parse_single_num(s_in: &str) -> Result<(&str, i8, bool), terr::TodoError> {
+        let (s, strict) = if s_in.starts_with('+') { (&s_in["+".len()..], true) } else { (s_in, false) };
+        let (s, sgn) = if s.starts_with('-') { (&s["-".len()..], -1i8) } else { (s, 1i8) };
         let (s, num_str) = parse_int(s);
         let num = if num_str.is_empty() {
             1
         } else {
             match num_str.parse::<i8>() {
                 Ok(n) => n,
-                Err(_) => return Err(terr::TodoError::InvalidValue(s.to_string(), "calendar range value".to_string())),
+                Err(_) => {
+                    return Err(terr::TodoError::InvalidValue(s_in.to_string(), "calendar range value".to_string()))
+                }
             }
         };
         let num = num * sgn;
-        rng.rng = match s {
+        match s {
             "" | "d" | "D" => {
                 if num.abs() > 100 {
-                    return Err(terr::TodoError::InvalidValue(num_str, "number of days(range -100..100)".to_string()));
+                    return Err(terr::TodoError::InvalidValue(
+                        s_in.to_string(),
+                        "number of days(range -100..100)".to_string(),
+                    ));
                 }
-                CalendarRangeType::Days(num)
             }
             "w" | "W" => {
                 if num.abs() > 16 {
-                    return Err(terr::TodoError::InvalidValue(num_str, "number of weeks(range -16..16)".to_string()));
+                    return Err(terr::TodoError::InvalidValue(
+                        s_in.to_string(),
+                        "number of weeks(range -16..16)".to_string(),
+                    ));
                 }
-                CalendarRangeType::Weeks(num)
             }
             "m" | "M" => {
                 if num.abs() > 24 {
-                    return Err(terr::TodoError::InvalidValue(num_str, "number of months(range -24..24)".to_string()));
+                    return Err(terr::TodoError::InvalidValue(
+                        s_in.to_string(),
+                        "number of months(range -24..24)".to_string(),
+                    ));
                 }
-                CalendarRangeType::Months(num)
             }
-            _ => return Err(terr::TodoError::InvalidValue(s.to_string(), "calendar range type".to_string())),
+            "y" | "Y" => {
+                if num.abs() > 2 {
+                    return Err(terr::TodoError::InvalidValue(
+                        s_in.to_string(),
+                        "number of years(range -2..2)".to_string(),
+                    ));
+                }
+            }
+            _ => return Err(terr::TodoError::InvalidValue(s_in.to_string(), "calendar range type".to_string())),
+        }
+        Ok((s, num, strict))
+    }
+
+    fn parse_range(s: &str) -> Result<CalendarRange, terr::TodoError> {
+        let ends: Vec<&str> = if s.contains("..") { s.split("..").collect() } else { s.split(':').collect() };
+        if ends.len() > 2 {
+            return Err(terr::TodoError::InvalidValue(
+                s.to_string(),
+                "calendar range cannot contain more than 2 values".to_string(),
+            ));
+        }
+        let (ltp, lnum, lstrict) = CalendarRange::parse_single_num(ends[0])?;
+        let (rtp, rnum, rstrict) = CalendarRange::parse_single_num(ends[1])?;
+        if ltp != rtp {
+            return Err(terr::TodoError::InvalidValue(
+                s.to_string(),
+                "both range ends must use the same dimensions".to_string(),
+            ));
+        }
+        let (lnum, rnum) = if lnum > rnum { (rnum, lnum) } else { (lnum, rnum) };
+        let rng = CalendarRange {
+            strict: lstrict || rstrict,
+            rng: match ltp {
+                "" | "d" | "D" => CalendarRangeType::DayRange(lnum, rnum),
+                "w" | "W" => CalendarRangeType::WeekRange(lnum, rnum),
+                "m" | "M" => CalendarRangeType::MonthRange(lnum, rnum),
+                "y" | "Y" => CalendarRangeType::YearRange(lnum, rnum),
+                _ => unreachable!(),
+            },
+        };
+        Ok(rng)
+    }
+
+    fn parse_single(s: &str) -> Result<CalendarRange, terr::TodoError> {
+        let (tp, num, strict) = CalendarRange::parse_single_num(s)?;
+        let rng = CalendarRange {
+            strict,
+            rng: match tp {
+                "" | "d" | "D" => CalendarRangeType::Days(num),
+                "w" | "W" => CalendarRangeType::Weeks(num),
+                "m" | "M" => CalendarRangeType::Months(num),
+                "y" | "Y" => CalendarRangeType::Years(num),
+                _ => unreachable!(),
+            },
         };
         Ok(rng)
     }
@@ -129,6 +201,21 @@ fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
     } else {
         NaiveDate::from_ymd_opt(y, m, new_mxd).unwrap_or(dt)
     }
+}
+
+fn add_years(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
+    let mut y = dt.year();
+    let m = dt.month();
+    let mut d = dt.day();
+    if back {
+        y -= num as i32;
+    } else {
+        y += num as i32;
+    }
+    if d > days_in_month(y, m) {
+        d = days_in_month(y, m);
+    }
+    NaiveDate::from_ymd_opt(y, m, d).unwrap_or(dt)
 }
 
 fn abs_time_diff(base: NaiveDate, human: &str, back: bool) -> HumanResult {
@@ -576,6 +663,7 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
                 today.checked_add_signed(Duration::days(diff.into())).unwrap_or(today)
             }
         }
+        CalendarRangeType::DayRange(n, _) => today.checked_add_signed(Duration::days(n.into())).unwrap_or(today),
         CalendarRangeType::Weeks(n) => {
             let is_first =
                 (today.weekday() == Weekday::Sun && first_sunday) || (today.weekday() == Weekday::Mon && !first_sunday);
@@ -590,6 +678,16 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
             if rng.strict || n >= -1 {
                 return today;
             }
+            let diff = if rng.strict {
+                n
+            } else if n > 0 {
+                n - 1
+            } else {
+                n + 1
+            };
+            today.checked_add_signed(Duration::weeks(diff.into())).unwrap_or(today)
+        }
+        CalendarRangeType::WeekRange(n, _) => {
             let diff = if rng.strict {
                 n
             } else if n > 0 {
@@ -617,6 +715,39 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
             }
             today
         }
+        CalendarRangeType::MonthRange(n, _) => {
+            let (today, diff) = if rng.strict {
+                (today, n)
+            } else {
+                (
+                    NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap_or(today),
+                    if n > 0 { n - 1 } else { n + 1 },
+                )
+            };
+            add_months(today, diff as u32, n < 0)
+        }
+        CalendarRangeType::Years(n) => {
+            if n >= 0 {
+                if rng.strict {
+                    return today;
+                }
+                return NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today);
+            }
+            let (today, diff) = if rng.strict {
+                (today, -n)
+            } else {
+                (NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today), -n - 1)
+            };
+            add_years(today, diff as u32, true)
+        }
+        CalendarRangeType::YearRange(n, _) => {
+            let (today, diff) = if rng.strict {
+                (today, n)
+            } else {
+                (NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today), if n > 0 { n - 1 } else { n + 1 })
+            };
+            add_years(today, diff as u32, true)
+        }
     }
 }
 
@@ -629,6 +760,7 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
             let n = n - 1;
             today.checked_add_signed(Duration::days(n.into())).unwrap_or(today)
         }
+        CalendarRangeType::DayRange(_, n) => today.checked_add_signed(Duration::days(n.into())).unwrap_or(today),
         CalendarRangeType::Weeks(n) => {
             if rng.strict {
                 if n <= 0 {
@@ -649,6 +781,7 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
             let n = n - 1;
             today.checked_add_signed(Duration::weeks(n.into())).unwrap_or(today)
         }
+        CalendarRangeType::WeekRange(_, n) => today.checked_add_signed(Duration::weeks(n.into())).unwrap_or(today),
         CalendarRangeType::Months(n) => {
             if rng.strict {
                 if n <= 0 {
@@ -664,6 +797,42 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
             }
             let diff = n - 1;
             add_months(today, diff as u32, false)
+        }
+        CalendarRangeType::MonthRange(_, n) => {
+            let dt = add_months(today, n.unsigned_abs() as u32, n < 0);
+            if rng.strict {
+                dt
+            } else {
+                let y = dt.year();
+                let m = dt.month();
+                let d = days_in_month(y, m);
+                NaiveDate::from_ymd_opt(y, m, d).unwrap_or(dt)
+            }
+        }
+        CalendarRangeType::Years(n) => {
+            if rng.strict {
+                if n <= 0 {
+                    return today;
+                }
+                return add_years(today, n as u32, false);
+            }
+            let dt = NaiveDate::from_ymd_opt(today.year(), 12, 31).unwrap_or(today);
+            if n <= 1 {
+                dt
+            } else {
+                add_years(dt, (n - 1) as u32, false)
+            }
+        }
+        CalendarRangeType::YearRange(_, n) => {
+            if rng.strict {
+                return add_years(today, n.unsigned_abs() as u32, n < 0);
+            }
+            let dt = NaiveDate::from_ymd_opt(today.year(), 12, 31).unwrap_or(today);
+            if n <= 1 {
+                dt
+            } else {
+                add_years(dt, (n - 1) as u32, false)
+            }
         }
     }
 }
@@ -1162,6 +1331,12 @@ mod humandate_test {
                 res: NaiveDate::from_ymd_opt(2022, 06, 01).unwrap(),
             },
             // ---
+            TestCal {
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
+                rng: CalendarRange { strict: false, rng: CalendarRangeType::Years(-1) },
+                sunday: false,
+                res: NaiveDate::from_ymd_opt(2022, 01, 01).unwrap(),
+            },
         ];
         for test in tests.iter() {
             let res = calendar_first_day(test.td, &test.rng, test.sunday);
@@ -1353,6 +1528,12 @@ mod humandate_test {
                 res: NaiveDate::from_ymd_opt(2022, 07, 31).unwrap(),
             },
             // ---
+            TestCal {
+                td: NaiveDate::from_ymd_opt(2022, 07, 03).unwrap(),
+                rng: CalendarRange { strict: false, rng: CalendarRangeType::Years(-1) },
+                sunday: false,
+                res: NaiveDate::from_ymd_opt(2022, 12, 31).unwrap(),
+            },
         ];
         for test in tests.iter() {
             let res = calendar_last_day(test.td, &test.rng, test.sunday);
