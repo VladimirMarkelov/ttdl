@@ -10,7 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::conv;
 use crate::human_date;
-use crate::subj_clean::Hide;
+use crate::subj_clean::{hide_contexts, hide_projects, hide_tags, Hide};
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -910,6 +910,7 @@ fn print_line(
                     clr = color_for_due_date(task, days, c);
                 }
                 print_date_val(stdout, &arg, c, "due", dt, clr, widths)?;
+                hide_tags(&mut desc, "due", c);
             }
             "thr" => {
                 let dt = task.threshold_date.as_ref();
@@ -919,6 +920,7 @@ fn print_line(
                     clr = color_for_threshold_date(task, days, c);
                 }
                 print_date_val(stdout, &arg, c, "thr", dt, clr, widths)?;
+                hide_tags(&mut desc, "thr", c);
             }
             "spent" => {
                 print_with_color(
@@ -926,6 +928,8 @@ fn print_line(
                     &format!("{:wid$} ", &duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
                     &fg,
                 )?;
+                hide_tags(&mut desc, "tmr", c);
+                hide_tags(&mut desc, "spent", c);
             }
             "uid" | "parent" => {
                 let width = field_width_cached(c, f, widths);
@@ -933,6 +937,7 @@ fn print_line(
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
                 print_with_color(stdout, &format!("{value:width$} "), &fg)?;
+                hide_tags(&mut desc, f, c);
             }
             "prj" => {
                 let width = field_width_cached(c, f, widths);
@@ -944,6 +949,7 @@ fn print_line(
                     v += prj;
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+                hide_projects(&mut desc, c);
             }
             "ctx" => {
                 let width = field_width_cached(c, f, widths);
@@ -955,6 +961,7 @@ fn print_line(
                     v += ctx;
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+                hide_contexts(&mut desc, c);
             }
             n => {
                 if let Some(f) = c.custom_field(n) {
@@ -966,6 +973,7 @@ fn print_line(
                     let value = conv::cut_string(&value, width);
                     let clr = f.matches(value).unwrap_or_else(|| fg.clone());
                     print_with_color(stdout, &format!("{value:width$} "), &clr)?;
+                    hide_tags(&mut desc, &f.name, c);
                 }
             }
         }

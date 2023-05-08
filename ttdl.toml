@@ -119,6 +119,16 @@ old = "1y"
 # todos after making a type, e.g, `ttdl listt`
 # strict_mode = false
 
+# defines what items from a subject will be removed before printing:
+#    none | nothing = subject is printed as-is (default)
+#    tags = only tags can be removed, projects and contexts are not touched
+#    all = remove tags, projects, and contexts
+# NOTE: the option affects only things that are printed in separate columns.
+#    I.e, with default "fields=pri,due,done" and "clean_subj=all", only
+#    "due" tag and value are removed. But with "fields=due,prj", both "due"
+#    tag and "project" are cleaned up.
+# clean_subject = "none"
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject

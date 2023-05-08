@@ -30,6 +30,7 @@ pub struct Global {
     pub script_prefix: Option<String>,
     pub first_sunday: Option<bool>,
     pub strict_mode: Option<bool>,
+    pub clean_subject: Option<String>,
 }
 
 #[derive(Deserialize)]

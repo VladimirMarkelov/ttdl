@@ -64,7 +64,6 @@ pub struct Conf {
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
     pub keep_empty: bool,
-    pub hide: Hide,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -88,7 +87,6 @@ impl Default for Conf {
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
             keep_empty: false,
-            hide: Hide::Nothing,
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -123,7 +121,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let extras = r#"Extra options:
-    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax
+    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -201,6 +199,18 @@ fn str_to_mode(s: &str) -> RunMode {
         "lp" | "listproj" | "listprojects" => RunMode::ListProjects,
         "lc" | "listcon" | "listcontexts" => RunMode::ListContexts,
         _ => RunMode::None,
+    }
+}
+
+fn str_to_hide(s: &str) -> Hide {
+    match s.to_lowercase().as_str() {
+        "no" | "none" | "nothing" => Hide::Nothing,
+        "tags" => Hide::Tags,
+        "all" | "yes" => Hide::All,
+        _ => {
+            eprintln!("Invalid value for 'clean-subject': {s}. Must be one of none, nothing, tags, all");
+            exit(1);
+        }
     }
 }
 
@@ -909,6 +919,9 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(b) = &tc.global.first_sunday {
         conf.first_sunday = *b;
     }
+    if let Some(s) = &tc.global.clean_subject {
+        conf.fmt.hide = str_to_hide(s);
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
@@ -1123,6 +1136,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("", "syntax", "Enable keyword highlights when printing subject");
     opts.optflag("", "no-syntax", "Disable keyword highlights when printing subject");
     opts.optflag("", "keep-empty", "do not remove empty todos when cleaning up(archiving) the list");
+    opts.optopt(
+        "",
+        "clean-subject",
+        "hide the given items in a subject column when printing a task list. Items are hidden only if their corresponding columns are visible",
+        "no|none|nothing|tags|all|yes. 'yes' is an alias for all, 'no|none|nothing' are the synonyms",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1173,6 +1192,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         conf.fmt.syntax = true;
     } else if matches.opt_present("no-syntax") {
         conf.fmt.syntax = false;
+    }
+    if let Some(s) = matches.opt_str("clean-subject") {
+        conf.fmt.hide = str_to_hide(&s);
     }
 
     let soon_days = conf.fmt.colors.soon_days;
