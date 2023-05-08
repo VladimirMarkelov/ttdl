@@ -10,6 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::conv;
 use crate::human_date;
+use crate::subj_clean::Hide;
 
 const REL_WIDTH_DUE: usize = 12;
 const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
@@ -437,6 +438,7 @@ pub struct Conf {
     pub syntax: bool,
     pub custom_fields: Vec<CustomField>,
     pub custom_names: Vec<String>, // for performance
+    pub hide: Hide,
 }
 
 impl Default for Conf {
@@ -465,6 +467,7 @@ impl Default for Conf {
             syntax: false,
             custom_fields: Vec::new(),
             custom_names: Vec::new(),
+            hide: Hide::Nothing,
         }
     }
 }

@@ -15,6 +15,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::fmt;
 use crate::human_date;
+use crate::subj_clean::Hide;
 use crate::tml;
 use todo_lib::{terr, tfilter, todo, todotxt, tsort};
 
@@ -63,6 +64,7 @@ pub struct Conf {
     pub todo_file: PathBuf,
     pub done_file: PathBuf,
     pub keep_empty: bool,
+    pub hide: Hide,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -86,6 +88,7 @@ impl Default for Conf {
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
             keep_empty: false,
+            hide: Hide::Nothing,
 
             fmt: Default::default(),
             todo: Default::default(),

@@ -9,6 +9,7 @@ mod conv;
 mod fmt;
 mod human_date;
 mod stats;
+mod subj_clean;
 mod tml;
 
 use std::collections::HashMap;
