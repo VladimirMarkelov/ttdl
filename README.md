@@ -24,6 +24,7 @@
       - [Example](#example)
     - [Extra features](#extra-features)
       - [Syntax highlight](#syntax-highlight)
+      - [Hide duplicated info](#hide-duplicated-info)
     - [Human-readable dates](#human-readable-dates)
     - [Custom columns](#custom-columns)
       - [Custom column example]($custom-column-example)
@@ -690,6 +691,55 @@ Besides turning highlighting on and off, the configuration allows tuning the key
 - hashtag color is cyan
 - project color is bright green
 - context color is green
+
+#### Hide duplicated info
+
+TTDL prints the task's subject as-is. It can result in duplicated information.
+E.g, by default `Due` column shows task's due date.
+At the same time, the due date is also displayed in the column `Subject` in a form `due:2000-01-01`.
+You can override this application behavior by either passing command-line option `--clean-subject` or modifying the configuration file - change the option `global.clean_subject`.
+Possible values:
+
+- `none`, `no` or `nothing` - the default mode: subjects are printed as-is
+- `tags` - hide only tags from the output, but keep duplicated `prj` and `ctx` entities even if you enabled columns for them
+- `all` or `yes` - filter out all duplicated stuff from subjects
+
+##### The example of how the option affects the output
+
+Let's assume, we have the following `todo.txt` file:
+
+```
++food @drink buy milk at shop due:2023-05-08
+```
+
+Now, let's try various combinations of fields and `clean-subject` option.
+The output is minimized to show only affected lines:
+
+```console
+# Default output with 'clean-subject=no`
+$ ttdl --fields=pri,due,prj,ctx
+. P Due        Project  Context Subject
+-----------------------------------------
+1   2023-05-08 food    drink   +food @drink buy milk at shop due:2023-05-08
+
+# Hide only duplicated tags: 'due' entity is gone from 'Subject'
+$ ttdl --fields=pri,due,prj,ctx --clean-subject=tags
+# P Due        Project Context Subject
+----------------------------------------
+1   2023-05-08 food    drink   +food @drink buy milk at shop
+
+# Hide all duplicated stuff: due, project, and context are gone
+$ ttdl --fields=pri,due,prj,ctx --clean-subject=all
+# P Due        Project Context Subject
+----------------------------------------
+1   2023-05-08 food    drink   buy milk at shop
+
+# Hide all duplicated stuff and disable 'Context' column. Now '@drink' remains in the subject
+$ ttdl --fields=pri,due,prj --clean-subject=all
+# P Due        Project Subject
+ --------------------------------
+1   2023-05-08 food    @drink buy milk at shop
+```
 
 ### Human-readable dates
 

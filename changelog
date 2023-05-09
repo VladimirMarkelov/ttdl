@@ -10,6 +10,10 @@ ttdl (3.9.0) unstable; urgency=medium
     projects and contexts respectively. Both are hidden by default.
     They can be shown by changing config or passing in command-line:
     `ttdl --fields=prj,ctx`
+  * Tags, projects, and contexts can be hidden if they are already printed in
+    their own columns. By default, the feature is off. To enable hiding,
+    either pass command-line option `--clean-subject` or modify the
+    configuration variable `global.clean_subject`
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 06 May 2023 15:47:09 -0700
 
