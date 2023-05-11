@@ -63,7 +63,9 @@ TTDL is a standalone binary and it does not create any files in user's directory
 * current working directory
 * Linux:  `~/.config/ttdl/ttdl.toml`
 * Windows: `c:\Users\{username}\AppData\Roaming\ttdl\ttdl.toml`
-* OSX: `/Users/{username}/Library/Preferences/ttdl/ttdl.toml`
+* OSX: `/Users/{username}/Library/Application Support/ttdl/ttdl.toml`
+
+To check in which directory TTDL looks for its configuration file, please refer to the table [Features](https://github.com/dirs-dev/dirs-rs#features), function name `config_dir`.
 
 ## How to use
 
