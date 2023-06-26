@@ -96,7 +96,7 @@ old = "1y"
 # shell to execute plugins. If not set, it defaults to:
 #   ["cmd", "/c"] on Windows
 #   ["sh", "-cu"] on other OS
-# shell = ["powershell", "-c"]
+# shell = ["powershell", "-F"]
 
 # add extension to plugin name when calling it.
 # if extension does not start with '.', the dot is added automatically.
@@ -142,7 +142,7 @@ context_color = "green"
 # [[fields]]
 # name = "chk" # tag name
 # title = "Check" # column title in the output
-# width = 0A # auto-width
+# width = 0 # auto-width
 # kind = "date"
 # ### the following subarray is optional and can be omitted
 # [[fields.rules]]

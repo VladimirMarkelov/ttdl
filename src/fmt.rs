@@ -1034,12 +1034,6 @@ fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {
     Some(arg)
 }
 
-// Returns true if a special tag is common one and processed by todo_txt library internally.
-// So, the tag should not be displayed in the final description.
-fn is_common_special_tag(tag: &str) -> bool {
-    tag == "due" || tag == "thr" || tag == "rec"
-}
-
 #[allow(clippy::format_push_string)]
 fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json::JsonValue)> {
     let arg = customize(task, c)?;
@@ -1054,12 +1048,22 @@ fn external_reconstruct(task: &todotxt::Task, c: &Conf) -> Option<(String, json:
         }
         for e in m.entries() {
             let (key, val) = e;
-            if is_common_special_tag(key) {
+            let key_s = key.to_string();
+            let old_val = match task.tags.get(&key_s) {
+                Some(v) => v.to_string(),
+                None => String::new(),
+            };
+            let new_val = val.as_str().unwrap_or("");
+            if new_val.is_empty() && old_val.is_empty() {
                 continue;
             }
-            if let Some(st) = val.as_str() {
-                res += &(format!(" {key}:{st}"));
+            if old_val.is_empty() {
+                res += &(format!(" {key}:{new_val}"));
+                continue;
             }
+            let old_pair = format!("{key}:{old_val}");
+            let new_pair = if new_val.is_empty() { String::new() } else { format!("{key}:{new_val}") };
+            todotxt::replace_word(&mut res, old_pair.as_str(), new_pair.as_str());
         }
     }
 
