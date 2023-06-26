@@ -1,3 +1,15 @@
+ttdl (3.10.0) unstable; urgency=medium
+
+  * Fixed broken custom formatting: when a plugin changed any tag value, the
+    tag was duplicated in the subject
+  * Custom formatting behavior change: if a user wants to remove a tag from
+    the subject, a plugin must set the empty value for the tag. Removing tag
+    from the hashmap does not remove the tag from the subject any longer
+  * Few small fixes in the example configuration ttdl.toml: corrected
+    powershell command-line options and fields example section
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 26 Jun 2023 10:58:13 -0700
+
 ttdl (3.9.0) unstable; urgency=medium
 
   * Flag `--calendar` supports years (in a range -2..2). Now you can print the

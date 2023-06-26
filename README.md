@@ -541,13 +541,13 @@ in `global` section that affects file name:
 Related configuration setting defines what shell executes the script:
 
 - `shell` - sets the shell to execute a binary/script. If not set, TTDL uses `["cmd", "/c"]` on Windows,
-  and `["sh", "-cu"]` on other OS. If you want to use PowerShell on Windows, change the value to `["powershell", "-c"]`;
+  and `["sh", "-cu"]` on other OS. If you want to use PowerShell on Windows, change the value to `["powershell", "-F"]`;
 
 #### Plugin interaction
 
 TTDL pipes a JSON with tags and optional items of a todo that is going to be displayed to a
-plugin's standard input. A plugin must read stdin and after processing the JSON, the plugin
-must print the result to stdout in the same JSON format. If a plugin does not need to change anything,
+plugin's standard input. A plugin must read STDIN and after processing the JSON, the plugin
+must print the result to STDOUT in the JSON format. If a plugin does not need to change anything,
 it must print it as is. If any plugin fails to execute or produces invalid JSON, the error is
 printed to standard error and the original todo text is displayed.
 
@@ -570,6 +570,9 @@ your native language(e.g., display `10 Sep` instead of `2020-09-10`).
 A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
 requirement is that the result should include all fields above.
 
+NOTE: removing a tag from `specialTags` hashmap does not remove the tag from the subject.
+If you want to remove a tag, set its value to an empty string.
+
 #### Notes
 
 1. While it is OK to set any value to an existing field, the output is limited with the current
@@ -579,83 +582,101 @@ requirement is that the result should include all fields above.
 2. All dates passed to the first plugin in JSON are always in format `YYYY-MM-DD` for easy
    parsing. So, even if relative dates are enabled, a plugin gets in default format.
 3. All values presented in result JSON are printed as is, while all missing values are printed
-   with current format settings. It results in that there is difference between: a plugin does
-   not touch a standard field, and a plugin removes the standard field from the result. If a plugin
-   removed non-standard field from result JSON, the field won't be printed.
-   Standard fields are: "done", "pri", "created", "finished", "description", "thr", "due".
-
-Quick example for #3. Today's date is 2020-01-18, a todo contains `2020-01-17 Test line !plug:2020 !plug2:01`,
-and TTDL is launched with relative dates enabled. If plugin `plug` does not exist, it prints with default formatting:
-
-```shell
-Created  Description
-1d ago   Test line !plug:2020 !plug2:01
-```
-
-If the plugin exists, it gets argument `{ "description": "Test line", "optional: [{"created": "2020-01-17"}], "specialTags: [{"!plug": "2020"}, {"plug2": "01"]}`.
-Case A: the plugin returns the original JSON untouched. All values are taken from JSON:
-
-```shell
-Created  Description
-2020-01- Test line !plug:2020 !plug2:01
-```
-
-Case B: the plugin removes `created` and `!plug2` from original JSON and returns `{ "description": "Test line", "optional: [], "specialTags: [{"!plug": "2020"}]}`.
-Now the current formatting setting are applied to standard `created`, non-standard `!plug2` is ignored and it prints:
-
-```shell
-Created  Description
-1d ago   Test line !plug:2020
-```
+   with current format settings.
 
 #### Example
 
-Let's assume there is the following line in todo.txt, and TTDL config contains `script_prefix="/home/username/ttdlscripts/"`:
+Let's assume, the configuration has option `script_ext = ".ps1"`, and there is the following line in todo.txt:
 
 ```shell
-2020-01-17 sprint ends !issue-cnt:project_name !issue-pct:project_name rec:2w
+# D P Created    Finished   Due        Subject
+-----------------------------------------------
+1                           2023-06-15 fix bug due:2023-06-15 spent:40 !hidedue:abc
+-----------------------------------------------
+1 todos (of 1 total)
 ```
 
-It is a recurrent todo - every 2 weeks - that notifies about the current sprint ends. We want to display
-the number of opened issues for the sprint and how many percent of issues are still opened, so two tags
-are added `!issue-cnt:project_name` and `!issue-pct:project_name`.
+We want to do a few things when a todo contains `!hidedue` tag:
 
-TTDL detects a tag with leading `!` and the plugin engine kicks in. The todo description is "sprint ends".
-The argument for the first plugin is:
+a) remove `due` tag and `!hidedue` tags;
+b) change `spent` tag value to `0`;
+c) add a new tag `status` with value `fixed`
 
-```shell
-{"description": "sprint ends", \
-    "optional": [ {"created": "2020-01-17" ], \
-    "specialTags": [ {"!issue-cnt": "project_name"}, {"!issue-high": "project_name"} ]}
+Let's create a powershell plugin to fulfill the task. 
+
+TTDL detects a tag with leading `!` and the plugin engine kicks in.
+The tag name is `!hidedue`. The script name is build from the tag name without character `!`, `script_ext`, and `script_prefix`.
+All plugin names must start with `ttdl-`. The default value for `script_prefix` is `./`.
+It makes the script name `./ttdl-hidedue.ps1` - a file must be in the current working directory.
+
+DISCLAIMER: I am no powershell expert. That is why I believe the script can be made simpler and shorter.
+But the script does its job and it is good enough to be a starting point.
+
+The content of the `ttdl-hidedue.ps`:
+
+```powershell
+# TTDL sends every task one by one as a JSON to a script through a pipe.
+# In powershell opened STDIN pipe is access via system variable `$input`
+
+# 1. Read the STDIN and convert it into JSON
+$obj = $input | ConvertFrom-Json
+$do_fix = 'false'
+# 2. JSON objects are PSObjects, let's convert them into Powershell hashtables
+$obj.specialTags = $obj.specialTags | ForEach-Object {
+	$h = @{}
+	$_.PSObject.properties | ForEach-Object {
+	  $h[$_.Name] = $_.Value
+	}
+	$h
+}
+# 3. Check if a task includes the tag '!hidedue'. Its value must be non-empty.
+foreach($item in $obj.specialTags) {
+  if ($item."!hidedue" -ne "") {
+     $do_fix = 'true'
+  }
+}
+# 4. If the tag '!hidedue' found do the following:
+if ($do_fix -eq 'true') {
+    # A. remove due tag
+	$obj.specialTags | Where {$_.due} | ForEach{$_.due = ''}
+    # B. remove `!hidedue` tag as well
+	$obj.specialTags | Where {$_."!hidedue"} | ForEach{$_."!hidedue" = ''}
+    # C. set tag `spent` value to zero
+	$obj.specialTags | Where {$_.spent} | ForEach{$_.spent = '0'}
+    # D. add a new tag `status` with value `fixed`
+	[hashtable]$objectProperty = @{}
+	$objectProperty.Add('status', 'fixed')
+	$object = New-Object -TypeName psobject -Property $objectProperty
+	$obj.specialTags += $object
+}
+# 5. Write the resulting JSON to the STDOUT pipe, so TTDL picks up the changes
+Write-Output (ConvertTo-Json $obj)
 ```
 
-The first tag is `!issue-cnt`. It gives script name `/home/username/ttdlscripts/issue-cnt`. On Linux
-it eventually executes:
+Now TTDL opens the script and writes JSON into scripts STDIN:
 
-```shell
-sh -cu /home/username/ttdlscripts/issue-cnt \
-    '{"description": "sprint ends", \
-      "specialTags": [ {"!issue-cnt": "project_name"}, \
-                       {"!issue-high": "project_name"} ]}'
+```json
+{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc", \
+    "optional": [ {"done": "  " }, {"pri": "  " ], \
+    "specialTags": [ {"due": "2023-06-15"}, {"spent": 40}, {"!hidedue": "abc"} ]}
 ```
 
-This sprint was very good and we have no opened issues. It means that we do not need to execute the
-second plugin `issue-pct` to show percentage, so the first plugin removes redundant tag from the
-`specialTags` and replaces its own tag with some nice message. Also the plugin deletes `optional`
-field to make it printed with default settings and original values. The plugin `issue-cnt` prints to
-stdout its result:
+After the plugin processes the input it prints out to STDOUT the resulting JSON:
 
-```shell
-{"description": "sprint ends - well done!", \
-   "specialTags": [ {"issues:ALL-DONE": "project_name"} ]}
+```json
+{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc", \
+    "optional": [ {"done": "  " }, {"pri": "  " ], \
+    "specialTags": [ {"due": ""}, {"spent": 0}, {"!hidedue": ""}, {"status": "fixed"} ]}
 ```
 
-TTDL gets intermediate result, and before calling the next plugin `issue-pct`, it checks if plugin
-name is still in the list. It is not found, and as it is the last plugin to call, TTDL builds
-the description from the last collected output. It joins description with all tags and prints:
+TTDL picks up the result, updates the subject and columns and prints the following:
 
-```shell
-2020-01-17 sprint ends - well done! issues:ALL-DONE
+```
+# D P Created    Finished   Due        Subject
+-----------------------------------------------
+1                                      fix bug spent:0 status:fixed
+-----------------------------------------------
+1 todos (of 1 total)
 ```
 
 ### Extra features
