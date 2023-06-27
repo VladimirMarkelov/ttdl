@@ -570,9 +570,6 @@ your native language(e.g., display `10 Sep` instead of `2020-09-10`).
 A plugin may add or remove any fields in resulting JSON, that allows plugins to communicate. The only
 requirement is that the result should include all fields above.
 
-NOTE: removing a tag from `specialTags` hashmap does not remove the tag from the subject.
-If you want to remove a tag, set its value to an empty string.
-
 #### Notes
 
 1. While it is OK to set any value to an existing field, the output is limited with the current
@@ -583,6 +580,8 @@ If you want to remove a tag, set its value to an empty string.
    parsing. So, even if relative dates are enabled, a plugin gets in default format.
 3. All values presented in result JSON are printed as is, while all missing values are printed
    with current format settings.
+4. Removing a tag from `specialTags` hashmap does not remove the tag from the subject.
+   If you want to remove a tag, set its value to an empty string.
 
 #### Example
 
@@ -607,7 +606,7 @@ Let's create a powershell plugin to fulfill the task.
 TTDL detects a tag with leading `!` and the plugin engine kicks in.
 The tag name is `!hidedue`. The script name is build from the tag name without character `!`, `script_ext`, and `script_prefix`.
 All plugin names must start with `ttdl-`. The default value for `script_prefix` is `./`.
-It makes the script name `./ttdl-hidedue.ps1` - a file must be in the current working directory.
+It makes the script name `./ttdl-hidedue.ps1`.
 
 DISCLAIMER: I am no powershell expert. That is why I believe the script can be made simpler and shorter.
 But the script does its job and it is good enough to be a starting point.
@@ -656,16 +655,16 @@ Write-Output (ConvertTo-Json $obj)
 Now TTDL opens the script and writes JSON into scripts STDIN:
 
 ```json
-{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc", \
-    "optional": [ {"done": "  " }, {"pri": "  " ], \
+{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc",
+    "optional": [ {"done": "  " }, {"pri": "  "} ],
     "specialTags": [ {"due": "2023-06-15"}, {"spent": 40}, {"!hidedue": "abc"} ]}
 ```
 
 After the plugin processes the input it prints out to STDOUT the resulting JSON:
 
 ```json
-{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc", \
-    "optional": [ {"done": "  " }, {"pri": "  " ], \
+{"description": "fix bug due:2023-06-15 spent:40 !hidedue:abc",
+    "optional": [ {"done": "  " }, {"pri": "  "} ],
     "specialTags": [ {"due": ""}, {"spent": 0}, {"!hidedue": ""}, {"status": "fixed"} ]}
 ```
 
