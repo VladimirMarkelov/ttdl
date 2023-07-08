@@ -12,9 +12,6 @@ use crate::conv;
 use crate::human_date;
 use crate::subj_clean::{hide_contexts, hide_projects, hide_tags, Hide};
 
-const REL_WIDTH_DUE: usize = 12;
-const REL_WIDTH_DATE: usize = 8; // FINISHED - the shortest
-const REL_COMPACT_WIDTH: usize = 3;
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &str = "description";
 const JSON_OPT: &str = "optional";
@@ -27,11 +24,6 @@ const FLOAT_LENGTH: usize = 15;
 const DURATION_LENGTH: usize = 10;
 const STR_LENGTH: usize = 15;
 const BYTES_LENGTH: usize = 8;
-
-lazy_static! {
-    static ref FIELDS: [&'static str; 12] =
-        ["id", "done", "pri", "created", "finished", "due", "thr", "spent", "uid", "parent", "prj", "ctx"];
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Format {
@@ -473,7 +465,7 @@ impl Default for Conf {
 }
 
 impl Conf {
-    fn is_human(&self, s: &str) -> bool {
+    pub fn is_human(&self, s: &str) -> bool {
         if !self.human {
             return false;
         }
@@ -515,7 +507,7 @@ impl Conf {
     }
 }
 
-fn number_of_digits(val: usize) -> usize {
+pub fn number_of_digits(val: usize) -> usize {
     match val {
         0..=9 => 1,
         10..=99 => 2,
@@ -525,69 +517,28 @@ fn number_of_digits(val: usize) -> usize {
     }
 }
 
-fn rel_due_date_width(field: &str, c: &Conf) -> usize {
-    if c.is_human(field) {
-        if c.compact {
-            REL_COMPACT_WIDTH
-        } else {
-            REL_WIDTH_DUE
-        }
-    } else {
-        "2018-12-12".width()
-    }
-}
-
-fn rel_date_width(field: &str, c: &Conf) -> usize {
-    if c.is_human(field) {
-        REL_WIDTH_DATE
-    } else {
-        "2018-12-12".width()
-    }
-}
-
-fn calc_width(c: &Conf, fields: &[&str], widths: &[usize]) -> (usize, usize) {
-    let mut before: usize = field_width_cached(c, "id", widths) + 1;
-
-    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
-    for f in FIELDS.iter().chain(cn.iter()) {
-        let mut found = false;
-        for pf in fields.iter() {
-            if default_caseless_match_str(pf, f) {
-                found = true;
-                break;
-            }
-        }
-
-        if found {
-            before += field_width_cached(c, f, widths) + 1;
-        }
+// Returns the width of all columns without subject and the length of subject
+fn calc_width(c: &Conf, fields: &[String], widths: &[usize]) -> (usize, usize) {
+    let mut before: usize = field_width_cached("id", fields, widths) + 1;
+    for f in fields {
+        before += field_width_cached(f, fields, widths) + 1;
     }
 
-    if c.long == LongLine::Simple {
+    // Do not wrap in long mode or when the subject columns gets too narrow
+    let swidth = "Subject".width() + 1;
+    if c.long == LongLine::Simple || usize::from(c.width) <= before + swidth {
         (before, 1000)
     } else {
         (before, c.width as usize - before)
     }
 }
 
-fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], widths: &[usize]) -> io::Result<()> {
-    write!(stdout, "{:>wid$} ", "#", wid = field_width_cached(c, "id", widths))?;
+fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], widths: &[usize]) -> io::Result<()> {
+    write!(stdout, "{:>wid$} ", "#", wid = field_width_cached("id", fields, widths))?;
 
-    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
-    for f in FIELDS.iter().chain(cn.iter()) {
-        let mut found = false;
-        for pf in fields.iter() {
-            if default_caseless_match_str(pf, f) {
-                found = true;
-                break;
-            }
-        }
-
-        if !found {
-            continue;
-        }
-        let width = field_width_cached(c, f, widths);
-        match *f {
+    for f in fields {
+        let width = field_width_cached(f, fields, widths);
+        match f.as_str() {
             "done" => write!(stdout, "D ")?,
             "pri" => write!(stdout, "P ")?,
             "created" => write!(stdout, "{:wid$} ", "Created", wid = width)?,
@@ -608,6 +559,12 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[&str], wid
             n => {
                 if let Some(f) = c.custom_field(n) {
                     write!(stdout, "{:wid$}", f.title, wid = width + 1)?;
+                } else {
+                    let title: String = f.chars().take(1).collect();
+                    let title = title.to_uppercase();
+                    let rest: String = f.chars().skip(1).collect();
+                    let title = title + &rest.to_lowercase();
+                    write!(stdout, "{:wid$}", title, wid = width + 1)?;
                 }
             }
         }
@@ -729,7 +686,7 @@ fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpe
     Ok(())
 }
 
-fn done_str(task: &todotxt::Task) -> String {
+pub fn done_str(task: &todotxt::Task) -> String {
     if timer::is_timer_on(task) {
         "T ".to_string()
     } else if task.finished {
@@ -741,7 +698,7 @@ fn done_str(task: &todotxt::Task) -> String {
     }
 }
 
-fn priority_str(task: &todotxt::Task) -> String {
+pub fn priority_str(task: &todotxt::Task) -> String {
     if task.priority < todotxt::NO_PRIORITY {
         format!("{} ", (b'A' + task.priority) as char)
     } else {
@@ -823,6 +780,7 @@ fn print_priority_val(
     print_with_color(stdout, &s, &color_for_priority(task, c))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_date_val(
     stdout: &mut StandardStream,
     arg: &json::JsonValue,
@@ -830,9 +788,10 @@ fn print_date_val(
     field: &str,
     dt: Option<&chrono::NaiveDate>,
     def_color: termcolor::ColorSpec,
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let width = field_width_cached(c, field, widths);
+    let width = field_width_cached(field, flist, widths);
     let mut st = if let Some(d) = dt {
         if c.is_human(field) {
             let (s, _) = format_relative_date(*d, c.compact);
@@ -857,10 +816,10 @@ fn print_line(
     task: &todotxt::Task,
     id: usize,
     c: &Conf,
-    fields: &[&str],
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let id_width = field_width_cached(c, "id", widths);
+    let id_width = field_width_cached("id", flist, widths);
     let fg = if task.finished { c.colors.done.clone() } else { c.colors.default_fg.clone() };
 
     let (mut desc, arg) =
@@ -871,21 +830,8 @@ fn print_line(
 
     print_with_color(stdout, &format!("{id:>id_width$} "), &fg)?;
 
-    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
-    for f in FIELDS.iter().chain(cn.iter()) {
-        let mut found = false;
-        for pf in fields.iter() {
-            if default_caseless_match_str(pf, f) {
-                found = true;
-                break;
-            }
-        }
-
-        if !found {
-            continue;
-        }
-
-        match *f {
+    for f in flist.iter() {
+        match f.as_str() {
             "done" => {
                 print_done_val(stdout, task, &arg, &fg)?;
             }
@@ -895,12 +841,12 @@ fn print_line(
             "created" => {
                 let clr = color_for_creation_date(task, c);
                 let dt = task.create_date.as_ref();
-                print_date_val(stdout, &arg, c, "created", dt, clr, widths)?;
+                print_date_val(stdout, &arg, c, "created", dt, clr, flist, widths)?;
             }
             "finished" => {
                 let dt = task.finish_date.as_ref();
                 let clr = fg.clone();
-                print_date_val(stdout, &arg, c, "finished", dt, clr, widths)?;
+                print_date_val(stdout, &arg, c, "finished", dt, clr, flist, widths)?;
             }
             "due" => {
                 let dt = task.due_date.as_ref();
@@ -909,7 +855,7 @@ fn print_line(
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_due_date(task, days, c);
                 }
-                print_date_val(stdout, &arg, c, "due", dt, clr, widths)?;
+                print_date_val(stdout, &arg, c, "due", dt, clr, flist, widths)?;
                 hide_tags(&mut desc, "due", c);
             }
             "thr" => {
@@ -919,7 +865,7 @@ fn print_line(
                     let (_, days) = format_relative_due_date(*d, c.compact);
                     clr = color_for_threshold_date(task, days, c);
                 }
-                print_date_val(stdout, &arg, c, "thr", dt, clr, widths)?;
+                print_date_val(stdout, &arg, c, "thr", dt, clr, flist, widths)?;
                 hide_tags(&mut desc, "thr", c);
             }
             "spent" => {
@@ -932,15 +878,15 @@ fn print_line(
                 hide_tags(&mut desc, "spent", c);
             }
             "uid" | "parent" => {
-                let width = field_width_cached(c, f, widths);
-                let name = if *f == "uid" { "id" } else { *f };
+                let width = field_width_cached(f, flist, widths);
+                let name = if *f == "uid" { "id" } else { f.as_str() };
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
                 print_with_color(stdout, &format!("{value:width$} "), &fg)?;
                 hide_tags(&mut desc, f, c);
             }
             "prj" => {
-                let width = field_width_cached(c, f, widths);
+                let width = field_width_cached(f, flist, widths);
                 let mut v = String::new();
                 for prj in &task.projects {
                     if !v.is_empty() {
@@ -952,7 +898,7 @@ fn print_line(
                 hide_projects(&mut desc, c);
             }
             "ctx" => {
-                let width = field_width_cached(c, f, widths);
+                let width = field_width_cached(f, flist, widths);
                 let mut v = String::new();
                 for ctx in &task.contexts {
                     if !v.is_empty() {
@@ -974,13 +920,22 @@ fn print_line(
                     let clr = f.matches(value).unwrap_or_else(|| fg.clone());
                     print_with_color(stdout, &format!("{value:width$} "), &clr)?;
                     hide_tags(&mut desc, &f.name, c);
+                } else {
+                    let width = field_width_cached(f, flist, widths);
+                    let value = match task.tags.get(f) {
+                        None => String::new(),
+                        Some(s) => s.to_string(),
+                    };
+                    let value = conv::cut_string(&value, width);
+                    print_with_color(stdout, &format!("{value:width$} "), &fg)?;
+                    hide_tags(&mut desc, n, c);
                 }
             }
         }
     }
 
     if c.width != 0 && c.long != LongLine::Simple {
-        let (skip, subj_w) = calc_width(c, fields, widths);
+        let (skip, subj_w) = calc_width(c, flist, widths);
         let lines = textwrap::wrap(&desc, subj_w);
         if c.long == LongLine::Cut || lines.len() == 1 {
             print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
@@ -1195,7 +1150,7 @@ fn format_relative_due_date(dt: NaiveDate, compact: bool) -> (String, i64) {
     (v, diff)
 }
 
-fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
+pub fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
     let today = Local::now().date_naive();
     let diff = (dt - today).num_days();
     let dstr = format_days(diff, false);
@@ -1211,7 +1166,7 @@ fn format_relative_date(dt: NaiveDate, compact: bool) -> (String, i64) {
     (v, diff)
 }
 
-fn field_list(c: &Conf) -> Vec<&str> {
+pub fn field_list(c: &Conf) -> Vec<&str> {
     match c.fmt {
         Format::Full => {
             if c.fields.is_empty() {
@@ -1225,15 +1180,14 @@ fn field_list(c: &Conf) -> Vec<&str> {
     }
 }
 
-fn header_len(c: &Conf, flist: &[&str], widths: &[usize]) -> usize {
+fn header_len(c: &Conf, flist: &[String], widths: &[usize]) -> usize {
     let (other, _) = calc_width(c, flist, widths);
     other + "Subject".width() + 1
 }
 
-pub fn print_header(stdout: &mut StandardStream, c: &Conf, widths: &[usize]) -> io::Result<()> {
-    let flist = field_list(c);
-    print_header_line(stdout, c, &flist, widths)?;
-    writeln!(stdout, "{}", "-".repeat(header_len(c, &flist, widths)))
+pub fn print_header(stdout: &mut StandardStream, c: &Conf, flist: &[String], widths: &[usize]) -> io::Result<()> {
+    print_header_line(stdout, c, flist, widths)?;
+    writeln!(stdout, "{}", "-".repeat(header_len(c, flist, widths)))
 }
 
 pub fn print_body_single(
@@ -1242,10 +1196,10 @@ pub fn print_body_single(
     idx: usize,
     id: usize,
     c: &Conf,
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let flist = field_list(c);
-    print_line(stdout, &tasks[idx], id, c, &flist, widths)?;
+    print_line(stdout, &tasks[idx], id, c, flist, widths)?;
     Ok(())
 }
 
@@ -1255,14 +1209,14 @@ fn print_body_selected(
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
     c: &Conf,
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let flist = field_list(c);
     for (i, id) in selected.iter().enumerate() {
         let print = updated.is_empty() || (i < updated.len() && updated[i]);
         let print = print && (*id < tasks.len());
         if print {
-            print_line(stdout, &tasks[*id], *id + 1, c, &flist, widths)?;
+            print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
         }
     }
     Ok(())
@@ -1274,13 +1228,13 @@ fn print_body_all(
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
     c: &Conf,
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let flist = field_list(c);
     for (i, t) in tasks.iter().enumerate() {
         let (id, print) = if i < selected.len() { (selected[i], updated[i]) } else { (0, false) };
         if print {
-            print_line(stdout, t, id + 1, c, &flist, widths)?;
+            print_line(stdout, t, id + 1, c, flist, widths)?;
         }
     }
     Ok(())
@@ -1292,10 +1246,10 @@ pub fn print_footer(
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
     c: &Conf,
+    flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    let flist = field_list(c);
-    writeln!(stdout, "{}", "-".repeat(header_len(c, &flist, widths)))?;
+    writeln!(stdout, "{}", "-".repeat(header_len(c, flist, widths)))?;
 
     if updated.is_empty() && !selected.is_empty() {
         writeln!(stdout, "{} todos (of {} total)", selected.len(), c.max)
@@ -1306,12 +1260,14 @@ pub fn print_footer(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn print_todos(
     stdout: &mut StandardStream,
     tasks: &todo::TaskSlice,
     select: &todo::IDSlice,
     updated: &todo::ChangedSlice,
     c: &Conf,
+    fields: &[String],
     widths: &[usize],
     all: bool,
 ) -> io::Result<()> {
@@ -1320,106 +1276,19 @@ pub fn print_todos(
     }
 
     if all {
-        print_body_all(stdout, tasks, select, updated, c, widths)
+        print_body_all(stdout, tasks, select, updated, c, fields, widths)
     } else {
-        print_body_selected(stdout, tasks, select, updated, c, widths)
+        print_body_selected(stdout, tasks, select, updated, c, fields, widths)
     }
 }
 
-pub fn field_widths(c: &Conf, tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> Vec<usize> {
-    let mut ws = Vec::new();
-    let id_width = number_of_digits(c.max);
-    let dt_width = "2018-12-12".width();
-
-    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
-    for field in FIELDS.iter().chain(cn.iter()) {
-        let w = match *field {
-            "id" => id_width,
-            "done" | "pri" => 1,
-            "created" | "finished" => {
-                if c.is_human(field) {
-                    rel_date_width(field, c)
-                } else {
-                    dt_width
-                }
-            }
-            "due" | "thr" => {
-                if c.is_human(field) {
-                    rel_due_date_width(field, c)
-                } else {
-                    dt_width
-                }
-            }
-            "spent" => SPENT_WIDTH,
-            "prj" => project_max_selected(tasks, selected),
-            "ctx" => context_max_selected(tasks, selected),
-            tag @ "uid" | tag @ "parent" => {
-                let ww = tag_max_length(tasks, selected, tag);
-                if ww > tag.width() {
-                    ww
-                } else {
-                    tag.width()
-                }
-            }
-            _ => c.custom_field_width(field),
-        };
-        ws.push(w);
-    }
-    ws
-}
-
-fn field_width_cached(c: &Conf, field: &str, cached: &[usize]) -> usize {
-    let cn: Vec<&str> = c.custom_names.iter().map(|s| s.as_str()).collect();
-    for (f, w) in FIELDS.iter().chain(cn.iter()).zip(cached.iter()) {
+fn field_width_cached(field: &str, fields: &[String], cached: &[usize]) -> usize {
+    for (f, w) in fields.iter().zip(cached.iter()) {
         if default_caseless_match_str(f, field) {
             return *w;
         }
     }
     0
-}
-
-fn tag_max_length(tasks: &todo::TaskSlice, selected: &todo::IDSlice, tag_name: &str) -> usize {
-    let name = if tag_name == "uid" { "id" } else { tag_name };
-    let mut mx = 0;
-    for id in selected.iter() {
-        if let Some(val) = tasks[*id].tags.get(name) {
-            let w = UnicodeWidthStr::width(val.as_str());
-            if w > mx {
-                mx = w;
-            }
-        }
-    }
-    mx
-}
-
-fn project_max_selected(tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> usize {
-    let mut mx = "Project".width();
-    for id in selected.iter() {
-        let t = &tasks[*id];
-        let mut l = if t.projects.is_empty() { 0 } else { t.projects.len() - 1 };
-        for p in &t.projects {
-            l += p.width();
-        }
-        if l > mx {
-            mx = l
-        }
-    }
-    mx
-}
-
-fn context_max_selected(tasks: &todo::TaskSlice, selected: &todo::IDSlice) -> usize {
-    let mut mx = "Context".width();
-    for id in selected.iter() {
-        let t = &tasks[*id];
-        let mut l = if t.contexts.is_empty() { 0 } else { t.contexts.len() - 1 };
-        for c in &t.contexts {
-            l += c.width();
-        }
-        if l > mx {
-            mx = l
-        }
-    }
-    mx
 }
 
 fn is_hashtag(s: &str) -> bool {

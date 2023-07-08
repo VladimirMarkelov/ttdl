@@ -129,6 +129,18 @@ old = "1y"
 #    tag and "project" are cleaned up.
 # clean_subject = "none"
 
+# Automatically hide columns if all values are empty
+# auto_hide_columns = false
+
+# Automatically show columns for all tags found in any of tasks.
+# NOTE: custom formatting fields, which names start with '!' are ignored.
+# auto_show_columns = false
+
+# Comma-separated list of tags that are hidden always.
+# Use it with auto_show_columns=true to hide non-empty columns that you
+# do not want to see in a separate columns
+# always_hide_columns = 
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject

@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{stdout, BufReader, IsTerminal, Read};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
-use atty::Stream;
 use chrono::Local;
 use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
@@ -65,6 +64,10 @@ pub struct Conf {
     pub done_file: PathBuf,
     pub keep_empty: bool,
 
+    pub auto_hide_columns: bool,
+    pub auto_show_columns: bool,
+    pub always_hide_columns: Vec<String>,
+
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
     pub flt: tfilter::Conf,
@@ -87,6 +90,10 @@ impl Default for Conf {
             todo_file: PathBuf::from(TODO_FILE),
             done_file: PathBuf::from(""),
             keep_empty: false,
+
+            auto_hide_columns: false,
+            auto_show_columns: false,
+            always_hide_columns: Vec::new(),
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -121,7 +128,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let extras = r#"Extra options:
-    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject
+    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -670,7 +677,7 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
             }
         }
     }
-    c.atty = atty::is(Stream::Stdout);
+    c.atty = stdout().is_terminal();
 
     if matches.opt_present("no-colors") || !c.atty {
         c.color_term = fmt::TermColorType::None;
@@ -922,6 +929,19 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(s) = &tc.global.clean_subject {
         conf.fmt.hide = str_to_hide(s);
     }
+    if let Some(b) = &tc.global.auto_hide_columns {
+        conf.auto_hide_columns = *b;
+    }
+    if let Some(b) = &tc.global.auto_show_columns {
+        conf.auto_show_columns = *b;
+    }
+    if let Some(l) = &tc.global.always_hide_columns {
+        let mut v = Vec::new();
+        for item in l.split(',') {
+            v.push(item.to_string());
+        }
+        conf.always_hide_columns = v;
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
@@ -1142,6 +1162,14 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "hide the given items in a subject column when printing a task list. Items are hidden only if their corresponding columns are visible",
         "no|none|nothing|tags|all|yes. 'yes' is an alias for all, 'no|none|nothing' are the synonyms",
     );
+    opts.optflag("", "auto-hide-cols", "Hide columns that do not have values");
+    opts.optflag("", "auto-show-cols", "Show all columns that have at least one value");
+    opts.optopt(
+        "",
+        "always-hide-cols",
+        "Comma-separated list of tags that TTDL never show in a separate column. E.g, 'prj,due' or 'pri,created,customtag'",
+        "FIELD1,FIELD2",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1195,6 +1223,20 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     }
     if let Some(s) = matches.opt_str("clean-subject") {
         conf.fmt.hide = str_to_hide(&s);
+    }
+
+    if matches.opt_present("auto-show-cols") {
+        conf.auto_show_columns = true;
+    }
+    if matches.opt_present("auto-hide-cols") {
+        conf.auto_hide_columns = true;
+    }
+    if let Some(dstr) = matches.opt_str("always-hide-cols") {
+        let mut v = Vec::new();
+        for item in dstr.split(',') {
+            v.push(item.to_string());
+        }
+        conf.always_hide_columns = v;
     }
 
     let soon_days = conf.fmt.colors.soon_days;

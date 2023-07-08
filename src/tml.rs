@@ -31,6 +31,9 @@ pub struct Global {
     pub first_sunday: Option<bool>,
     pub strict_mode: Option<bool>,
     pub clean_subject: Option<String>,
+    pub auto_hide_columns: Option<bool>,
+    pub auto_show_columns: Option<bool>,
+    pub always_hide_columns: Option<String>,
 }
 
 #[derive(Deserialize)]

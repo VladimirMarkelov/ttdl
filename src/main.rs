@@ -4,6 +4,7 @@ extern crate lazy_static;
 extern crate serde_derive;
 
 mod cal;
+mod colauto;
 mod conf;
 mod conv;
 mod fmt;
@@ -75,18 +76,26 @@ fn process_tasks(
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
-            let widths = fmt::field_widths(&c.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Todos to be {action}:")?;
-            fmt::print_header(stdout, &c.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &widths, false)?;
+            fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths, false)?;
             writeln!(stdout, "\nReplace with:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &c.fmt, &widths, true)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, &c.fmt, &cols, &widths, true)?;
             if clones.len() > old_len {
                 for idx in old_len..clones.len() {
-                    fmt::print_body_single(stdout, &clones, idx, tasks.len() + idx - old_len + 1, &c.fmt, &widths)?;
+                    fmt::print_body_single(
+                        stdout,
+                        &clones,
+                        idx,
+                        tasks.len() + idx - old_len + 1,
+                        &c.fmt,
+                        &cols,
+                        &widths,
+                    )?;
                 }
             }
-            fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &widths)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
         }
         Ok(false)
     } else {
@@ -98,17 +107,17 @@ fn process_tasks(
             writeln!(stdout, "No todo was {action}")?;
             Ok(false)
         } else {
-            let widths = fmt::field_widths(&c.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Changed todos:")?;
-            fmt::print_header(stdout, &c.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &widths, false)?;
+            fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths, false)?;
             if old_len < tasks.len() {
                 writeln!(stdout, "\nAdded todos:")?;
                 for idx in old_len..tasks.len() {
-                    fmt::print_body_single(stdout, tasks, idx, idx + 1, &c.fmt, &widths)?;
+                    fmt::print_body_single(stdout, tasks, idx, idx + 1, &c.fmt, &cols, &widths)?;
                 }
             }
-            fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &widths)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
             Ok(true)
         }
     }
@@ -125,10 +134,10 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     let now = chrono::Local::now().date_naive();
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
-        let widths = fmt::field_widths(&conf.fmt, &[t.clone()], &[0]);
+        let (cols, widths) = cols_with_width(&[t.clone()], &[0], conf);
         writeln!(stdout, "To be added: ")?;
-        fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, &[t], &[0], &[true], &conf.fmt, &widths, true)?;
+        fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+        fmt::print_todos(stdout, &[t], &[0], &[true], &conf.fmt, &cols, &widths, true)?;
         return Ok(());
     }
 
@@ -138,10 +147,10 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
         std::process::exit(1);
     }
 
-    let widths = fmt::field_widths(&conf.fmt, tasks, &[id]);
+    let (cols, widths) = cols_with_width(tasks, &[id], conf);
     writeln!(stdout, "Added todo:")?;
-    fmt::print_header(stdout, &conf.fmt, &widths)?;
-    fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &widths, false)?;
+    fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+    fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &cols, &widths, false)?;
     if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
         writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
         std::process::exit(1);
@@ -149,13 +158,36 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     Ok(())
 }
 
+fn build_col_list(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Conf) -> Vec<String> {
+    let mut cols = if !conf.auto_show_columns {
+        fmt::field_list(&conf.fmt).iter().map(|it| it.to_string()).collect()
+    } else {
+        colauto::collect_non_empty(tasks, ids)
+    };
+    if conf.auto_hide_columns {
+        let f: Vec<&str> = cols.iter().map(|it| it.as_str()).collect();
+        cols = colauto::filter_non_empty(tasks, ids, &f);
+    }
+    if !conf.always_hide_columns.is_empty() {
+        cols.retain(|x| !conf.always_hide_columns.iter().any(|it| it == x));
+    }
+    cols
+}
+
+fn cols_with_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Conf) -> (Vec<String>, Vec<usize>) {
+    let cols = build_col_list(tasks, ids, conf);
+    let fs: Vec<&str> = cols.iter().map(|it| it.as_str()).collect();
+    let widths = colauto::col_widths(tasks, ids, &fs, &conf.fmt);
+    (cols, widths)
+}
+
 fn print_task_table(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
     let mut todos = filter_tasks(tasks, conf);
-    let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+    let (cols, widths) = cols_with_width(tasks, &todos, conf);
     tsort::sort(&mut todos, tasks, &conf.sort);
-    fmt::print_header(stdout, &conf.fmt, &widths)?;
-    fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &widths, false)?;
-    fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &widths)
+    fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+    fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+    fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)
 }
 
 fn task_list(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
@@ -271,10 +303,10 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         } else {
             writeln!(stdout, "Removed todos:")?
         }
-        let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
-        fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &widths, false)?;
-        fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &widths)?;
+        let (cols, widths) = cols_with_width(tasks, &todos, conf);
+        fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+        fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !flt_conf.dry {
             let removed = todo::remove(tasks, Some(&todos));
             if calculate_updated(&removed) != 0 {
@@ -309,10 +341,10 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
         } else {
             writeln!(stdout, "Archived todos:")?
         }
-        let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
-        fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &widths, false)?;
-        fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &widths)?;
+        let (cols, widths) = cols_with_width(tasks, &todos, &conf);
+        fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+        fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !conf.dry {
             let cloned = todo::clone_tasks(tasks, &done_todos);
             if !conf.wipe {
@@ -346,13 +378,13 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be {action}:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &widths, true)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
         let updated = todo::edit(tasks, Some(&todos), &conf.todo);
@@ -361,11 +393,11 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
                 writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
@@ -411,13 +443,13 @@ fn task_add_text(
             }
         }
 
-        let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+        let (cols, widths) = cols_with_width(tasks, &todos, conf);
         writeln!(stdout, "Todos to be changed:")?;
-        fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
+        fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
         writeln!(stdout, "\nNew todos:")?;
-        fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &widths, true)?;
-        fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+        fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+        fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
     } else {
         let updated: Vec<bool> = vec![true; todos.len()];
 
@@ -434,11 +466,11 @@ fn task_add_text(
             }
         }
 
-        let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+        let (cols, widths) = cols_with_width(tasks, &todos, conf);
         writeln!(stdout, "Changed todos:")?;
-        fmt::print_header(stdout, &conf.fmt, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
-        fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+        fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+        fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
             writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
             std::process::exit(1);
@@ -465,13 +497,13 @@ fn task_start_stop(
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be {action}:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &widths, true)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
         let updated = if start { todo::start(tasks, Some(&todos)) } else { todo::stop(tasks, Some(&todos)) };
@@ -480,11 +512,11 @@ fn task_start_stop(
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
                 writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
@@ -529,13 +561,13 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was postponed")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be postponed:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &widths, true)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
         let mut updated: Vec<bool> = Vec::new();
@@ -555,11 +587,11 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was postponed")?;
         } else {
-            let widths = fmt::field_widths(&conf.fmt, tasks, &todos);
+            let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
-            fmt::print_header(stdout, &conf.fmt, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &widths, false)?;
-            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &widths)?;
+            fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
                 writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                 std::process::exit(1);
