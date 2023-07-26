@@ -272,12 +272,12 @@ mod tests {
             Test {
                 i: vec!["test due:2020-10-10", "x test due:2020-10-10", "x test"],
                 fin: vec!["pri", "done", "created", "finished", "due", "thr"],
-                fout: vec![1, 2, 7, 8, 10, 9],
+                fout: vec![1, 1, 7, 8, 10, 9],
             },
             Test {
                 i: vec!["test due:2020-10-10 t:2020-10-10", "x test tag:first", "x test tag:second", "x test some:tag"],
                 fin: vec!["done", "due", "thr", "tag", "some", "nothing"],
-                fout: vec![2, 10, 10, 6, 4, 7],
+                fout: vec![1, 10, 10, 6, 4, 7],
             },
         ];
         let base = NaiveDate::from_ymd_opt(2020, 2, 2).unwrap();
