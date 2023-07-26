@@ -89,7 +89,7 @@ fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, c:
         let w = if field == "id" {
             number_of_digits(*id)
         } else if let Some(val) = get_field(&tasks[*id], field, c) {
-            val.width()
+            val.trim().width()
         } else {
             0
         };

@@ -171,6 +171,10 @@ fn build_col_list(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Con
     if !conf.always_hide_columns.is_empty() {
         cols.retain(|x| !conf.always_hide_columns.iter().any(|it| it == x));
     }
+    let id_exists = cols.iter().any(|it| it == "id");
+    if !id_exists {
+        cols.push("id".to_string());
+    }
     cols
 }
 

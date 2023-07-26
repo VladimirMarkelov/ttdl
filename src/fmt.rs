@@ -521,6 +521,9 @@ pub fn number_of_digits(val: usize) -> usize {
 fn calc_width(c: &Conf, fields: &[String], widths: &[usize]) -> (usize, usize) {
     let mut before: usize = field_width_cached("id", fields, widths) + 1;
     for f in fields {
+        if f.as_str() == "id" {
+            continue;
+        }
         before += field_width_cached(f, fields, widths) + 1;
     }
 
@@ -539,6 +542,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], w
     for f in fields {
         let width = field_width_cached(f, fields, widths);
         match f.as_str() {
+            "id" => continue,
             "done" => write!(stdout, "D ")?,
             "pri" => write!(stdout, "P ")?,
             "created" => write!(stdout, "{:wid$} ", "Created", wid = width)?,
@@ -671,13 +675,13 @@ fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpe
     let words = parse_subj(msg);
     for word in words.iter() {
         if is_project(word) {
-            stdout.set_color(&c.colors.tag)?;
+            stdout.set_color(&c.colors.project)?;
         } else if is_hashtag(word) {
             stdout.set_color(&c.colors.hashtag)?;
         } else if is_context(word) {
             stdout.set_color(&c.colors.context)?;
         } else if is_tag(word) {
-            stdout.set_color(&c.colors.project)?;
+            stdout.set_color(&c.colors.tag)?;
         } else {
             stdout.set_color(color)?;
         }
@@ -832,6 +836,9 @@ fn print_line(
 
     for f in flist.iter() {
         match f.as_str() {
+            "id" => {
+                continue;
+            }
             "done" => {
                 print_done_val(stdout, task, &arg, &fg)?;
             }
@@ -866,7 +873,7 @@ fn print_line(
                     clr = color_for_threshold_date(task, days, c);
                 }
                 print_date_val(stdout, &arg, c, "thr", dt, clr, flist, widths)?;
-                hide_tags(&mut desc, "thr", c);
+                hide_tags(&mut desc, "t", c);
             }
             "spent" => {
                 print_with_color(
