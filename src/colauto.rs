@@ -75,7 +75,7 @@ fn is_field_empty(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str) -> 
 
 fn header_width(field: &str) -> usize {
     match field {
-        "done" => 1,
+        "done" | "pri" => 1,
         "thr" => "threshold".width(),
         "prj" => "project".width(),
         "ctx" => "context".width(),
@@ -272,12 +272,12 @@ mod tests {
             Test {
                 i: vec!["test due:2020-10-10", "x test due:2020-10-10", "x test"],
                 fin: vec!["pri", "done", "created", "finished", "due", "thr"],
-                fout: vec![0, 2, 0, 0, 10, 0],
+                fout: vec![1, 2, 7, 8, 10, 9],
             },
             Test {
                 i: vec!["test due:2020-10-10 t:2020-10-10", "x test tag:first", "x test tag:second", "x test some:tag"],
                 fin: vec!["done", "due", "thr", "tag", "some", "nothing"],
-                fout: vec![2, 10, 10, 6, 3, 0],
+                fout: vec![2, 10, 10, 6, 4, 7],
             },
         ];
         let base = NaiveDate::from_ymd_opt(2020, 2, 2).unwrap();
@@ -301,7 +301,7 @@ mod tests {
                 widths
             );
             for (idxf, f) in widths.iter().enumerate() {
-                assert_eq!(*f, test.fout[idxf], "{}. {} != {}", idx, f, test.fout[idxf]);
+                assert_eq!(*f, test.fout[idxf], "{}[{}]. {} != {}", idx, test.fin[idxf], f, test.fout[idxf]);
             }
         }
     }
