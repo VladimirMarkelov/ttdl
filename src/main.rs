@@ -159,10 +159,17 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
 }
 
 fn build_col_list(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Conf) -> Vec<String> {
-    let mut cols = if !conf.auto_show_columns {
-        fmt::field_list(&conf.fmt).iter().map(|it| it.to_string()).collect()
+    let mut cols: Vec<String> = if conf.auto_show_columns {
+        let mut c: Vec<String> = conf.fmt.fields.iter().map(|it| it.to_string()).collect();
+        for nf in colauto::collect_non_empty(tasks, ids).drain(..) {
+            let found = c.iter().any(|it| it.as_str() == nf.as_str());
+            if !found {
+                c.push(nf);
+            }
+        }
+        c
     } else {
-        colauto::collect_non_empty(tasks, ids)
+        fmt::field_list(&conf.fmt).iter().map(|it| it.to_string()).collect()
     };
     if conf.auto_hide_columns {
         let f: Vec<&str> = cols.iter().map(|it| it.as_str()).collect();
