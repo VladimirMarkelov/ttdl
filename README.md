@@ -7,8 +7,10 @@
   - [Known issues](#known-issues)
   - [Configuration](#configuration)
     - [Extra ways to set filenames of active and archived todos](#extra-ways-to-set-filenames-of-active-and-archived-todos)
+    - [Customizing the output](#customizing-the-output)
   - [How to use](#how-to-use)
     - [Output example](#output-example)
+      - [Output customization example](#output-customization-example)
     - [Filtering](#filtering)
     - [Archive](#archive)
       - [How to show archived todos](#how-to-show-archived-todos)
@@ -134,6 +136,121 @@ Rules to choose a file which is used to store archived todos (from lowest to hig
 
 1. "done.txt" in the same directory with "todo.txt"
 2. Command line option `--done-file`. If any path set in command line points to a directory then "done.txt" is added automatically. If the value is only a filename without directory then the directory is inherited from todo list file
+
+### Customizing the output
+
+NOTE: The only column that cannot be customized and cannot be hidden is the very first column `ID`.
+The ordinal number of a task always goes first.
+
+The default output shows the following columns: marker for done, priority, creation date, finish date, due date, and subject.
+All dates are displayed as absolute values in ISO format, e.g. "2023-05-19".
+
+There are a lot of way to change the way TTDL displays the task table.
+The simplest way is to use command-line option `--short`.
+The option hides all columns except marker for done and priority.
+
+If you prefer to see how many days left before something or how many days passed some date, use the command-line option `--human`.
+The option transforms absolute dates into `in 1w`(in 1 week) or `6d ago`(6 days ago) depending on the current date.
+
+If you want to hide, show, or reorder some columns, use the command-line option `--fields` or modify configuration option `global.fiels`.
+The option is a command-separated list of column names.
+TTDL displays columns in the same order in which you put them to `--fields`.
+Usually the column name and a tag name are the same, but majority of standard columns are exceptions:
+
+| Field name | Column displays |
+| --- | --- |
+| `done` | Shows `x` if a task is done, `R` if a task is recurrent, and nothing otherwise |
+| `pri` | Task priority |
+| `ctx` | Task contexts, comma-separated if the task has more than 1 context |
+| `prj` | Task projects, comma-separated if the task has more than 1 project |
+| `created` | Task creation date |
+| `finished` | Task completion date |
+| `due` | Task due date |
+| `thr` | Threshold date (the tag name is `t:`) |
+
+If you do not like empty columns, but you do not want to fiddle with `--fields` every time, you can use the option `--auto-hide-cols` or set the configuration option `global.auto_hide_columns = true`.
+When auto hiding columns is on, TTDL automatically hides the columns which have no values.
+
+The opposite case: you do not want to define `--fields` every time but you want to display all existing tags in separate columns.
+Use the option `--auto-show-cols` or set the `global.auto_show_columns = true`.
+When the option is on, first, TTDL traverse through the list of tasks and collects all non-empty tags.
+Second, TTDL shows all the tags in corresponding columns.
+
+NOTE: custom tags(tags which names start with `!`) are never shown in separate columns.
+
+When using `--fields` and `auto-show-cols` you can notice that some information is duplicated.
+The first occurrence is in the column, the second one is inside subject text.
+Sometimes it is helpful, e.g. if you pass `--human` option, columns with dates will display relative value(`1d ago`).
+At the same time, task subject contains the absolute value of the date(`2023-05-17`).
+Anyway, most of the time the duplication does not look good.
+To mitigate the issue, use the option `--clean-subject` or set the configuration option `global.clean_subject`.
+The option takes one of three values:
+
+1. `none` - default mode. Nothing is hidden.
+2. `all` - all duplicated info is removed from the subject (project, context, tags, etc)
+3. `tags` - only tags are removed from the subject(contexts and projects are always displayed in subject). Sometimes, context or project is a part of the text, so removing them can ruin the message. This mode helps to fix this trouble.
+
+The last option that affects the output, is `--always-hide-cols` or configuration option `global.always_hide_columns`.
+Its value is a comma-separated list of tags that are never shows in their own columns, they are shown only inside `subject` text.
+
+None of mentioned options are mutually exclusive. They allow you to customize the output in a flexible way.
+E.g, by setting `--fields` you define what fields you want to see first and in what order.
+Adding `--auto-show-cols` display the rest of columns in "random" order - in order of appearance in the task list.
+
+The options are applied to the output in the following order(in case of all options are enabled):
+
+1. First, `--fields` to create the beginning of the table
+2. Second, `--auto-show-cols` appends the rest of columns
+3. Third, `--auto-hide-cols` removes all empty columns
+4. Fourth, `--always-hide-cols` removes the columns that should not be visible
+5. The last, `--clean-subject` removes from the subject text all tags and values which are displayed in separate columns
+
+#### Output customization example
+
+Let's assume, `todo.txt` contains a task:
+
+```
+buy milk @food +house due:2023-07-31 rec:1w count:2
+```
+
+Show the list of tasks with various options (for brevity, I omit the tail of the output):
+
+```
+> ttdl list
+ # D P Created Finished Due        Subject
+ -------------------------------------------
+ 1 R                    2023-07-31 buy milk @food +house due:2023-07-31 rec:1w count:2
+
+> ttdl list --human
+ # D P Created Finished Due   Subject
+ --------------------------------------
+ 1 R                    in 2d buy milk @food +house due:2023-07-31 rec:1w count:2
+
+> ttdl list --fields=ctx,created,due
+ # Context Created Due        Subject
+ --------------------------------------
+ 1 food            2023-07-31 buy milk @food +house due:2023-07-31 rec:1w count:2
+
+> ttdl list --fields=ctx,created,due --auto-hide-cols
+ # Context Created Due        Subject
+ --------------------------------------
+ 1 food    2023-07-31 buy milk @food +house due:2023-07-31 rec:1w count:2
+
+> ttdl list --fields=ctx,created,due --auto-hide-cols --auto-show-cols
+ # Context Due        D Project Rec Count Subject
+ --------------------------------------------------
+ 1 food    2023-07-31 R house   1w  2     buy milk @food +house due:2023-07-31 rec:1w count:2
+
+> ttdl list --fields=ctx,created,due --auto-hide-cols --auto-show-cols --clean-subject=all
+ # Context Due        D Project Count Rec Subject
+ --------------------------------------------------
+ 1 food    2023-07-31 R house   2     1w  buy milk
+
+> ttdl list --fields=ctx,created,due --auto-hide-cols --auto-show-cols --clean-subject=all --always-hide-cols=rec
+ # Context Due        D Project Count Subject
+ ----------------------------------------------
+ 1 food    2023-07-31 R house   2     buy milk rec:1w
+```
 
 ## How to use
 

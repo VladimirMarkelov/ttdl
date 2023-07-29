@@ -1,3 +1,20 @@
+ttdl (4.0.0) unstable; urgency=medium
+
+  * New incompatible output format:
+    - column width is not constant, its width fits the longest column value
+    - columns are shown in the same order as they mentioned in the settings
+  * Fixed incorrect syntax highlighting: project and tag colors were exchanged
+  * Fixed removing threshold from subject when it is shown in a column
+  * New command-line option `auto-hide-cols`: automatically hide columns which
+    have no values
+  * New command-line option `auto-show-cols`: automatically show tags,
+    context, and project in separate columns
+  * New command-line option `always-hide-cols`: never show the mentioned tags
+    in separate columns. The option is good when used together with the option
+    `auto-show-cols`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 27 Jul 2023 19:40:31 -0700
+
 ttdl (3.10.0) unstable; urgency=medium
 
   * Fixed broken custom formatting: when a plugin changed any tag value, the
