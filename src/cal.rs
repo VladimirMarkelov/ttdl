@@ -289,8 +289,8 @@ fn next_month(dt: NaiveDate, m_delta: u32) -> NaiveDate {
     let mut y = dt.year();
     let mut m = dt.month() + m_delta;
     if m > 12 {
-        y += (m / 12) as i32;
-        m %= 12;
+        y += ((m - 1) / 12) as i32;
+        m = (m - 1) % 12 + 1;
     }
     NaiveDate::from_ymd_opt(y, m, 1).expect("Failed to calculate the next month date")
 }
