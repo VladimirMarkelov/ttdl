@@ -724,7 +724,7 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
                     if n > 0 { n - 1 } else { n + 1 },
                 )
             };
-            add_months(today, diff as u32, n < 0)
+            add_months(today, diff.unsigned_abs() as u32, n < 0)
         }
         CalendarRangeType::Years(n) => {
             if n >= 0 {
@@ -738,15 +738,12 @@ pub(crate) fn calendar_first_day(today: NaiveDate, rng: &CalendarRange, first_su
             } else {
                 (NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today), -n - 1)
             };
-            add_years(today, diff as u32, true)
+            add_years(today, diff as u32, n < 0)
         }
         CalendarRangeType::YearRange(n, _) => {
-            let (today, diff) = if rng.strict {
-                (today, n)
-            } else {
-                (NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today), if n > 0 { n - 1 } else { n + 1 })
-            };
-            add_years(today, diff as u32, true)
+            let (today, diff) =
+                if rng.strict { (today, n) } else { (NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap_or(today), n) };
+            add_years(today, diff.unsigned_abs() as u32, n < 0)
         }
     }
 }
@@ -787,7 +784,7 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
                 if n <= 0 {
                     return today;
                 }
-                let today = add_months(today, n as u32, false);
+                let today = add_months(today, n.unsigned_abs() as u32, n < 0);
                 return today.checked_add_signed(Duration::days(-1)).unwrap_or(today);
             }
             let last = days_in_month(today.year(), today.month());
@@ -796,7 +793,7 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
                 return today;
             }
             let diff = n - 1;
-            add_months(today, diff as u32, false)
+            add_months(today, diff.unsigned_abs() as u32, diff < 0)
         }
         CalendarRangeType::MonthRange(_, n) => {
             let dt = add_months(today, n.unsigned_abs() as u32, n < 0);
@@ -827,12 +824,8 @@ pub(crate) fn calendar_last_day(today: NaiveDate, rng: &CalendarRange, first_sun
             if rng.strict {
                 return add_years(today, n.unsigned_abs() as u32, n < 0);
             }
-            let dt = NaiveDate::from_ymd_opt(today.year(), 12, 31).unwrap_or(today);
-            if n <= 1 {
-                dt
-            } else {
-                add_years(dt, (n - 1) as u32, false)
-            }
+            let dt = add_years(today, n.unsigned_abs() as u32, n < 0);
+            NaiveDate::from_ymd_opt(dt.year(), 12, 31).unwrap_or(today)
         }
     }
 }
