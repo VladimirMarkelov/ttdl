@@ -10,6 +10,7 @@
     - [Customizing the output](#customizing-the-output)
       - [Output customization example](#output-customization-example)
   - [How to use](#how-to-use)
+    - [Marking task completed and uncompleted](marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
     - [Filtering](#filtering)
     - [Archive](#archive)
@@ -277,6 +278,43 @@ NOTES:
 1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits, or ISO 8601 date format)
 2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
+
+### Marking task completed and uncompleted
+
+When you complete a task and you do not want to see it in the default output any longer, mark the task 'done' with the command `ttdl done ,ID>`.
+If you have completed an incorrect task by accident, you can get it back with the command `ttdl undone <ID>`.
+Where `ID` is the same that you used for `ttdo done` command, because marking a task completed does not change its ID.
+
+Hint: to remove an invalid task use `ttdl rm`. This command may change IDs of all or a few tasks. The command `ttdl rm` is irreversible.
+
+Hint: after some time, your `todo.txt` can grow long and can be full of completed tasks. You can use `ttdl archive` to move all completed tasks to `done.txt`. It may make TTDL faster.
+
+For majority of cases it is all any user should know about completing and uncompleting tasks.
+But there are two special cases when completion can work differently: for tasks with priority set, and for recurrent tasks.
+
+#### Recurrent tasks
+
+When you complete a recurrent task, it marks the old one as `done` and creates its clone with new due date.
+So, if you uncomplete the task, you will end with two similar tasks in your todo list.
+They differ only by their due dates.
+You should manually remove a duplicated task with `ttdl rm`.
+
+#### Tasks with priority
+
+Default TTDL behavior is just prepend `x` to the task subject when the task is done.
+Completed tasks in default mode keep displaying their priorities in the priority column as regular tasks do.
+If you do not want to see priority column filled with anything(and do not want to colorize done tasks by priority) for completed tasks, tune up the TTDL configuration.
+
+Either change `ttdl.toml` configuration file: section `global`, the option `priority_on_done` or pass command-line option `priority-on-done`.
+Available modes:
+
+- `keep` - use the default mode, when a completed tasks keeps showing its priority
+- `move` - on completion the priority moves after task completion date. So, the priority becomes part of task subject but is now shown in the priority column
+- `tag` - on completion the priority is set to none, but a new tag with priority value is appended to the subject. Example: `(A) buy milk` becomes `x buy milk pri:A` in this mode
+- `erase` - just set priority to None
+
+NOTE: do not forget to pass the same command-line option value when you want to uncomplete a completed task.
+All modes above, except `erase`, are reversible and correctly restore the task priority when you uncomplete the task.
 
 ### Output example
 
