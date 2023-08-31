@@ -139,7 +139,18 @@ old = "1y"
 # Comma-separated list of tags that are hidden always.
 # Use it with auto_show_columns=true to hide non-empty columns that you
 # do not want to see in a separate columns
-# always_hide_columns = 
+# always_hide_columns =
+
+# What to do with task priority when the task is completed:
+#    keep  = only prepend 'x' (default)
+#    move  = place the priority after completion date. In this case the task
+#            subject still contains priority but it is not displayed in the
+#            priority column
+#    tag   = convert priority to a tag
+#    erase = remove priority from the task
+# NOTE: all modes above, except `erase`, are reversible, i.e., when the completed
+#       task is undone, the task gets its priority back
+# priority_on_done = keep
 
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags

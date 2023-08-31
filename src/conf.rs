@@ -67,6 +67,7 @@ pub struct Conf {
     pub auto_hide_columns: bool,
     pub auto_show_columns: bool,
     pub always_hide_columns: Vec<String>,
+    pub priority_on_done: todotxt::CompletionMode,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -94,6 +95,7 @@ impl Default for Conf {
             auto_hide_columns: false,
             auto_show_columns: false,
             always_hide_columns: Vec::new(),
+            priority_on_done: todotxt::CompletionMode::JustMark,
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -218,6 +220,16 @@ fn str_to_hide(s: &str) -> Hide {
             eprintln!("Invalid value for 'clean-subject': {s}. Must be one of none, nothing, tags, all");
             exit(1);
         }
+    }
+}
+
+fn str_to_pri_mode(s: &str) -> Option<todotxt::CompletionMode> {
+    match s.to_lowercase().as_str() {
+        "keep" => Some(todotxt::CompletionMode::JustMark),
+        "move" => Some(todotxt::CompletionMode::MovePriority),
+        "erase" => Some(todotxt::CompletionMode::RemovePriority),
+        "tag" => Some(todotxt::CompletionMode::PriorityToTag),
+        _ => None,
     }
 }
 
@@ -1175,6 +1187,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "Comma-separated list of tags that TTDL never show in a separate column. E.g, 'prj,due' or 'pri,created,customtag'",
         "FIELD1,FIELD2",
     );
+    opts.optopt(
+        "",
+        "priority-on-done",
+        "what to do with priority on task completion: keep - no special action(default behavior), move - place priority after completion date, tag - convert priority to a tag 'pri:', erase - remove priority. Notethat in all modes, except `erase`, the operation is reversible and on task uncompleting, the task gets its priority back",
+        "VALUE",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1242,6 +1260,17 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
             v.push(item.to_string());
         }
         conf.always_hide_columns = v;
+    }
+    if let Some(s) = matches.opt_str("priority-on-done") {
+        match str_to_pri_mode(&s) {
+            Some(m) => conf.priority_on_done = m,
+            None => {
+                return Err(anyhow!(terr::TodoError::InvalidValue(
+                    s.to_string(),
+                    "priority completion mode".to_string()
+                )))
+            }
+        }
     }
 
     let soon_days = conf.fmt.colors.soon_days;

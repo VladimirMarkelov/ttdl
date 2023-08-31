@@ -34,6 +34,7 @@ pub struct Global {
     pub auto_hide_columns: Option<bool>,
     pub auto_show_columns: Option<bool>,
     pub always_hide_columns: Option<String>,
+    pub priority_on_done: Option<String>,
 }
 
 #[derive(Deserialize)]

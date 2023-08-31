@@ -30,7 +30,8 @@ use todo_lib::*;
 const TASK_HIDDEN_OFF: &str = "0";
 const TASK_HIDDEN_FLD: &str = "h";
 
-type FnUpdateData = fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>) -> todo::ChangedVec;
+type FnDoneUndone =
+    fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>, mode: todotxt::CompletionMode) -> todo::ChangedVec;
 
 fn task_is_hidden(task: &todotxt::Task) -> bool {
     match task.tags.get(TASK_HIDDEN_FLD) {
@@ -63,14 +64,14 @@ fn process_tasks(
     tasks: &mut todo::TaskVec,
     c: &conf::Conf,
     action: &str,
-    f: FnUpdateData,
+    f: FnDoneUndone,
 ) -> io::Result<bool> {
     let todos = filter_tasks(tasks, c);
 
     if c.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let old_len = clones.len();
-        let updated = f(&mut clones, None);
+        let updated = f(&mut clones, None, c.priority_on_done);
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
@@ -100,7 +101,7 @@ fn process_tasks(
         Ok(false)
     } else {
         let old_len = tasks.len();
-        let updated = f(tasks, Some(&todos));
+        let updated = f(tasks, Some(&todos), c.priority_on_done);
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
