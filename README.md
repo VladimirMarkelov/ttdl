@@ -79,6 +79,14 @@ For macOS and Linux you can install TTDL using [Homebrew](https://brew.sh/):
 brew install ttdl
 ```
 
+### Archlinux (AUR)
+
+For Archlinux you can install TTDL from the [AUR package](https://aur.archlinux.org/packages/ttdl):
+
+```shell
+paru -S ttdl
+```
+
 ## Known issues
 
 **Adding a new todo, append or prepend a text to existing todo results in error:**
