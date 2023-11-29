@@ -313,6 +313,8 @@ Strictness affects on how TTDL calculates the next due date after completing the
 - `Strict` - the next due date depends on the current due date: `next due date` = `current due date` + `recurrence interval`. This mode is useful to track birthdays or regular payments that must be paid by a certain day of month
 - `Non-strict` - the next due date depends on the current date: `next due date` = `today` + `recurrence interval`. This mode is useful to track things that have relaxed due date but the task should be done within certain limit of days. Example: you have to mow your lawn at least once a month. So you set non-strict interval `rec:1m`. Then, even if you mow your lawn a few days before the due date, completing the task moves the due date to exactly 1 month ahead of today. That helps you to keep you lawn nice and never mow too late.
 
+More about recurrent task completion in the section ["Completion of recurrent tasks"](#completion-of-recurrent-tasks).
+
 #### Example
 
 Let's assume today is `2023-11-20`. In the todo list there are two tasks:
@@ -332,8 +334,6 @@ mow lawn due:2023-12-20 rec:1m
 
 The strict task moved its due date to a month ahead of its previous due date.
 White the non-strict task now have the due date exactly in a month from the current date.
-
-More about recurrent task completion in the section ["Completion of recurrent tasks"](completion-of-recurrent-tasks).
 
 ### Marking task completed and uncompleted
 
