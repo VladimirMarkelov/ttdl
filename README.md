@@ -10,6 +10,7 @@
     - [Customizing the output](#customizing-the-output)
       - [Output customization example](#output-customization-example)
   - [How to use](#how-to-use)
+    - [Recurrent tasks](recurrent-tasks)
     - [Marking task completed and uncompleted](marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
     - [Filtering](#filtering)
@@ -287,6 +288,53 @@ NOTES:
 2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
 
+### Recurrent tasks
+
+Sometimes you need to create a task that you have to do periodically - a recurrent task.
+To make a task recurrent, set the task due date and define a recurrence interval using tag `rec:`.
+Please note that a recurrent task must contain a due date, otherwise the recurrence tag is ignored.
+
+A recurrence interval is an integer number followed by an optional interval type:
+
+| Interval type | Meaning |
+| --- | --- |
+| (nothing)  | the number of days |
+| `d` | the number of days |
+| `w` | the number of weeks |
+| `m` | the number of months |
+| `y` | the number of years |
+
+Examples: `rec:1y` - repeat the task every year, `rec:2w` - repeat the task every two weeks.
+
+A bare recurrence defines a non-strict interval.
+You can make the recurrence strict by putting a symbol `+` right before the number: `rec:1w` - non-strict, `rec:+1w` - strict.
+Strictness affects on how TTDL calculates the next due date after completing the current task:
+
+- `Strict` - the next due date depends on the current due date: `next due date` = `current due date` + `recurrence interval`. This mode is useful to track birthdays or regular payments that must be paid by a certain day of month
+- `Non-strict` - the next due date depends on the current date: `next due date` = `today` + `recurrence interval`. This mode is useful to track things that have relaxed due date but the task should be done within certain limit of days. Example: you have to mow your lawn at least once a month. So you set non-strict interval `rec:1m`. Then, even if you mow your lawn a few days before the due date, completing the task moves the due date to exactly 1 month ahead of today. That helps you to keep you lawn nice and never mow too late.
+
+#### Example
+
+Let's assume today is `2023-11-20`. In the todo list there are two tasks:
+
+```
+pay credit card due:2023-11-29 rec:+1m
+mow lawn due:2023-11-29 rec:1m
+```
+
+Both tasks have the same due date, but different strictness.
+Let's complete both tasks. The todo list now contains the following lines:
+
+```
+pay credit card due:2023-12-29 rec:+1m
+mow lawn due:2023-12-20 rec:1m
+```
+
+The strict task moved its due date to a month ahead of its previous due date.
+White the non-strict task now have the due date exactly in a month from the current date.
+
+More about recurrent task completion in the section ["Completion of recurrent tasks"](completion-of-recurrent-tasks).
+
 ### Marking task completed and uncompleted
 
 When you complete a task and you do not want to see it in the default output any longer, mark the task 'done' with the command `ttdl done ,ID>`.
@@ -300,12 +348,19 @@ Hint: after some time, your `todo.txt` can grow long and can be full of complete
 For majority of cases it is all any user should know about completing and uncompleting tasks.
 But there are two special cases when completion can work differently: for tasks with priority set, and for recurrent tasks.
 
-#### Recurrent tasks
+#### Completion of recurrent tasks
 
 When you complete a recurrent task, it marks the old one as `done` and creates its clone with new due date.
 So, if you uncomplete the task, you will end with two similar tasks in your todo list.
 They differ only by their due dates.
 You should manually remove a duplicated task with `ttdl rm`.
+
+There is a special case for a recurrent task when the task's due date(for strict recurrence) or today's date(for non-strict recurrence) is the last day of a month and the recurrence interval type is either `m`(month) or `y`(year).
+In this case, the next due date always is the last day of a new due date's month.
+
+Example for strict recurrence: when completing a task `pay credit card due:2023-02-28 rec:+1m`, the new due date is `due:2023-03-31` because `2023-02-28` is the last day of February.
+
+Example for non-strict recurrence: if today is `2023-02-28` and you complete a task `pay credit card due:2023-02-25 rec:1m`, the next due date of the task is `due:2023-03-28` because `today` is the last day of a month - of February.
 
 #### Tasks with priority
 
