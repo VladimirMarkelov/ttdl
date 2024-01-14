@@ -12,6 +12,7 @@ mod human_date;
 mod stats;
 mod subj_clean;
 mod tml;
+mod date_expr;
 
 use std::collections::HashMap;
 use std::env;

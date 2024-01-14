@@ -3,7 +3,7 @@ use std::mem;
 
 use todo_lib::{terr, tfilter};
 
-const NO_CHANGE: &str = "no change";
+pub const NO_CHANGE: &str = "no change";
 const DAYS_PER_WEEK: u32 = 7;
 const FAR_PAST: i64 = -100 * 365; // far in the past
 
@@ -129,7 +129,12 @@ impl CalendarRange {
                 "w" | "W" => CalendarRangeType::WeekRange(lnum, rnum),
                 "m" | "M" => CalendarRangeType::MonthRange(lnum, rnum),
                 "y" | "Y" => CalendarRangeType::YearRange(lnum, rnum),
-                _ => unreachable!(),
+                _ => {
+                    return Err(terr::TodoError::InvalidValue(
+                        ltp.to_string(),
+                        "date range type".to_string(),
+                    ));
+                },
             },
         };
         Ok(rng)
@@ -144,7 +149,12 @@ impl CalendarRange {
                 "w" | "W" => CalendarRangeType::Weeks(num),
                 "m" | "M" => CalendarRangeType::Months(num),
                 "y" | "Y" => CalendarRangeType::Years(num),
-                _ => unreachable!(),
+                _ => {
+                    return Err(terr::TodoError::InvalidValue(
+                        tp.to_string(),
+                        "date range type".to_string(),
+                    ));
+                },
             },
         };
         Ok(rng)
@@ -169,7 +179,7 @@ fn days_in_month(y: i32, m: u32) -> u32 {
     }
 }
 
-fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
+pub fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
     let mut y = dt.year();
     let mut m = dt.month();
     let mut d = dt.day();
@@ -203,7 +213,7 @@ fn add_months(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
     }
 }
 
-fn add_years(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
+pub fn add_years(dt: NaiveDate, num: u32, back: bool) -> NaiveDate {
     let mut y = dt.year();
     let m = dt.month();
     let mut d = dt.day();
