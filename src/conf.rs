@@ -744,16 +744,20 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
             conf.todo_file = PathBuf::from(val);
         }
     }
+
+    resolve_home_directory(&mut conf.todo_file);
+
     if conf.todo_file.is_dir() {
         conf.todo_file.push(TODO_FILE);
     }
 
     if let Some(val) = matches.opt_str("done-file") {
         if !val.is_empty() {
-            let pb = PathBuf::from(val.clone());
+            let mut pb = PathBuf::from(val.clone());
             if pb.parent() == Some(&PathBuf::from("")) {
                 conf.done_file = conf.todo_file.with_file_name(val);
             } else {
+                resolve_home_directory(&mut pb);
                 conf.done_file = pb;
             }
         }
@@ -763,6 +767,14 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     }
     if conf.done_file.is_dir() {
         conf.done_file.push(DONE_FILE);
+    }
+}
+
+fn resolve_home_directory(path: &mut PathBuf) {
+    if let Ok(path_striped) = path.strip_prefix("~") {
+        if let Some(home) = dirs::home_dir() {
+            *path = home.join(path_striped);
+        }
     }
 }
 
