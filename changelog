@@ -2,6 +2,12 @@ ttdl (4.2.0) unstable; urgency=medium
 
   * New recurrence interval: business days.
     It works as the day interval but all Sundays and Saturdays are skipped.
+  * Now the character `~` can be used in configuration file to set todo and
+    done files. `~` is a shortcut for user's home directory.
+    Thanks to Enno Zickler(@ezickler) for contribution.
+  * Updated docs:
+    - Added description of strict and non-strict recurrences
+    - Added ArchLinux installation intstructions. Thanks to Justin (@just1602)
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 14 Feb 2024 22:06:02 -0800
 
