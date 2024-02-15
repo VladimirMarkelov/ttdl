@@ -1,3 +1,10 @@
+ttdl (4.2.0) unstable; urgency=medium
+
+  * New recurrence interval: business days.
+    It works as the day interval but all Sundays and Saturdays are skipped.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 14 Feb 2024 22:06:02 -0800
+
 ttdl (4.1.0) unstable; urgency=medium
 
   * New command-line and configuraton option `priority-on-done`. The option
@@ -8,6 +15,8 @@ ttdl (4.1.0) unstable; urgency=medium
     tag: remove the priority and add a tag 'pri:' with the priority value
     Note that all modes, except 'erase' are reversible and properly restore
     task priority when the task is uncompleted
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 27 Jul 2023 19:40:31 -0700
 
 ttdl (4.0.0) unstable; urgency=medium
 

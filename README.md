@@ -300,6 +300,7 @@ A recurrence interval is an integer number followed by an optional interval type
 | --- | --- |
 | (nothing)  | the number of days |
 | `d` | the number of days |
+| `b` | the number of business days (Sundays and Saturdays are skipped when counting) |
 | `w` | the number of weeks |
 | `m` | the number of months |
 | `y` | the number of years |
