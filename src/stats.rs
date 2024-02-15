@@ -90,7 +90,7 @@ impl Stats {
                 if overdue {
                     t.overdue += 1;
                 }
-                t.spent = t.spent + spent;
+                t.spent += spent;
                 found = true;
             }
         }
