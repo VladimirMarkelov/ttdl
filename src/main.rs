@@ -308,10 +308,7 @@ fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
 
 fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {
-        writeln!(
-            stdout,
-            "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete."
-        )?;
+        writeln!(stdout, "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete.")?;
         std::process::exit(1);
     }
     let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
