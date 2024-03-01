@@ -40,6 +40,38 @@ fn task_is_hidden(task: &todotxt::Task) -> bool {
     }
 }
 
+fn is_filter_empty(flt: &tfilter::Conf) -> bool {
+    if flt.regex.is_some() || flt.due.is_some() || flt.thr.is_some() || flt.rec.is_some() {
+        return false;
+    }
+    if flt.pri.is_some() || flt.tmr.is_some() || flt.created.is_some() || flt.finished.is_some() {
+        return false;
+    }
+    if let tfilter::ItemRange::None = flt.range {
+    } else {
+        return false;
+    }
+    if let tfilter::TodoStatus::Active = flt.all {
+    } else {
+        return false;
+    }
+    if !flt.include.projects.is_empty()
+        || !flt.include.contexts.is_empty()
+        || !flt.include.tags.is_empty()
+        || !flt.include.hashtags.is_empty()
+    {
+        return false;
+    }
+    if !flt.exclude.projects.is_empty()
+        || !flt.exclude.contexts.is_empty()
+        || !flt.exclude.tags.is_empty()
+        || !flt.exclude.hashtags.is_empty()
+    {
+        return false;
+    }
+    true
+}
+
 fn filter_tasks(tasks: &[todotxt::Task], c: &conf::Conf) -> todo::IDVec {
     let mut todos = tfilter::filter(tasks, &c.flt);
     if !c.show_hidden {
@@ -275,6 +307,13 @@ fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
 }
 
 fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(
+            stdout,
+            "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete."
+        )?;
+        std::process::exit(1);
+    }
     let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
@@ -286,6 +325,13 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
 }
 
 fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(
+            stdout,
+            "Warning: you are going to undone all the tasks completed tasks. Please specify tasks to undone."
+        )?;
+        std::process::exit(1);
+    }
     let mut flt_conf = conf.clone();
     if flt_conf.flt.all == tfilter::TodoStatus::Active {
         flt_conf.flt.all = tfilter::TodoStatus::Done;
@@ -302,6 +348,10 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
 }
 
 fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(stdout, "Warning: deletion of all tasks requested. Please specify tasks to delete.")?;
+        std::process::exit(1);
+    }
     let mut flt_conf = conf.clone();
     if flt_conf.flt.all == tfilter::TodoStatus::Active {
         flt_conf.flt.all = tfilter::TodoStatus::All;
@@ -378,6 +428,10 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
 }
 
 fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(stdout, "Warning: modifying of all tasks requested. Please specify tasks to edit.")?;
+        std::process::exit(1);
+    }
     let todos = filter_tasks(tasks, conf);
     let action = "changed";
     if todos.is_empty() {
@@ -425,6 +479,10 @@ fn task_add_text(
     conf: &conf::Conf,
     to_end: bool,
 ) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(stdout, "Warning: you are going to add text to all tasks. Please specify tasks to modify.")?;
+        std::process::exit(1);
+    }
     let subj = match &conf.todo.subject {
         None => {
             writeln!(stdout, "Subject is empty")?;
@@ -539,6 +597,10 @@ fn task_start_stop(
 }
 
 fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+    if is_filter_empty(&conf.flt) {
+        writeln!(stdout, "Warning: postponing of all tasks requested. Please specify tasks to postpone.")?;
+        std::process::exit(1);
+    }
     let subj = match conf.todo.subject {
         Some(ref s) => s,
         None => {

@@ -1,3 +1,11 @@
+ttdl (4.2.1) unstable; urgency=medium
+
+  * Forbid executing some operations if no filter is specified in command
+    line. When running without specifying what tasks to process, the commands
+    rm, edit, postpone, done, undone interrupt the application with an error
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 29 Feb 2024 19:23:11 -0800
+
 ttdl (4.2.0) unstable; urgency=medium
 
   * New recurrence interval: business days.
