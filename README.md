@@ -3,6 +3,7 @@
 - [TTDL (Terminal ToDo List)](#ttdl-terminal-todo-list)
   - [Installation](#installation)
     - [Precompiled binaries](#precompiled-binaries)
+    - [Scoop](#scoop)
     - [Homebrew](#homebrew)
   - [Known issues](#known-issues)
   - [Configuration](#configuration)
@@ -71,6 +72,18 @@ For Windows and Ubuntu you can download precompiled binaries from [Release page]
 
 - Windows binary works on Windows 7 or newer Windows.
 - Ubuntu binary tested on Ubuntu 16 but should work on Ubuntu 18 (and maybe on other deb-based Linux distributions)
+
+### Scoop
+
+For Windows you can install using [Scoop](https://scoop.sh/).
+
+First, you need to add scoop bucket `Extras`, then you can install TTDL:
+
+```console
+scoop bucket add extras
+
+scoop install ttdl
+```
 
 ### Homebrew
 
