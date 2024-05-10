@@ -829,7 +829,7 @@ fn print_line(
     let (mut desc, arg) =
         if let Some(tpl) = external_reconstruct(task, c) { tpl } else { (String::new(), json::JsonValue::Null) };
     if desc.is_empty() {
-        desc = task.subject.clone();
+        desc.clone_from(&task.subject);
     }
 
     print_with_color(stdout, &format!("{id:>id_width$} "), &fg)?;

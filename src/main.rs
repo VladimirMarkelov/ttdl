@@ -433,17 +433,17 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
     tsk.finished = task.finished;
     let mut sbj = format!("{0}", tsk);
 
-    for ctx in &task.contexts {
-        sbj += &format!(" @{0}", ctx);
-    }
     for prj in &task.projects {
         sbj += &format!(" +{0}", prj);
     }
-    for htag in &task.hashtags {
-        sbj += &format!(" #{0}", htag);
+    for ctx in &task.contexts {
+        sbj += &format!(" @{0}", ctx);
     }
     for (k, v) in &task.tags {
         sbj += &format!(" {k}:{v}");
+    }
+    for htag in &task.hashtags {
+        sbj += &format!(" #{0}", htag);
     }
     sbj
 }

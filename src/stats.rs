@@ -173,7 +173,7 @@ fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::
             String::new()
         } else {
             writeln!(stdout, "{sep}")?;
-            last_prj = s.prj.clone();
+            last_prj.clone_from(&s.prj);
             proj_total = s.total;
             if s.prj.len() > PRJ_WIDTH {
                 format!("{:.w$}", s.prj, w = PRJ_WIDTH)

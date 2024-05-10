@@ -944,7 +944,7 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
 
     if let Some(sh) = &tc.global.shell {
         if !sh.is_empty() {
-            conf.fmt.shell = sh.clone();
+            conf.fmt.shell.clone_from(sh);
         }
     }
 
