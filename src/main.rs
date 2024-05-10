@@ -424,6 +424,30 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
     Ok(())
 }
 
+fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
+    let now = chrono::Local::now().date_naive();
+    let mut tsk = todotxt::Task::parse(subj, now);
+    tsk.priority = task.priority;
+    tsk.create_date = task.create_date;
+    tsk.finish_date = task.finish_date;
+    tsk.finished = task.finished;
+    let mut sbj = format!("{0}", tsk);
+
+    for ctx in &task.contexts {
+        sbj += &format!(" @{0}", ctx);
+    }
+    for prj in &task.projects {
+        sbj += &format!(" +{0}", prj);
+    }
+    for htag in &task.hashtags {
+        sbj += &format!(" #{0}", htag);
+    }
+    for (k, v) in &task.tags {
+        sbj += &format!(" {k}:{v}");
+    }
+    sbj
+}
+
 fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {
         writeln!(stdout, "Warning: modifying of all tasks requested. Please specify tasks to edit.")?;
@@ -435,7 +459,22 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         writeln!(stdout, "No todo changed")?
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
-        let updated = todo::edit(&mut clones, None, &conf.todo);
+        let updated = if conf.keep_tags {
+            if let Some(ref subj) = conf.todo.subject {
+                let sbj = copy_tags_from_task(subj, &mut clones[0]);
+                let now = chrono::Local::now().date_naive();
+                let tsk = todotxt::Task::parse(&sbj, now);
+                clones[0] = tsk;
+                let mut changed = vec![false; clones.len()];
+                changed[0] = true;
+                changed
+            } else {
+                writeln!(stdout, "The option keep-tags can be used only when setting a new subject")?;
+                std::process::exit(1);
+            }
+        } else {
+            todo::edit(&mut clones, None, &conf.todo)
+        };
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
@@ -450,7 +489,23 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
-        let updated = todo::edit(tasks, Some(&todos), &conf.todo);
+        let updated = if conf.keep_tags {
+            if let Some(ref subj) = conf.todo.subject {
+                let id = todos[0];
+                let sbj = copy_tags_from_task(subj, &mut tasks[id]);
+                let now = chrono::Local::now().date_naive();
+                let tsk = todotxt::Task::parse(&sbj, now);
+                tasks[id] = tsk;
+                let mut changed = vec![false; todos.len()];
+                changed[0] = true;
+                changed
+            } else {
+                writeln!(stdout, "The option keep-tags can be used only when setting a new subject")?;
+                std::process::exit(1);
+            }
+        } else {
+            todo::edit(tasks, Some(&todos), &conf.todo)
+        };
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
