@@ -1,3 +1,13 @@
+ttdl (4.3.0) unstable; urgency=medium
+
+  * New option `--keep-tags` or `-k` for edit mode. If the option is set, the
+    command must contain a new subject text. A modified todo keeps all
+    properties (project, context, tags, hashtags), but the regular text is
+    replaced with the new subject
+  * Update packages and fix clippy warnings
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 10 May 2024 16:52:01 -0700
+
 ttdl (4.2.1) unstable; urgency=medium
 
   * Forbid executing some operations if no filter is specified in command

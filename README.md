@@ -30,6 +30,7 @@
     - [Extra features](#extra-features)
       - [Syntax highlight](#syntax-highlight)
       - [Hide duplicated info](#hide-duplicated-info)
+      - [Edit in keep-tags mode](#edit-in-keep-tags-mode)
     - [Human-readable dates](#human-readable-dates)
     - [Custom columns](#custom-columns)
       - [Custom column example]($custom-column-example)
@@ -993,6 +994,75 @@ $ ttdl --fields=pri,due,prj --clean-subject=all
 # P Due        Project Subject
  --------------------------------
 1   2023-05-08 food    @drink buy milk at shop
+```
+
+#### Edit in keep-tags mode
+
+The command `edit` supports an option `--keep-tags` or `-k`.
+The option is useful when you want to modify a todo but you do not want to type all its properties (project, due date, tags etc) again.
+
+While the option can save a lot of time when making a small change, it has some drawbacks:
+
+- all existing properties (project, context, tags, and hashtags) are moved to the end of the subject
+- the order of properties is not stable. The old properties are added to the end of the new subject in the following order: projects, contexts, tags, and hashtags
+- a new subject can contain new properties. Most of them are kept as-is. Except basic ones that are overwritten with those of the original subject. The list of the properties that cannot be modified by defining them inside a new subject: done, priority, creation date, finish date, due date, threshold date. Though, due and threshold date can be set if they were missing in the original todo
+
+##### Examples
+
+1. Replace a subject and keep all the rest intact
+
+```
+$ ttdl edit 2 "buy cake" -k --dry-run
+Todos to be changed:
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 2   A                  2023-08-21 buy milk due:2023-08-21
+New todos:
+ 2   A                  2023-08-21 buy cake due:2023-08-21
+```
+
+2. Replace a subject and add new tags. Note that the new tag `location` remains at its original position, but existing `due` is moved to the end
+
+```
+$ ttdl edit 2 "buy cake location:shop" -k --dry-run
+Todos to be changed:
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 2   A                  2023-08-21 buy milk due:2023-08-21
+New todos:
+ 2   A                  2023-08-21 buy cake location:shop due:2023-08-21
+```
+
+3. Trying to set a new priority does not work
+
+```
+$ ttdl edit 2 "(A) buy cake location:shop" -k --dry-run
+Todos to be changed:
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 2                      2023-08-21 buy milk due:2023-08-21
+New todos:
+ 2                      2023-08-21 buy cake location:shop due:2023-08-21
+```
+
+4. Setting a new due date works if it was empty, and fails otherwise. Note that the new `due` goes first, so it is overwritten with the old one that is mentioned later it the subject. That is why the old `due` is still used
+
+```
+$ ttdl edit 2 "buy cake due:2024-01-01" -k --dry-run
+Todos to be changed:
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 2                                 buy milk
+New todos:
+ 2                      2024-01-01 buy cake due:2024-01-01
+
+$ ttdl edit 3 "buy cake due:2024-02-01" -k --dry-run
+Todos to be changed:
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 3                      2024-01-18 buy milk due:2024-01-18
+New todos:
+ 3                      2024-01-18 buy cake due:2024-02-01 due:2024-01-18
 ```
 
 ### Human-readable dates
