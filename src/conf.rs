@@ -976,6 +976,12 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
         }
         conf.always_hide_columns = v;
     }
+    if let Some(l) = &tc.global.priority_on_done {
+        match str_to_pri_mode(l) {
+            Some(m) => conf.priority_on_done = m,
+            None => eprintln!("Invalid value '{l}' for global.priority_on_done"),
+        }
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
