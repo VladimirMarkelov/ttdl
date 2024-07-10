@@ -310,7 +310,10 @@ fn parse_filter_date_range(val: &str, soon_days: u8) -> Result<tfilter::DateRang
             Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 0 }, span: tfilter::ValueSpan::Range })
         }
         "tomorrow" => {
-            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 0, high: 1 }, span: tfilter::ValueSpan::Range })
+            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: 1, high: 1 }, span: tfilter::ValueSpan::Range })
+        }
+        "yesterday" => {
+            Ok(tfilter::DateRange { days: tfilter::ValueRange { low: -1, high: -1 }, span: tfilter::ValueSpan::Range })
         }
         _ => Err(terr::TodoError::InvalidValue(val.to_string(), "date range".to_string())),
     }
