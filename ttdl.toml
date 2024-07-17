@@ -152,6 +152,14 @@ old = "1y"
 #       task is undone, the task gets its priority back
 # priority_on_done = keep
 
+# How to set completion date when task is finished. The original todo.txt standard
+# states that creation date must be present when completion date is. However, most
+# todo.txt clients allow completed tasks to have only one date, which is completion
+# date.
+#    false  = only add completion date if task has creation date (default)
+#    true   = always add completion date, regardless of creation date is presence
+# add_completion_date_always = false
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject

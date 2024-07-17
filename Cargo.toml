@@ -15,7 +15,7 @@ lto = true
 strip = "debuginfo"
 
 [dependencies]
-todo_lib = "7"
+todo_lib = "7.2.0"
 getopts = "^0.2"
 chrono = "^0.4"
 textwrap = "^0.11"
