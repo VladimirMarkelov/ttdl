@@ -1221,6 +1221,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "what to do with priority on task completion: keep - no special action(default behavior), move - place priority after completion date, tag - convert priority to a tag 'pri:', erase - remove priority. Notethat in all modes, except `erase`, the operation is reversible and on task uncompleting, the task gets its priority back",
         "VALUE",
     );
+    opts.optflag(
+        "",
+        "add-completion-date-always",
+        "When task is finished, always add completion date, regardless of whether or not creation date is present"
+    );
     opts.optflag("k", "keep-tags", "in edit mode a new subject replaces regular text of the todo, everything else(tags, priority etc) is taken from the old and appended to the new subject. A convenient way to replace just text and keep all the tags without typing the tags again");
 
     let matches: Matches = match opts.parse(&args[1..]) {
@@ -1300,6 +1305,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
                 )))
             }
         }
+    }
+    if matches.opt_present("add-completion-date-always") {
+        conf.add_completion_date_always = true;
     }
 
     let soon_days = conf.fmt.colors.soon_days;
