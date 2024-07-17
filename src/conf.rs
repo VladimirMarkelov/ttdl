@@ -69,6 +69,7 @@ pub struct Conf {
     pub auto_show_columns: bool,
     pub always_hide_columns: Vec<String>,
     pub priority_on_done: todotxt::CompletionMode,
+    pub add_completion_date_always: bool,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -98,6 +99,7 @@ impl Default for Conf {
             auto_show_columns: false,
             always_hide_columns: Vec::new(),
             priority_on_done: todotxt::CompletionMode::JustMark,
+            add_completion_date_always: false,
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -981,6 +983,9 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
             Some(m) => conf.priority_on_done = m,
             None => eprintln!("Invalid value '{l}' for global.priority_on_done"),
         }
+    }
+    if let Some(acda) = &tc.global.add_completion_date_always {
+        conf.add_completion_date_always = *acda;
     }
 }
 

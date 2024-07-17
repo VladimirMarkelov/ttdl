@@ -22,6 +22,7 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
+use todotxt::CompletionConfig;
 
 use crate::cal::CalPrinter;
 use crate::human_date::{calendar_first_day, calendar_last_day};
@@ -31,7 +32,7 @@ const TASK_HIDDEN_OFF: &str = "0";
 const TASK_HIDDEN_FLD: &str = "h";
 
 type FnDoneUndone =
-    fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>, mode: todotxt::CompletionMode) -> todo::ChangedVec;
+    fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>, mode: todotxt::CompletionConfig) -> todo::ChangedVec;
 
 fn task_is_hidden(task: &todotxt::Task) -> bool {
     match task.tags.get(TASK_HIDDEN_FLD) {
@@ -100,10 +101,18 @@ fn process_tasks(
 ) -> io::Result<bool> {
     let todos = filter_tasks(tasks, c);
 
+    let completion_config = CompletionConfig {
+        completion_mode: c.priority_on_done,
+        completion_date_mode: match c.add_completion_date_always {
+            true => todotxt::CompletionDateMode::AlwaysSet,
+            false => todotxt::CompletionDateMode::WhenCreationDateIsPresent
+        }
+    };
+
     if c.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let old_len = clones.len();
-        let updated = f(&mut clones, None, c.priority_on_done);
+        let updated = f(&mut clones, None, completion_config);
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
@@ -133,7 +142,7 @@ fn process_tasks(
         Ok(false)
     } else {
         let old_len = tasks.len();
-        let updated = f(tasks, Some(&todos), c.priority_on_done);
+        let updated = f(tasks, Some(&todos), completion_config);
         let updated_cnt = calculate_updated(&updated);
 
         if updated_cnt == 0 {
@@ -311,7 +320,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         writeln!(stdout, "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete.")?;
         std::process::exit(1);
     }
-    let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
+    let processed = process_tasks(stdout, tasks, conf, "completed", todo::done_with_config)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
             eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
@@ -333,8 +342,8 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     if flt_conf.flt.all == tfilter::TodoStatus::Active {
         flt_conf.flt.all = tfilter::TodoStatus::Done;
     }
-
-    let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", todo::undone)?;
+    let undone_adapter: FnDoneUndone = |tasks, ids, config| { todo::undone(tasks, ids, config.completion_mode) };
+    let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", undone_adapter)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
             writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
