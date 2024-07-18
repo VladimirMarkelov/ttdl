@@ -1,3 +1,13 @@
+ttdl (4.4.0) unstable; urgency=medium
+
+  * Allow setting task completion date even if creation date is undefined. By
+    default, TTDL works in the same way. You can enable setting completion
+    date always by either modifying the configuration file (set option
+    `global.add_completion_date_always` to `true`) or by passing a
+    command-line option `--add-completion-date-always`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 17 Jul 2024 21:22:22 -0700
+
 ttdl (4.3.0) unstable; urgency=medium
 
   * New option `--keep-tags` or `-k` for edit mode. If the option is set, the
