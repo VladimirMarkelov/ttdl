@@ -1,3 +1,10 @@
+ttdl (4.4.1) unstable; urgency=medium
+
+  * On completing a recurrent task, the tags `tmr` and `spent` are removed
+    from the newly created task.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 24 Aug 2024 20:23:11 -0700
+
 ttdl (4.4.0) unstable; urgency=medium
 
   * Allow setting task completion date even if creation date is undefined. By

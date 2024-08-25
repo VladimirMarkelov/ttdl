@@ -105,8 +105,8 @@ fn process_tasks(
         completion_mode: c.priority_on_done,
         completion_date_mode: match c.add_completion_date_always {
             true => todotxt::CompletionDateMode::AlwaysSet,
-            false => todotxt::CompletionDateMode::WhenCreationDateIsPresent
-        }
+            false => todotxt::CompletionDateMode::WhenCreationDateIsPresent,
+        },
     };
 
     if c.dry {
@@ -342,7 +342,7 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     if flt_conf.flt.all == tfilter::TodoStatus::Active {
         flt_conf.flt.all = tfilter::TodoStatus::Done;
     }
-    let undone_adapter: FnDoneUndone = |tasks, ids, config| { todo::undone(tasks, ids, config.completion_mode) };
+    let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
     let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", undone_adapter)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {

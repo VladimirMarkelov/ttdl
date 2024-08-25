@@ -1224,7 +1224,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag(
         "",
         "add-completion-date-always",
-        "When task is finished, always add completion date, regardless of whether or not creation date is present"
+        "When task is finished, always add completion date, regardless of whether or not creation date is present",
     );
     opts.optflag("k", "keep-tags", "in edit mode a new subject replaces regular text of the todo, everything else(tags, priority etc) is taken from the old and appended to the new subject. A convenient way to replace just text and keep all the tags without typing the tags again");
 
