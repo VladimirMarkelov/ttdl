@@ -1,5 +1,5 @@
 IDFULL=$(shell cargo pkgid --offline)
-ID=$(lastword $(subst \#, ,$(IDFULL)))
+ID=$(lastword $(subst #, ,$(IDFULL)))
 WINNAME=ttdl_$(ID)_win_x64.zip
 LINNAME=ttdl_$(ID)_linux-x64-musl.tar.gz
 
