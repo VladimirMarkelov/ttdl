@@ -7,12 +7,12 @@ mod cal;
 mod colauto;
 mod conf;
 mod conv;
+mod date_expr;
 mod fmt;
 mod human_date;
 mod stats;
 mod subj_clean;
 mod tml;
-mod date_expr;
 
 use std::collections::HashMap;
 use std::env;
@@ -175,6 +175,18 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
         Some(s) => s.clone(),
     };
     let now = chrono::Local::now().date_naive();
+    let mut tag_list = date_expr::TaskTagList::from_str(&subj, now);
+    let subj = match date_expr::calculate_main_tags(now, &mut tag_list, conf.fmt.colors.soon_days) {
+        Err(e) => {
+            eprintln!("{e:?}");
+            std::process::exit(1);
+        }
+        Ok(changed) => match changed {
+            false => subj,
+            true => date_expr::update_tags_in_str(&tag_list, &subj),
+        },
+    };
+
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
         let (cols, widths) = cols_with_width(&[t.clone()], &[0], conf);
