@@ -130,11 +130,8 @@ impl CalendarRange {
                 "m" | "M" => CalendarRangeType::MonthRange(lnum, rnum),
                 "y" | "Y" => CalendarRangeType::YearRange(lnum, rnum),
                 _ => {
-                    return Err(terr::TodoError::InvalidValue(
-                        ltp.to_string(),
-                        "date range type".to_string(),
-                    ));
-                },
+                    return Err(terr::TodoError::InvalidValue(ltp.to_string(), "date range type".to_string()));
+                }
             },
         };
         Ok(rng)
@@ -150,11 +147,8 @@ impl CalendarRange {
                 "m" | "M" => CalendarRangeType::Months(num),
                 "y" | "Y" => CalendarRangeType::Years(num),
                 _ => {
-                    return Err(terr::TodoError::InvalidValue(
-                        tp.to_string(),
-                        "date range type".to_string(),
-                    ));
-                },
+                    return Err(terr::TodoError::InvalidValue(tp.to_string(), "date range type".to_string()));
+                }
             },
         };
         Ok(rng)
@@ -546,12 +540,7 @@ pub fn fix_date(base: NaiveDate, orig: &str, look_for: &str, soon_days: u8) -> O
     let substr = &orig[start + look_for.len()..];
     let human = if let Some(p) = substr.find(' ') { &substr[..p] } else { substr };
     match human_to_date(base, human, soon_days) {
-        Err(e) => {
-            if e != NO_CHANGE {
-                eprintln!("invalid due date: {human}");
-            }
-            None
-        }
+        Err(_) => None,
         Ok(new_date) => {
             let what = look_for.to_string() + human;
             let with = look_for.to_string() + new_date.format("%Y-%m-%d").to_string().as_str();
