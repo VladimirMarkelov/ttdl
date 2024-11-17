@@ -7,9 +7,7 @@ mod cal;
 mod colauto;
 mod conf;
 mod conv;
-mod date_expr;
 mod fmt;
-mod human_date;
 mod stats;
 mod subj_clean;
 mod tml;
@@ -335,7 +333,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         writeln!(stdout, "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete.")?;
         std::process::exit(1);
     }
-    let processed = process_tasks(stdout, tasks, conf, "completed", todo::done_with_config)?;
+    let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
     if processed {
         if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
             eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
