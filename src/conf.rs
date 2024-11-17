@@ -448,21 +448,21 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
         let s = if s.is_empty() { "none".to_owned() } else { s.to_lowercase() };
         match s.as_str() {
             "-" => {
-                c.priority_act = todo::Action::Decrease;
+                c.priority.action = todo::Action::Decrease;
             }
             "+" => {
-                c.priority_act = todo::Action::Increase;
+                c.priority.action = todo::Action::Increase;
             }
             "none" => {
-                c.priority_act = todo::Action::Delete;
+                c.priority.action = todo::Action::Delete;
             }
             _ => {
                 let p = s.as_bytes()[0];
                 if !p.is_ascii_lowercase() {
                     return Err(terr::TodoError::InvalidValue(s, "priority".to_string()));
                 }
-                c.priority = p - b'a';
-                c.priority_act = todo::Action::Set;
+                c.priority.value = p - b'a';
+                c.priority.action = todo::Action::Set;
             }
         }
     }
@@ -471,12 +471,12 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
         let s = s.to_lowercase();
         match s.as_str() {
             "-" | "none" => {
-                c.recurrence_act = todo::Action::Delete;
+                c.recurrence.action = todo::Action::Delete;
             }
             _ => match todotxt::Recurrence::from_str(&s) {
                 Ok(r) => {
-                    c.recurrence = Some(r);
-                    c.recurrence_act = todo::Action::Set;
+                    c.recurrence.value = Some(r);
+                    c.recurrence.action = todo::Action::Set;
                 }
                 Err(_) => {
                     return Err(terr::TodoError::InvalidValue(s, "recurrence".to_string()));
@@ -488,7 +488,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
     if let Some(s) = matches.opt_str("set-due") {
         match s.as_str() {
             "-" | "none" => {
-                c.due_act = todo::Action::Delete;
+                c.due.action = todo::Action::Delete;
             }
             "soon" => {
                 return Err(terr::TodoError::InvalidValue(s, "set-due".to_string()));
@@ -496,16 +496,17 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             _ => {
                 let dt = Local::now().date_naive();
                 if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
-                    c.due = Some(new_date);
-                    c.due_act = todo::Action::Set;
+                    c.due.value = todo::NewDateValue::Date(new_date);
+                    c.due.action = todo::Action::Set;
                 } else {
                     match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
                         Ok(d) => {
-                            c.due = Some(d);
-                            c.due_act = todo::Action::Set;
+                            c.due.value = todo::NewDateValue::Date(d);
+                            c.due.action = todo::Action::Set;
                         }
                         Err(_) => {
-                            return Err(terr::TodoError::InvalidValue(s, "set-due".to_string()));
+                            c.due.action = todo::Action::Set;
+                            c.due.value = todo::NewDateValue::Expr(s);
                         }
                     }
                 }
@@ -516,7 +517,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
     if let Some(s) = matches.opt_str("set-threshold") {
         match s.as_str() {
             "-" | "none" => {
-                c.recurrence_act = todo::Action::Delete;
+                c.thr.action = todo::Action::Delete;
             }
             "soon" => {
                 return Err(terr::TodoError::InvalidValue(s, "set-threshold".to_string()));
@@ -524,16 +525,17 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             _ => {
                 let dt = Local::now().date_naive();
                 if let Ok(new_date) = human_date::human_to_date(dt, &s, 0) {
-                    c.thr = Some(new_date);
-                    c.thr_act = todo::Action::Set;
+                    c.thr.value = todo::NewDateValue::Date(new_date);
+                    c.thr.action = todo::Action::Set;
                 } else {
                     match chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
                         Ok(d) => {
-                            c.thr = Some(d);
-                            c.thr_act = todo::Action::Set;
+                            c.thr.value = todo::NewDateValue::Date(d);
+                            c.thr.action = todo::Action::Set;
                         }
                         Err(_) => {
-                            return Err(terr::TodoError::InvalidValue(s, "set-threshold".to_string()));
+                            c.thr.action = todo::Action::Set;
+                            c.thr.value = todo::NewDateValue::Expr(s);
                         }
                     }
                 }
@@ -543,44 +545,44 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
 
     if let Some(s) = matches.opt_str("set-proj") {
         for st in s.split(',') {
-            c.projects.push(st.to_string());
+            c.projects.value.push(st.to_string());
         }
-        c.project_act = todo::Action::Set;
+        c.projects.action = todo::Action::Set;
     }
 
     if let Some(s) = matches.opt_str("del-proj") {
         for st in s.split(',') {
-            c.projects.push(st.to_string());
+            c.projects.value.push(st.to_string());
         }
-        c.project_act = todo::Action::Delete;
+        c.projects.action = todo::Action::Delete;
     }
 
     if let Some(s) = matches.opt_str("repl-proj") {
         for st in s.split(',') {
-            c.projects.push(st.to_string());
+            c.projects.value.push(st.to_string());
         }
-        c.project_act = todo::Action::Replace;
+        c.projects.action = todo::Action::Replace;
     }
 
     if let Some(s) = matches.opt_str("set-ctx") {
         for st in s.split(',') {
-            c.contexts.push(st.to_string());
+            c.contexts.value.push(st.to_string());
         }
-        c.context_act = todo::Action::Set;
+        c.contexts.action = todo::Action::Set;
     }
 
     if let Some(s) = matches.opt_str("del-ctx") {
         for st in s.split(',') {
-            c.contexts.push(st.to_string());
+            c.contexts.value.push(st.to_string());
         }
-        c.context_act = todo::Action::Delete;
+        c.contexts.action = todo::Action::Delete;
     }
 
     if let Some(s) = matches.opt_str("repl-ctx") {
         for st in s.split(',') {
-            c.contexts.push(st.to_string());
+            c.contexts.value.push(st.to_string());
         }
-        c.context_act = todo::Action::Replace;
+        c.contexts.action = todo::Action::Replace;
     }
 
     if let Some(s) = matches.opt_str("set-tag") {
@@ -599,8 +601,10 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !hmap.is_empty() {
-            c.tags = Some(hmap);
-            c.tags_act = todo::Action::Set;
+            c.tags = todo::TagValuesChange{
+                value: Some(hmap),
+                action: todo::Action::Set,
+            };
         }
     }
 
@@ -626,8 +630,10 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !hmap.is_empty() {
-            c.tags = Some(hmap);
-            c.tags_act = todo::Action::Delete;
+            c.tags = todo::TagValuesChange{
+                value: Some(hmap),
+                action: todo::Action::Delete,
+            };
         }
     }
 
@@ -637,8 +643,10 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             v.push(st.to_string());
         }
         if !v.is_empty() {
-            c.hashtags = Some(v);
-            c.hashtags_act = todo::Action::Set;
+            c.hashtags = todo::ListTagChange{
+                value: v,
+                action: todo::Action::Set,
+            };
         }
     }
 
@@ -648,8 +656,10 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             v.push(st.to_string());
         }
         if !v.is_empty() {
-            c.hashtags = Some(v);
-            c.hashtags_act = todo::Action::Delete;
+            c.hashtags = todo::ListTagChange{
+                value: v,
+                action: todo::Action::Delete,
+            }
         }
     }
 
@@ -663,8 +673,10 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !v.is_empty() {
-            c.hashtags = Some(v);
-            c.hashtags_act = todo::Action::Replace;
+            c.hashtags = todo::ListTagChange{
+                value: v,
+                action: todo::Action::Replace,
+            };
         }
     }
 
