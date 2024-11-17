@@ -601,10 +601,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !hmap.is_empty() {
-            c.tags = todo::TagValuesChange{
-                value: Some(hmap),
-                action: todo::Action::Set,
-            };
+            c.tags = todo::TagValuesChange { value: Some(hmap), action: todo::Action::Set };
         }
     }
 
@@ -630,10 +627,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !hmap.is_empty() {
-            c.tags = todo::TagValuesChange{
-                value: Some(hmap),
-                action: todo::Action::Delete,
-            };
+            c.tags = todo::TagValuesChange { value: Some(hmap), action: todo::Action::Delete };
         }
     }
 
@@ -643,10 +637,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             v.push(st.to_string());
         }
         if !v.is_empty() {
-            c.hashtags = todo::ListTagChange{
-                value: v,
-                action: todo::Action::Set,
-            };
+            c.hashtags = todo::ListTagChange { value: v, action: todo::Action::Set };
         }
     }
 
@@ -656,10 +647,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             v.push(st.to_string());
         }
         if !v.is_empty() {
-            c.hashtags = todo::ListTagChange{
-                value: v,
-                action: todo::Action::Delete,
-            }
+            c.hashtags = todo::ListTagChange { value: v, action: todo::Action::Delete }
         }
     }
 
@@ -673,10 +661,7 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
             }
         }
         if !v.is_empty() {
-            c.hashtags = todo::ListTagChange{
-                value: v,
-                action: todo::Action::Replace,
-            };
+            c.hashtags = todo::ListTagChange { value: v, action: todo::Action::Replace };
         }
     }
 
