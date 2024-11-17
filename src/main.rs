@@ -166,7 +166,7 @@ fn process_tasks(
     }
 }
 
-fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
+fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut conf::Conf) -> io::Result<()> {
     let subj = match &conf.todo.subject {
         None => {
             eprintln!("Subject is empty");
@@ -176,7 +176,8 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
     };
     let now = chrono::Local::now().date_naive();
     let mut tag_list = date_expr::TaskTagList::from_str(&subj, now);
-    let subj = match date_expr::calculate_main_tags(now, &mut tag_list, conf.fmt.colors.soon_days) {
+    let soon = conf.fmt.colors.soon_days;
+    let subj = match date_expr::calculate_main_tags(now, &mut tag_list, soon) {
         Err(e) => {
             eprintln!("{e:?}");
             std::process::exit(1);
@@ -186,6 +187,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf:
             true => date_expr::update_tags_in_str(&tag_list, &subj),
         },
     };
+    conf.todo.subject = Some(subj.clone());
 
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
@@ -849,7 +851,7 @@ fn main() {
     };
 
     let err = match conf.mode {
-        conf::RunMode::Add => task_add(&mut stdout, &mut tasks, &conf),
+        conf::RunMode::Add => task_add(&mut stdout, &mut tasks, &mut conf),
         conf::RunMode::List => {
             if conf.calendar.is_none() {
                 task_list(&mut stdout, &tasks, &conf)
