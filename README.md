@@ -11,6 +11,7 @@
     - [Customizing the output](#customizing-the-output)
       - [Output customization example](#output-customization-example)
   - [How to use](#how-to-use)
+    - [Date Expressions](#date-expressions]
     - [Recurrent tasks](#recurrent-tasks)
     - [Marking task completed and uncompleted](#marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
@@ -292,7 +293,7 @@ If the first non-option word contains only digits and dash character, it is trea
 
 The second non-option(or the first one if ID range is not defined) is a subject. Subject's usage depends on command:
 
-- `add` - it is an entire text for a new todo (including projects, contexts, due date, recurrence);
+- `add` - it is an entire text for a new todo (including priority, projects, contexts, due date, recurrence, and hashtags);
 - `edit` - it is an entire new subject for the first selected todo;
 - for the rest commands it can be either a substring(case-insensitive search) or a regular expression to search in the todo's subject, projects, and contexts - depends on the option `--regex`.
 
@@ -301,8 +302,83 @@ NOTES:
 1. All dates are entered and displayed in format - YYYY-MM-DD(4 year digits - 2 month digits - 2 day digits, or ISO 8601 date format)
 2. Recurrence is defined in format 'the number of intervals' + 'interval type' without a space between them. Interval type is one of `d` - days, `w` - weeks, `m` - months, `y` - years. Example: to add a todo with your friend's birthday(let's assume today is 10th of April) use the following command `ttdl add "best friend birthday due:2019-04-10 rec:1y"`. After the birthday passes, just execute `ttdl done <todo-ID>` and it will change its due date to 2020-04-10
 3. Recurrence special case: if you set due date to the last day of a month and interval is a month or longer then the next due date will always be the end of the months. Example: a todo `pay credit due:2019-02-28 rec:1m` after executing `ttdl done ID` turns into `pay credit due:2019-03-31`
+4. Priority must be the first item in the task description: an uppercase Latin letter inside parenthesis. Examples: a task with a highest priority `(A) fix the fridge`; with the lowest priority `(Z) send a letter to John`
 
-### Recurrent tasks
+### Date Expressions
+
+Sometimes date tags inside a task are depend on each other.
+E.g, a due date can be defined as "a week after a threshold date".
+In this case it is easier to define them with expressions instead of fixed dates.
+
+The expressions are very limited. They must follow the pattern:
+
+```
+<base date>[<operation><duration>]
+```
+
+Where `base date` can be any of:
+
+- exact date like `2024-11-05`
+- any other tag name like `t`
+- special values like `today` or `sunday`. See [Human-readable dates](#human-readable-dates) for list of special dates
+
+The `operation` can be only either `+` or `-`;
+
+The `duration` follows the same rules as recurrence: a number followed by a duration type(`d` - days, `w` - weeks, `m` - months, `y` - years; if type is missing, it defaults to `d`).
+
+The pair `<operation><duration>` can be repeated as many times as you need. E.g, to set the due date a month and a week from today, you can write `due:today+1m+1w`.
+
+Only two commands support expressions: adding a new task and edit an existing task.
+Making a tag value dependent on another tag adds flexibility to the feature.
+Be careful and do not create endless loops.
+In this case you probably get an error about `recursion limit`.
+Examples when you can get that error:
+
+- `ttdl add "water plants due:t t:due"` - neither `due` nor `t` is an exact date, so TTDL will stuck in endless loop trying to calculate both values until the recursion limit is exceeded
+- `ttdl add "water plants due:due+1"` - a similar situation: `due` is not exact date, so TTDL try to calculate `due+1`, then `due+1+1` etc that eventually fails
+- `tddl edit --set-due=due+1` - this command works only if the task had `due` date set before calling `edit`. In this case, the command just push the due date by 1 day. But if the task did not have `due` date before, the command fails with the recursion limit error.
+
+NOTE: when editing a task, all `--set-*` options are executed in the same pre-defined order.
+The due date is always goes before the threshold date.
+It results in that the command `ttdl edit 1 --set-due=today --set-threshold=due-5d` works as expected, but the command `ttdl edit 1 --set-threshold=today --set-due=t+5d` sets correctly **only** the threshold date.
+The new value of the due date will be calculated as **old value of the threshold date** plus 5 days - it is not what expected.
+
+#### How expressions affect task subject
+
+When task is added, all tags are calculated, but only new values of `due` and `t` tags are saved in the subject. All other tags will keep their values as expressions.Example:
+
+```
+ttdl add due:t+1 t:start start:today+4d
+```
+
+After the task is added, the resulting task subject will look like this(assuming that today is `2024-11-01`):
+
+```
+ttdl add due:2024-11-06 t:2024-11-05 start:today+1d
+```
+
+It adds flexibility to TTDL when working with a few tasks at a time.
+Example: you have a few tasks for the same project.
+But the tasks have different due date: they should be done one after another in a certain order.
+You can create task with a custom tag that renders the order:
+
+```
+ttdl add "first task +project due:when when:today"
+ttdl add "second task +project due:when when:today+2"
+```
+
+When you need to define new due date (or push the current date to a few days), you can run:
+
+```
+ttdl edit +project --set-due=when
+```
+
+It sets due date of the first task to today, and two dates after today for the second one.
+
+Note that initially you can skip setting `due` tag if you do not know due date yet: `ttdl add "first task +project when:today"`.
+The following `edit` command will create `due` tag correctly.
+
+### Recurring tasks
 
 Sometimes you need to create a task that you have to do periodically - a recurrent task.
 To make a task recurrent, set the task due date and define a recurrence interval using tag `rec:`.
