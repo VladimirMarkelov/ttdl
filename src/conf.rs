@@ -1438,7 +1438,7 @@ fn is_id_range(s: &str) -> bool {
     if s.find(|c: char| !c.is_ascii_digit() && c != '-' && c != ':').is_some() {
         return false;
     }
-    s.contains(|c: char| c == '-' || c == ':')
+    s.contains(['-', ':'])
 }
 
 fn color_from_str(s: &str) -> Result<ColorSpec> {

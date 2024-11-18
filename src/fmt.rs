@@ -1295,19 +1295,19 @@ fn field_width_cached(field: &str, fields: &[String], cached: &[usize]) -> usize
 }
 
 fn is_hashtag(s: &str) -> bool {
-    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('#')
+    !s.contains([' ', '\t', '\n', '\r']) && s.len() > 1 && s.starts_with('#')
 }
 
 fn is_project(s: &str) -> bool {
-    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('+')
+    !s.contains([' ', '\t', '\n', '\r']) && s.len() > 1 && s.starts_with('+')
 }
 
 fn is_context(s: &str) -> bool {
-    !s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') && s.len() > 1 && s.starts_with('@')
+    !s.contains([' ', '\t', '\n', '\r']) && s.len() > 1 && s.starts_with('@')
 }
 
 fn is_tag(s: &str) -> bool {
-    if s.contains(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+    if s.contains([' ', '\t', '\n', '\r']) {
         return false;
     }
     match s.find(':') {
@@ -1322,7 +1322,7 @@ fn is_syntax_word(s: &str) -> bool {
 
 fn parse_subj(subj: &str) -> Vec<&str> {
     let mut parts: Vec<&str> = Vec::new();
-    if !subj.contains(|c| c == ':' || c == '@' || c == '+' || c == '#') {
+    if !subj.contains([':', '@', '+', '#']) {
         parts.push(subj);
         return parts;
     }
@@ -1330,7 +1330,7 @@ fn parse_subj(subj: &str) -> Vec<&str> {
     let mut part = subj;
     let mut part_len = 0;
     loop {
-        match curr.find(|c| c == ' ' || c == '\n' || c == '\r') {
+        match curr.find([' ', '\n', '\r']) {
             Some(pos) => {
                 if is_syntax_word(&curr[..pos]) {
                     if part_len == 0 {
