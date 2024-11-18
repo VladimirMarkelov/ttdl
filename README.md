@@ -11,7 +11,7 @@
     - [Customizing the output](#customizing-the-output)
       - [Output customization example](#output-customization-example)
   - [How to use](#how-to-use)
-    - [Date Expressions](#date-expressions]
+    - [Date Expressions](#date-expressions)
     - [Recurrent tasks](#recurrent-tasks)
     - [Marking task completed and uncompleted](#marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
