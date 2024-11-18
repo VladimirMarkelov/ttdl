@@ -162,6 +162,7 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl l --calendar=+-10d` - show calendar for 10 days in the past(one month) ending with today
     add | a - add a new todo
         `ttdl a "send tax declaration +personal @finance @tax due:2018-04-01 rec:1y"` - add a new recurrent todo(yearly todo) with a due date first of April every year
+        `ttdl a "(A) send tax return docs due:2018-04-01" - add a new todo with the highest priority `A`
     done | d - mark regular incomplete todos completed, pushes due date for recurrent todos to their next date
         `ttdl d 2-5` - mark todos with IDs from 2 through 5 done
     undone - remove finish date and completion mark from completed todos
@@ -170,13 +171,17 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl rm 2-5` - delete incomplete todos with IDs from 2 thorough 5
         `ttdl rm 2-5 -a` - delete both done and incomplete todos with IDs from 2 through 5
         `ttdl rm 2-5 -A` - delete all done todos with IDs from 2 through 5. The command does the same as `ttdl clean 2-5 --wipe` does
-    edit | e - modifies selected todos. Warninig: if you try to change a subject of a few todos, only the first todo would be changed. It is by design
+    edit | e - modifies selected todos. Warninig: if you try to change a subject of a few todos, only the first todo would be changed. It is by design. Date-like tags `due` and `threshold` accept simple expressions
         `ttdl e 2-5 "new subject"` - only the first incomplete todo with ID between 2 and 5 changes its subject
         `ttdl e +proj --repl-ctx=bug1010@bug1020` - replace context `bug1010` with `bug1020` for all incomplete todos that related to project `proj`
         `ttdl e @customer_acme --set-due=2018-12-31` - set due date 2018-12-31 for all incomplete todos that has `customer_acme` context
         `ttdl e @customer_acme --set-due=none` - remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context
         `ttdl e --pri=none --set-pri=z` - set the lowest priority for all incomplete todos which do not have a priority set`
         `ttdl e @bug1000 --set-pri=+` - increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z`
+        `ttdl e 2 --set-due=t+1w` - set the due date a week later than the task threshold date
+        `ttdl e 2 --set-due=due+2d` - push the due date by 2 days
+        `ttdl e 2 --set-due=limit+1d` - takes task's tag `limit` as a date, adds 1 day and sets the result to the due date
+        `ttdl e 2 --set-due=t+1w+3d` - push the due date by a week and a half or more accurate by 10 days
     append | app - adds a text to the end of todos
     prepend | prep - inserts a text at the beginning of todos
     listprojects [FILTER] | listproj | lp - list all projects

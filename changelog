@@ -1,3 +1,12 @@
+ttdl (4.5.0) unstable; urgency=medium
+
+  *  When editing a task or adding a new one, you can use simple expressions
+     for date-like tags `due` and `t`:
+        - `ttdl add "water plants t:2024-11-10 dur:t+5d`
+        - `ttdl edit 1 --set-due=due+5d
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 17 Nov 2024 17:10:16 -0800
+
 ttdl (4.4.1) unstable; urgency=medium
 
   * On completing a recurrent task, the tags `tmr` and `spent` are removed
