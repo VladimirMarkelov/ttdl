@@ -200,6 +200,7 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl e 2 --set-due=due+2d` - push the due date by 2 days
         `ttdl e 2 --set-due=limit+1d` - takes task's tag `limit` as a date, adds 1 day and sets the result to the due date
         `ttdl e 2 --set-due=t+1w+3d` - push the due date by a week and a half or more accurate by 10 days
+        `ttdl e 2-5 -i` - open an external editor of you choice the the incomplete todos with ID between 2 and 5 for interactive editing. After saving the changes and closing the editor, TTDL updates the task list
     append | app - adds a text to the end of todos
     prepend | prep - inserts a text at the beginning of todos
     listprojects [FILTER] | listproj | lp - list all projects
