@@ -32,6 +32,7 @@
       - [Syntax highlight](#syntax-highlight)
       - [Hide duplicated info](#hide-duplicated-info)
       - [Edit in keep-tags mode](#edit-in-keep-tags-mode)
+      - [Interactive edit](#interactive-edit)
     - [Human-readable dates](#human-readable-dates)
     - [Custom columns](#custom-columns)
       - [Custom column example]($custom-column-example)
@@ -1140,6 +1141,59 @@ Todos to be changed:
 New todos:
  3                      2024-01-18 buy cake due:2024-02-01 due:2024-01-18
 ```
+
+#### Interactive edit
+
+If you need to edit more than one task at a time, you can use your editor of choice to modify tasks in a convenient way.
+Please note that the interactive edit does not support the dry-run mode.
+So, all changes in the interactive mode are final ones.
+
+First, you should set what editor TTDL will use.
+It can be done either by setting environment variable `EDITOR` or by setting option `global.editor` in TTDL configuration.
+Examples: `EDITOR=vim ttdl edit -i` or setting the configuration option `editor = "c:/utils/npp/notepad++.exe"`.
+
+Second, run TTDL with a command `edit` and command-line option `--interactive` (short option name is `-i`).
+Note that in case of interactive mode, it is OK to edit the entire task list.
+
+After you modify the task list, you must save it and close the editor.
+If TTDL detects any changes, it replaces previous tasks with new ones.
+
+If you do not want to update the tasks, you have to way to do it after an editor is opened:
+
+1. Exit the editor without saving. TTDL notices that the tasks are the same and will do nothing.
+2. If you have modified something and saved already, you can delete all the text in the editor and save the empty file. When TTDL detects empty new task list, it aborts editing.
+
+Note: an empty file is a file that contains only whitespaces (carriage returns, line feeds, spaces, and tabs).
+So, a file with a single or more empty lines is also treated as an empty one, and the edit is aborted.
+
+If TTDL has done any changes, it reports about it in a way: `Removed 14 tasks, added 13 tasks.`.
+
+##### How the interactive mode works internally
+
+First, TTDL generates a list of tasks to edit. If the list is empty, the editing is aborted.
+
+Second, TTDL saves the selected tasks to a temporary file.
+So, if you run `ttdl edit 2-5 -i`, a temporary file will contain only tasks with IDs between 2 and 5.
+
+Third, TTDL opens an external editor and passed the name of the temporary file to it.
+When the editor is closed, TTDL determines if it should do anything.
+
+Forth, TTDL detects if there were any changes.
+The algorithm is simple: TTDL calculates hashes for both old and new files.
+If the hashes differ, TTDL removed old tasks and appends the new ones to the end of the task list.
+It results in:
+
+- if you move tasks around but do not change their texts, TTDL will update the task list
+- if you just add an empty line, TTDL will update the task list
+- there is a tiny chance that hashes of old and new files are the same. In this case, you should make them different by adding an empty line anywhere.
+
+If no changes are detected or the task list is empty after editing, the edit operation is aborted and nothing changes.
+
+Otherwise, fifth, TTDL removes the original tasks from the task list.
+If removal is successful, TTDL appends the new tasks to the end of file.
+Note: as you can see, it is impossible to keep the same task IDs after editing in interactive mode.
+The only way to keep the original IDs is editing the entire task list with `ttdl edit -i` command.
+But even in this case if you move tasks around or remove any, IDs will changes.
 
 ### Human-readable dates
 

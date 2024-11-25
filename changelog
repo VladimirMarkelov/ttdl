@@ -1,3 +1,16 @@
+ttdl (4.6.0) unstable; urgency=medium
+
+  *  New command-line option `--interactive`/`-i` for command `edit`. When it
+     is set, and editor is defined, all options that modifies tasks are
+     ignored and TTDL opens an editor with tasks that were filtered by the
+     command line options. After closing the editor, if the tasks are changed
+     and the text is not empty, TTDL updated the selected tasks. Example:
+     - `ttdl edit -i` - open all tasks to edit in an external editor
+     - `ttdl edit +proj -i` - open all tasks related to the project `proj` in
+        an external editor.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 24 Nov 2024 16:41:04 -0800
+
 ttdl (4.5.0) unstable; urgency=medium
 
   *  When editing a task or adding a new one, you can use simple expressions
