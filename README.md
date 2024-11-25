@@ -138,13 +138,24 @@ To check in which directory TTDL looks for its configuration file, please refer 
 
 First, TTDL looks for a configuration file in the current working directory. And only if it does not contain ttdl.toml, the application looks for its configuration file in user's directory. Automatic configuration path detection can be overridden with command line option `-c` or `--config`. If the option is set in command line TTDL disables automatic detection of the configuration file path.
 
+TTDL does not create its configuration automatically.
+You have to create it manually or copy existing one from some location, e.g. from the distribution archive.
+Another way to create a default configuration file is to run TTDL with one of command-line options:
+
+- `--init` - this option creates a default configuration file in the user's configuration directory. If TTDL fails to detect where the directory is, it does not create anything
+- `--init-local` - this option creates a default configuration file in the current working directory.
+
+None of the command-line options above overwrites TTDL configuration file if it exists.
+So if you want to reset all setting to default ones, you must delete or rename the existing configuration file and then run TTDL with any of init command-line options.
+
 The configuration file contains options that cannot be set in command line:
 
 - default foreground color(usually it is white color for dark-themed terminal). By default, the option is not in the configuration file that means `None` = terminal default color.
 - colors for special kinds of todos: overdue, due today, due soon, top priority, high priority, and completed
 - ranges for cases "due soon" and "high priority". By default both option are disabled. To enable "due soon", set it to the number of days, so todos that are due in equal to or less than that number(except overdue and due today todos) will be displayed with `soon` color. To enable high priority highlight, set `important` to a priority - all todos with this priority or higher(except top priority ones) will be displayed with `important` color.
 - `filename` - the path to global todo file (can point to directory, TTDL adds `todo.txt` automatically if `filename` is a directory). To override the option, you can set environment variable `TTDL_FILENAME` or use command line option `--local` if you need to load todo list from current working directory
-- `creation_date_auto` The option defines TTDL behavior when a new todo is added. By default, TTDL adds a todo as is - a user must set manually creation date in the subject. Setting `creation_date_auto` to `true` makes TTDL to set today as creation date for all new todos if their subject does not include creation date.
+- `creation_date_auto` The option defines TTDL behavior when a new todo is added. By default, TTDL adds a todo as is - a user must set manually creation date in the subject. Setting `creation_date_auto` to `true` makes TTDL to set today as creation date for all new todos if their subject does not include creation date
+- `editor` - the path to the editor binary that is used to edit selected tasks in an editor of your choice.
 
 ### Extra ways to set filenames of active and archived todos
 
