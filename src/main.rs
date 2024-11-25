@@ -14,12 +14,15 @@ mod tml;
 
 use std::collections::HashMap;
 use std::env;
-use std::io::{self, Write};
+use std::fs::{read_to_string, File};
+use std::hash::Hasher;
+use std::io::{self, Read, Write};
 use std::path::Path;
-use std::process::exit;
+use std::process::{exit, Command};
 use std::str::FromStr;
 
 use chrono::NaiveDate;
+use tempfile::{self, NamedTempFile, TempPath};
 use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 use todotxt::CompletionConfig;
 
@@ -470,8 +473,42 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
     sbj
 }
 
+fn create_temp_file(tasks: &mut todo::TaskVec, ids: &todo::IDVec) -> io::Result<TempPath> {
+    let named = NamedTempFile::new()?;
+    let filetmp = named.into_temp_path();
+    println!("Temp: {0:?}", filetmp);
+    let mut file = File::create(filetmp.as_os_str())?;
+    for idx in ids {
+        writeln!(file, "{0}", tasks[*idx])?;
+    }
+    Ok(filetmp)
+}
+
+fn tmp_file_hash(f: &TempPath) -> io::Result<Option<u64>> {
+    let mut hasher = std::hash::DefaultHasher::new();
+    let mut file = File::open(f.as_os_str())?;
+    let mut data = vec![];
+    file.read_to_end(&mut data)?;
+    let has_some = data.iter().any(|&c| c != b' ' && c != b'\n' && c != b'\r');
+    if !has_some {
+        Ok(None)
+    } else {
+        hasher.write(&data);
+        Ok(Some(hasher.finish()))
+    }
+}
+
 fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
-    if is_filter_empty(&conf.flt) {
+    if conf.use_editor && conf.dry {
+        writeln!(stdout, "Interactive editing does not support dry run")?;
+        std::process::exit(1);
+    }
+    let editor = conf.editor();
+    if conf.use_editor && conf.editor().is_none() {
+        writeln!(stdout, "Interactive editing requires setting up a path to an editor. Either set environment variable 'EDITOR' or define a path to an editor in TTDL config in the section 'global'")?;
+        std::process::exit(1);
+    }
+    if is_filter_empty(&conf.flt) && !conf.use_editor {
         writeln!(stdout, "Warning: modifying of all tasks requested. Please specify tasks to edit.")?;
         std::process::exit(1);
     }
@@ -479,6 +516,71 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
     let action = "changed";
     if todos.is_empty() {
         writeln!(stdout, "No todo changed")?
+    } else if conf.use_editor {
+        // unwrap cannot fail here as we already check it for 'Some' before.
+        let editor = editor.unwrap();
+        let filepath = create_temp_file(tasks, &todos)?;
+        let orig_hash = tmp_file_hash(&filepath)?;
+        let mut child = Command::new(editor).arg(filepath.as_os_str()).spawn()?;
+        if let Err(e) = child.wait() {
+            writeln!(stdout, "Failed to execute editor: {e:?}")?;
+            exit(1);
+        }
+        let new_hash = tmp_file_hash(&filepath)?;
+        match (orig_hash, new_hash) {
+            (_, None) => {
+                writeln!(stdout, "Empty file detected. Edit operation canceled")?;
+                exit(0);
+            }
+            (_, Some(b)) => {
+                let now = chrono::Local::now().date_naive();
+                let content = read_to_string(filepath.as_os_str())?;
+                let mut removed_cnt = 0;
+                if let Some(a) = orig_hash {
+                    if a == b {
+                        // The temporary file was not changed. Nothing to do
+                        writeln!(stdout, "No changes detected. Edit operation canceled")?;
+                        exit(0);
+                    }
+                    let removed = todo::remove(tasks, Some(&todos));
+                    removed_cnt = calculate_updated(&removed);
+                }
+                let mut added_cnt = 0;
+                for line in content.lines() {
+                    let subj = line.trim();
+                    if subj.is_empty() {
+                        continue;
+                    }
+                    // TODO: move duplicated code (here and in task_add) to a separate fn
+                    let mut tag_list = date_expr::TaskTagList::from_str(&subj, now);
+                    let soon = conf.fmt.colors.soon_days;
+                    let subj = match date_expr::calculate_main_tags(now, &mut tag_list, soon) {
+                        Err(e) => {
+                            writeln!(stdout, "{e:?}")?;
+                            exit(1);
+                        }
+                        Ok(changed) => match changed {
+                            false => subj.to_string(),
+                            true => date_expr::update_tags_in_str(&tag_list, &subj),
+                        },
+                    };
+                    let mut cnf = conf.clone();
+                    cnf.todo.subject = Some(subj.clone());
+                    let id = todo::add(tasks, &cnf.todo);
+                    if id == todo::INVALID_ID {
+                        writeln!(stdout, "Failed to add: parse error '{subj}'")?;
+                    } else {
+                        added_cnt += 1;
+                    }
+                }
+                if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+                    std::process::exit(1);
+                }
+                writeln!(stdout, "Removed {removed_cnt} tasks, added {added_cnt} tasks.")?;
+            }
+        }
+        let _ = filepath.close()?;
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let updated = if conf.keep_tags {

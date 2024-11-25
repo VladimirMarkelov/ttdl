@@ -23,6 +23,7 @@ const APP_DIR: &str = "ttdl";
 const CONF_FILE: &str = "ttdl.toml";
 const TODO_FILE: &str = "todo.txt";
 const DONE_FILE: &str = "done.txt";
+const EDITOR: &str = "EDITOR";
 
 struct RangeEnds {
     l: usize,
@@ -64,6 +65,8 @@ pub struct Conf {
     pub done_file: PathBuf,
     pub keep_empty: bool,
     pub keep_tags: bool,
+    editor_path: Option<String>,
+    pub use_editor: bool,
 
     pub auto_hide_columns: bool,
     pub auto_show_columns: bool,
@@ -94,6 +97,8 @@ impl Default for Conf {
             done_file: PathBuf::from(""),
             keep_empty: false,
             keep_tags: false,
+            editor_path: None,
+            use_editor: false,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -113,6 +118,22 @@ impl Default for Conf {
 impl Conf {
     fn new() -> Self {
         Default::default()
+    }
+    pub fn editor(&self) -> Option<PathBuf> {
+        let mut spth: String = match env::var(EDITOR) {
+            Ok(p) => p,
+            Err(_) => String::new(),
+        };
+        if spth.is_empty() {
+            if let Some(p) = &self.editor_path {
+                spth = p.clone();
+            }
+        }
+        if spth.is_empty() {
+            None
+        } else {
+            Some(PathBuf::from(spth))
+        }
     }
 }
 
@@ -989,6 +1010,9 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(acda) = &tc.global.add_completion_date_always {
         conf.add_completion_date_always = *acda;
     }
+    if let Some(p) = &tc.global.editor {
+        conf.editor_path = Some(p.clone());
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
@@ -1054,6 +1078,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let args = preprocess_args(args);
     let program = args[0].clone();
     let mut conf = Conf::new();
+
+    // Free short options: BCDEFGHIJKLMNOPQRSTUVWXYZbdfgjlmnopqruxyz"
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
@@ -1197,7 +1223,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optopt(
         "",
         "calendar",
-        "Display a calendar with dates highlighted if any todo is due on that date(foreground color). Today is highlighted with background color, Default values for `NUMBER` is `1` and for `TYPE` is `d`(days). Valid values for type are `d`(days), `w`(weeks), and `m`(months). Pepending plus sign shows the selected interval starting from today, not from Monday or first day of the month",
+        "Display a calendar with dates highlighted if any todo is due on that date(foreground color). Today is highlighted with background color, Default values for `NUMBER` is `1` and for `TYPE` is `d`(days). Valid values for type are `d`(days), `w`(weeks), and `m`(months). Prepending plus sign shows the selected interval starting from today, not from Monday or first day of the month",
         "[+][NUMBER][TYPE]",
     );
     opts.optflag("", "syntax", "Enable keyword highlights when printing subject");
@@ -1220,7 +1246,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optopt(
         "",
         "priority-on-done",
-        "what to do with priority on task completion: keep - no special action(default behavior), move - place priority after completion date, tag - convert priority to a tag 'pri:', erase - remove priority. Notethat in all modes, except `erase`, the operation is reversible and on task uncompleting, the task gets its priority back",
+        "what to do with priority on task completion: keep - no special action(default behavior), move - place priority after completion date, tag - convert priority to a tag 'pri:', erase - remove priority. Note that in all modes, except `erase`, the operation is reversible and on task uncompleting, the task gets its priority back",
         "VALUE",
     );
     opts.optflag(
@@ -1229,6 +1255,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "When task is finished, always add completion date, regardless of whether or not creation date is present",
     );
     opts.optflag("k", "keep-tags", "in edit mode a new subject replaces regular text of the todo, everything else(tags, priority etc) is taken from the old and appended to the new subject. A convenient way to replace just text and keep all the tags without typing the tags again");
+    opts.optflag("i", "interactive", "Open an external edit to modify all filtered tasks. If the task list is modified inside an editor, the old tasks will be removed and new ones will be added to the end of the task list. If you do not change anything or save an empty file, the edit operation will be canceled. To set editor, change config.global.editor option or set EDITOR environment variable.");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1311,6 +1338,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if matches.opt_present("add-completion-date-always") {
         conf.add_completion_date_always = true;
     }
+    conf.use_editor = matches.opt_present("interactive");
 
     let soon_days = conf.fmt.colors.soon_days;
     conf.keep_empty = matches.opt_present("keep-empty");
@@ -1333,6 +1361,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if idx >= matches.free.len() {
         // TODO: validity check
         return Ok(conf);
+    }
+
+    if conf.use_editor && conf.mode != RunMode::Edit {
+        eprintln!("Option '--interactive' can be used only with `edit` command");
+        exit(1);
     }
 
     // second should be a range
