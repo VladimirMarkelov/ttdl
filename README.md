@@ -1394,7 +1394,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | Command                                      | Description                                                                                                                                |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ttdl e 2-5 "new subject"`                   | only the first incomplete todos with ID between 2 and 5 changes its subject (in this case todo with ID equals 2 gets subject "new subject") |
-| `ttdl e 2-5 "new subject"` -i                | edits in the interactive mode todos with ID between 2 and 5. The new subject value is ignored |
+| `ttdl e 2-5 "new subject" -i`                | edits in the interactive mode todos with ID between 2 and 5. The new subject value is ignored |
 | `ttdl e +proj --repl-ctx=bug1010@bug1020`    | replace context `bug1010` with `bug1020` for all incomplete todos that related to project `proj`                                           |
 | `ttdl e @customer_acme --set-due=2018-12-31` | set due date 2018-12-31 for all incomplete todos that has `customer_acme` context                                                          |
 | `ttdl e @customer_acme --set-due=none`       | remove due date 2018-12-31 for all incomplete todos that has `customer_acme` context                                                       |
