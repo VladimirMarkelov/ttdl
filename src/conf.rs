@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::env;
-use std::fs::File;
-use std::io::{stdout, BufReader, IsTerminal, Read};
+use std::fs::{self, File};
+use std::io::{stdout, BufReader, IsTerminal, Read, Write};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
@@ -24,6 +24,7 @@ const CONF_FILE: &str = "ttdl.toml";
 const TODO_FILE: &str = "todo.txt";
 const DONE_FILE: &str = "done.txt";
 const EDITOR: &str = "EDITOR";
+const DEFAULT_CONFIG: &str = include_str!("../ttdl.toml");
 
 struct RangeEnds {
     l: usize,
@@ -153,6 +154,7 @@ fn print_usage(program: &str, opts: &Options) {
 
     let extras = r#"Extra options:
     --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
+    --interactive | -i, --init, --init-local
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -1029,6 +1031,33 @@ fn detect_conf_file_path() -> PathBuf {
     }
 }
 
+fn init_config_file(local: bool) -> Result<()> {
+    let conf_dir = if local {
+        PathBuf::from("")
+    } else {
+        let mut cfg = match dirs::config_dir() {
+            None => return Err(anyhow!("Failed to get user's directory for configuration files")),
+            Some(dir) => dir,
+        };
+        cfg.push(APP_DIR);
+        cfg
+    };
+    let mut conf_path = conf_dir.clone();
+    conf_path.push(CONF_FILE);
+    if conf_path.exists() {
+        println!("Configuration file '{0}' already exists.", conf_path.display());
+    } else {
+        if !local && !conf_dir.exists() {
+            fs::create_dir_all(conf_dir.clone())?;
+            println!("Created directory '{0}'", conf_dir.display());
+        }
+        let mut file = File::create(conf_path.clone())?;
+        file.write_all(DEFAULT_CONFIG.as_bytes())?;
+        println!("Configuration initialized: '{0}'", conf_path.display());
+    }
+    Ok(())
+}
+
 fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     let path: PathBuf = match conf_path {
         Some(p) => p,
@@ -1254,6 +1283,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     );
     opts.optflag("k", "keep-tags", "in edit mode a new subject replaces regular text of the todo, everything else(tags, priority etc) is taken from the old and appended to the new subject. A convenient way to replace just text and keep all the tags without typing the tags again");
     opts.optflag("i", "interactive", "Open an external edit to modify all filtered tasks. If the task list is modified inside an editor, the old tasks will be removed and new ones will be added to the end of the task list. If you do not change anything or save an empty file, the edit operation will be canceled. To set editor, change config.global.editor option or set EDITOR environment variable.");
+    opts.optflag("", "init", "create a default configuration file in user's configuration directory if the configuration file does not exist yet");
+    opts.optflag("", "init-local", "create a default configuration file in the current working directory if the configuration file does not exist yet");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1272,6 +1303,15 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if matches.opt_present("h") {
         print_usage(&program, &opts);
         exit(0);
+    }
+    if matches.opt_present("init") || matches.opt_present("init-local") {
+        match init_config_file(matches.opt_present("init-local")) {
+            Ok(()) => exit(0),
+            Err(e) => {
+                println!("{e}");
+                exit(1);
+            }
+        }
     }
     let conf_file = if matches.opt_present("config") { matches.opt_str("config").map(PathBuf::from) } else { None };
 
