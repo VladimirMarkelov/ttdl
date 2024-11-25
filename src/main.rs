@@ -552,7 +552,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
                         continue;
                     }
                     // TODO: move duplicated code (here and in task_add) to a separate fn
-                    let mut tag_list = date_expr::TaskTagList::from_str(&subj, now);
+                    let mut tag_list = date_expr::TaskTagList::from_str(subj, now);
                     let soon = conf.fmt.colors.soon_days;
                     let subj = match date_expr::calculate_main_tags(now, &mut tag_list, soon) {
                         Err(e) => {
@@ -561,7 +561,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
                         }
                         Ok(changed) => match changed {
                             false => subj.to_string(),
-                            true => date_expr::update_tags_in_str(&tag_list, &subj),
+                            true => date_expr::update_tags_in_str(&tag_list, subj),
                         },
                     };
                     let mut cnf = conf.clone();
@@ -580,7 +580,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
                 writeln!(stdout, "Removed {removed_cnt} tasks, added {added_cnt} tasks.")?;
             }
         }
-        let _ = filepath.close()?;
+        filepath.close()?;
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let updated = if conf.keep_tags {

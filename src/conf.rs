@@ -120,10 +120,7 @@ impl Conf {
         Default::default()
     }
     pub fn editor(&self) -> Option<PathBuf> {
-        let mut spth: String = match env::var(EDITOR) {
-            Ok(p) => p,
-            Err(_) => String::new(),
-        };
+        let mut spth: String = env::var(EDITOR).unwrap_or_default();
         if spth.is_empty() {
             if let Some(p) = &self.editor_path {
                 spth = p.clone();
