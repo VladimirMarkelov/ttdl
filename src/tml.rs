@@ -36,6 +36,7 @@ pub struct Global {
     pub always_hide_columns: Option<String>,
     pub priority_on_done: Option<String>,
     pub add_completion_date_always: Option<bool>,
+    pub editor: Option<String>,
 }
 
 #[derive(Deserialize)]

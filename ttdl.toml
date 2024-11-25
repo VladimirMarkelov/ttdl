@@ -160,6 +160,10 @@ old = "1y"
 #    true   = always add completion date, regardless of creation date is presence
 # add_completion_date_always = false
 
+# Path an external editor binary.
+# It is used when 'edit' command includes the option `--interactive`.
+# editor = ""
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject
