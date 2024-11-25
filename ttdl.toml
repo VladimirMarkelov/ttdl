@@ -160,7 +160,7 @@ old = "1y"
 #    true   = always add completion date, regardless of creation date is presence
 # add_completion_date_always = false
 
-# Path an external editor binary.
+# Path an external editor binary or the name of the editor binary if it is in PATH.
 # It is used when 'edit' command includes the option `--interactive`.
 # editor = ""
 
