@@ -1,3 +1,14 @@
+ttdl (4.8.0) unstable; urgency=medium
+
+  *  New special dates are available when setting due and other dates. The new
+     special dates are names of months. You can use short (3 first letters) or
+     full month names. After substitution a month name is replaced with the
+     first day of the month. Note that the date is always in the future. In
+     other words, if you set 'due:dec' on the December 1st, the due date will
+     be December 1st of the next year
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 17 Jan 2025 19:01:10 -0800
+
 ttdl (4.7.0) unstable; urgency=medium
 
   *  New command-line options `--init` and `--init-local` to create a default

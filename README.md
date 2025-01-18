@@ -1239,6 +1239,18 @@ The list of supported abbreviations (more can be added in the future if needed):
 | `fr`, `fri`, `friday`    | nearest Friday in the future                                                                                                                                         |
 | `sa`, `sat`, `saturday`  | nearest Saturday in the future                                                                                                                                       |
 | `su`, `sun`, `sunday`    | nearest Sunday in the future                                                                                                                                         |
+| 'jan', 'january'         | nearest 1st of January in the future. If today is the 1st of January, the date will be January 1st in the next year |
+| 'feb', 'february'        | nearest 1st of February in the future. See note for 'jan' above |
+| 'mar', 'march'        | nearest 1st of March in the future. See note for 'jan' above |
+| 'apr', 'april'        | nearest 1st of April in the future. See note for 'jan' above |
+| 'may'        | nearest 1st of May in the future. See note for 'jan' above |
+| 'jun', 'june'        | nearest 1st of June in the future. See note for 'jan' above |
+| 'jul', 'july'        | nearest 1st of July in the future. See note for 'jan' above |
+| 'aug', 'august'        | nearest 1st of August in the future. See note for 'jan' above |
+| 'sep', 'september'        | nearest 1st of September in the future. See note for 'jan' above |
+| 'oct', 'october'        | nearest 1st of October in the future. See note for 'jan' above |
+| 'nov', 'november'        | nearest 1st of November in the future. See note for 'jan' above |
+| 'dec', 'december'        | nearest 1st of December in the future. See note for 'jan' above |
 
 1. All day of week abbreviations never set today's date. So, if the current date is Monday, `due:mon` sets the due date to the next Monday.
 2. `#d`, `#w`, `#m`, and `#y` are addictive and can be grouped. Moreover, you can use the same abbreviation as many times as you want. Examples: `due:3d4d` is the same as `due:1w`; and `due:1w1d` is the same as `due:11d`
