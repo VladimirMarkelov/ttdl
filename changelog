@@ -1,3 +1,11 @@
+ttdl (4.9.0) unstable; urgency=medium
+
+  *  New command "listhashtags" (with shortcuts "listhash" and "lh"). The
+     command prints out all hashtags used in tasks. It is similar to
+     existing "lp" and "lc" which list projects and contexts respectively.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 12 Feb 2025 18:42:32 -0800
+
 ttdl (4.8.0) unstable; urgency=medium
 
   *  New special dates are available when setting due and other dates. The new

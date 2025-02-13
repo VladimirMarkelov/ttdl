@@ -901,6 +901,19 @@ fn task_list_contexts(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     Ok(())
 }
 
+fn task_list_hashtags(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
+    let mut conf = conf.clone();
+    conf.show_hidden = true;
+    let todos = filter_tasks(tasks, &conf);
+    // no tsort::sort() here since multiple contexts in one task
+    // would mess up the alphabetical output sort
+
+    for item in collect_unique_items(tasks, &todos, |task| &task.hashtags) {
+        writeln!(stdout, "{item}")?;
+    }
+    Ok(())
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -972,6 +985,7 @@ fn main() {
         conf::RunMode::Postpone => task_postpone(&mut stdout, &mut tasks, &conf),
         conf::RunMode::ListProjects => task_list_projects(&mut stdout, &tasks, &conf),
         conf::RunMode::ListContexts => task_list_contexts(&mut stdout, &tasks, &conf),
+        conf::RunMode::ListHashtags => task_list_hashtags(&mut stdout, &tasks, &conf),
         _ => Ok(()),
     };
     if let Err(e) = err {

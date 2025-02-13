@@ -691,14 +691,15 @@ Commands:
 - prepend - inserts a new text at the beginning of the selected todos (space between old text and new one is added automatically);
 - start - activate todo's timer;
 - stop - stop todo's timer and update time spent on the todo;
-- stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context.
-- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them
+- stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context;
+- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them;
 - listprojects - show list of all project tags. Filters used by "list" are supported;
 - listcontexts - show list of all context tags. Filters used by "list" are supported;
+- listhashtags - show list of all hashtags. Filters used by "list" are supported.
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
-All commands(except `listcontexts` and `listprojects`) skip hidden tasks by default. To include hidden tasks, use `--hidden` option. See section [tags](#tags) for details.
+All commands(except `listhashtags`, `listcontexts` and `listprojects`) skip hidden tasks by default. To include hidden tasks, use `--hidden` option. See section [tags](#tags) for details.
 
 NOTE: `done` moves a recurrent todo's due date to the next one, but it does not check if the new due date is in the future (it is by design). So, if a monthly task is 2 months overdue, you have to execute `ttdl done ID` two times to push it to the incoming month or manually set a new due date with the command `ttdl edit ID --set-due=YYYY-MM-DD`.
 

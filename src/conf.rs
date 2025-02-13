@@ -50,6 +50,7 @@ pub enum RunMode {
     Postpone,
     ListProjects,
     ListContexts,
+    ListHashtags,
 }
 
 #[derive(Debug, Clone)]
@@ -237,6 +238,7 @@ fn str_to_mode(s: &str) -> RunMode {
         "postpone" => RunMode::Postpone,
         "lp" | "listproj" | "listprojects" => RunMode::ListProjects,
         "lc" | "listcon" | "listcontexts" => RunMode::ListContexts,
+        "lh" | "listhash" | "listhashtags" => RunMode::ListHashtags,
         _ => RunMode::None,
     }
 }
