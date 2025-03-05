@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs::{self, File};
-use std::io::{stdout, BufReader, IsTerminal, Read, Write};
+use std::io::{stdout, BufRead, BufReader, IsTerminal, Read, Write};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
+use std::{env, io};
 
 use anyhow::{anyhow, Result};
 use chrono::Local;
@@ -57,6 +57,7 @@ pub enum RunMode {
 pub struct Conf {
     pub mode: RunMode,
     pub verbose: bool,
+    pub stdin: bool,
     pub dry: bool,
     pub wipe: bool,
     pub use_done: bool,
@@ -88,6 +89,7 @@ impl Default for Conf {
     fn default() -> Conf {
         Conf {
             mode: RunMode::None,
+            stdin: false,
             dry: false,
             verbose: false,
             wipe: false,
@@ -154,7 +156,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let extras = r#"Extra options:
-    --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
+    --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
     --interactive | -i, --init, --init-local
     "#;
     let commands = r#"Available commands:
@@ -1287,6 +1289,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("i", "interactive", "Open an external edit to modify all filtered tasks. If the task list is modified inside an editor, the old tasks will be removed and new ones will be added to the end of the task list. If you do not change anything or save an empty file, the edit operation will be canceled. To set editor, change config.global.editor option or set EDITOR environment variable.");
     opts.optflag("", "init", "create a default configuration file in user's configuration directory if the configuration file does not exist yet");
     opts.optflag("", "init-local", "create a default configuration file in the current working directory if the configuration file does not exist yet");
+    opts.optflag("", "stdin", "Read new or replacement task content from standard input");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1322,6 +1325,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     parse_sort(&matches, &mut conf.sort);
     parse_fmt(&matches, &mut conf.fmt);
 
+    conf.stdin = matches.opt_present("stdin");
     conf.dry = matches.opt_present("dry-run");
     conf.verbose = matches.opt_present("verbose");
     conf.wipe = matches.opt_present("wipe");
@@ -1330,7 +1334,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if conf.use_done && conf.flt.all == tfilter::TodoStatus::Active {
         conf.flt.all = tfilter::TodoStatus::Done;
     }
-    if matches.opt_present("strict") {
+    if matches.opt_present("strict") || conf.stdin {
         conf.strict_mode = true;
     }
     if let Some(dstr) = matches.opt_str("calendar") {
@@ -1386,67 +1390,23 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     parse_filter(&matches, &mut conf.flt, soon_days)?;
 
     let mut idx: usize = 0;
-    if idx >= matches.free.len() {
+    if idx >= matches.free.len() && !conf.stdin {
         conf.mode = RunMode::List;
         return Ok(conf);
     }
 
     // first should be command. In strict mode, the first argument must be a command
-    conf.mode = str_to_mode(&matches.free[idx]);
+    if idx < matches.free.len() {
+        conf.mode = str_to_mode(&matches.free[idx]);
+    }
     if conf.mode != RunMode::None {
         idx += 1;
     } else if conf.strict_mode {
         return Err(anyhow!(terr::TodoError::NotCommand));
     }
-    if idx >= matches.free.len() {
+    if idx >= matches.free.len() && !conf.stdin {
         // TODO: validity check
         return Ok(conf);
-    }
-
-    if conf.use_editor && conf.mode != RunMode::Edit {
-        eprintln!("Option '--interactive' can be used only with `edit` command");
-        exit(1);
-    }
-
-    // second should be a range
-    if matches.free[idx].find(|c: char| !c.is_ascii_digit()).is_none() {
-        // a single ID
-        if let Ok(id) = matches.free[idx].parse::<usize>() {
-            conf.flt.range = tfilter::ItemRange::One(id - 1);
-            idx += 1;
-        }
-    } else if is_id_range(&matches.free[idx]) {
-        // a range in a form "ID1-ID2" or "ID1:ID2"
-        let ends = parse_id_range(&matches.free[idx])?;
-        if ends.l != RANGE_END_SKIP {
-            conf.flt.range = tfilter::ItemRange::Range(ends.l, ends.r);
-            idx += 1;
-        }
-    } else if matches.free[idx].find(|c: char| !c.is_ascii_digit() && c != ',' && c != '-' && c != ':').is_none() {
-        // a list, possibly list of ranges
-        let mut v: Vec<usize> = Vec::new();
-        for s in matches.free[idx].split(',') {
-            if is_id_range(s) {
-                let ends = parse_id_range(s)?;
-                if ends.l == RANGE_END_SKIP {
-                    continue;
-                }
-                for id in ends.l..=ends.r {
-                    if !v.contains(&id) {
-                        v.push(id);
-                    }
-                }
-                continue;
-            }
-            if let Ok(id) = s.parse::<usize>() {
-                let id = id - 1;
-                if !v.contains(&id) {
-                    v.push(id);
-                }
-            }
-        }
-        conf.flt.range = tfilter::ItemRange::List(v);
-        idx += 1;
     }
 
     let edit_mode = conf.mode == RunMode::Add
@@ -1456,41 +1416,113 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         || conf.mode == RunMode::Prepend
         || conf.mode == RunMode::Postpone;
 
-    while idx < matches.free.len() {
-        let arg = matches.free[idx].trim_start();
-        let has_space = arg.contains(' ');
-        if arg.starts_with('@') && !has_space {
-            let context = arg.trim_start_matches('@');
-            conf.flt.include.contexts.push(context.to_owned().to_lowercase());
-        } else if arg.starts_with("-@") && !has_space {
-            let context = arg.trim_start_matches("-@");
-            conf.flt.exclude.contexts.push(context.to_owned().to_lowercase());
-        } else if arg.starts_with('+') && !has_space {
-            let project = arg.trim_start_matches('+');
-            conf.flt.include.projects.push(project.to_owned().to_lowercase());
-        } else if arg.starts_with("-+") && !has_space {
-            let project = arg.trim_start_matches("-+");
-            conf.flt.exclude.projects.push(project.to_owned().to_lowercase());
-        } else if edit_mode {
-            let dt = Local::now().date_naive();
-            let subj = match human_date::fix_date(dt, arg, "due:", soon_days) {
-                None => matches.free[idx].clone(),
-                Some(s) => s,
-            };
-            let subj = match human_date::fix_date(dt, &subj, "t:", soon_days) {
-                None => subj,
-                Some(s) => s,
-            };
-            conf.todo.subject = Some(subj);
-        } else {
-            conf.flt.regex = Some(arg.to_string());
-        }
+    if conf.use_editor && conf.mode != RunMode::Edit {
+        eprintln!("Option '--interactive' can be used only with `edit` command");
+        exit(1);
+    }
 
+    if conf.use_editor && conf.stdin {
+        eprintln!("Option '--interactive' cannot be combined with --stdin");
+        exit(1);
+    }
+
+    if idx < matches.free.len() {
+        // second should be a range
+        if matches.free[idx].find(|c: char| !c.is_ascii_digit()).is_none() {
+            // a single ID
+            if let Ok(id) = matches.free[idx].parse::<usize>() {
+                conf.flt.range = tfilter::ItemRange::One(id - 1);
+                idx += 1;
+            }
+        } else if is_id_range(&matches.free[idx]) {
+            // a range in a form "ID1-ID2" or "ID1:ID2"
+            let ends = parse_id_range(&matches.free[idx])?;
+            if ends.l != RANGE_END_SKIP {
+                conf.flt.range = tfilter::ItemRange::Range(ends.l, ends.r);
+                idx += 1;
+            }
+        } else if matches.free[idx].find(|c: char| !c.is_ascii_digit() && c != ',' && c != '-' && c != ':').is_none() {
+            // a list, possibly list of ranges
+            let mut v: Vec<usize> = Vec::new();
+            for s in matches.free[idx].split(',') {
+                if is_id_range(s) {
+                    let ends = parse_id_range(s)?;
+                    if ends.l == RANGE_END_SKIP {
+                        continue;
+                    }
+                    for id in ends.l..=ends.r {
+                        if !v.contains(&id) {
+                            v.push(id);
+                        }
+                    }
+                    continue;
+                }
+                if let Ok(id) = s.parse::<usize>() {
+                    let id = id - 1;
+                    if !v.contains(&id) {
+                        v.push(id);
+                    }
+                }
+            }
+            conf.flt.range = tfilter::ItemRange::List(v);
+            idx += 1;
+        }
+    }
+
+    while idx < matches.free.len() {
+        let raw_arg = &matches.free[idx];
+        process_single_free_arg(&mut conf, soon_days, edit_mode, raw_arg);
         idx += 1;
+    }
+
+    if conf.stdin && edit_mode {
+        // Read all stdin input and process it as if it was free args elements
+        let stdin = io::stdin();
+        let stdin = stdin.lock();
+        BufReader::new(stdin).lines().filter(Result::is_ok).map(Result::unwrap).for_each(|s| {
+            s.split_whitespace().for_each(|arg| process_single_free_arg(&mut conf, soon_days, edit_mode, &arg))
+        });
     }
 
     // TODO: validate
     Ok(conf)
+}
+
+fn process_single_free_arg(conf: &mut Conf, soon_days: u8, edit_mode: bool, raw_arg: &str) {
+    let arg = raw_arg.trim_start();
+    let has_space = arg.contains(' ');
+    if arg.starts_with('@') && !has_space {
+        let context = arg.trim_start_matches('@');
+        conf.flt.include.contexts.push(context.to_owned().to_lowercase());
+    } else if arg.starts_with("-@") && !has_space {
+        let context = arg.trim_start_matches("-@");
+        conf.flt.exclude.contexts.push(context.to_owned().to_lowercase());
+    } else if arg.starts_with('+') && !has_space {
+        let project = arg.trim_start_matches('+');
+        conf.flt.include.projects.push(project.to_owned().to_lowercase());
+    } else if arg.starts_with("-+") && !has_space {
+        let project = arg.trim_start_matches("-+");
+        conf.flt.exclude.projects.push(project.to_owned().to_lowercase());
+    } else if edit_mode {
+        let dt = Local::now().date_naive();
+        let subj = match human_date::fix_date(dt, arg, "due:", soon_days) {
+            None => raw_arg.to_string(),
+            Some(s) => s,
+        };
+        let subj = match human_date::fix_date(dt, &subj, "t:", soon_days) {
+            None => subj,
+            Some(s) => s,
+        };
+
+        // Append content to the todo text
+        conf.todo.subject = conf
+            .todo
+            .subject
+            .as_ref()
+            .map_or(Some(subj.to_string()), |old_subj| Some(vec![old_subj.as_str(), subj.as_str()].join(" ")));
+    } else {
+        conf.flt.regex = Some(arg.to_string());
+    }
 }
 
 // Parses a range in a form "ID1-ID2" or "ID1:ID2".
