@@ -254,6 +254,10 @@ fn print_task_table(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
     let mut todos = filter_tasks(tasks, conf);
     let (cols, widths) = cols_with_width(tasks, &todos, conf);
     tsort::sort(&mut todos, tasks, &conf.sort);
+    // Apply limitations of maximum numbers of todos shown
+    if let Some(max) = conf.max_items {
+        todos.truncate(max);
+    }
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
     fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
     fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)
