@@ -70,6 +70,7 @@ pub struct Conf {
     pub keep_tags: bool,
     editor_path: Option<String>,
     pub use_editor: bool,
+    pub max_items: Option<usize>,
 
     pub auto_hide_columns: bool,
     pub auto_show_columns: bool,
@@ -103,6 +104,7 @@ impl Default for Conf {
             keep_tags: false,
             editor_path: None,
             use_editor: false,
+            max_items: None,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -165,6 +167,9 @@ fn print_usage(program: &str, opts: &Options) {
         `ttdl l "car*"` - list all todos which have substring `car*` in their subject, project or context
         `ttdl l "car*" -e` - list all todos which have subject, project or context matched regular expression `car*`
         `ttdl l "car"` - list all todos which have substring `car` in their subject, project or context
+        `ttdl l --max 10` - show only the first 10 incomplete todos
+        `ttdl l "car*" --max 5` - list at most 5 todos which have substring `car*` in their subject, project or context
+        `ttdl l -s=proj,pri --max 5` - show first 5 incomplete todos sorted by their project and by priority inside each project
         `ttdl l --pri=a` - show all incomplete todos with the highest priority A
         `ttdl l --pri=b+` - show all incomplete todos with priority B and higher (only A and B in this case)
         `ttdl l +car +train` - show all incomplete todos which related either to `car` or to `train` projects
@@ -1291,6 +1296,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("", "init-local", "create a default configuration file in the current working directory if the configuration file does not exist yet");
     opts.optflag("", "stdin", "Read new or replacement task content from standard input");
 
+    opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => {
@@ -1384,6 +1390,16 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     }
     conf.use_editor = matches.opt_present("interactive");
 
+    if let Some(max_str) = matches.opt_str("max") {
+        if let Ok(max) = max_str.parse::<usize>() {
+            conf.max_items = Some(max);
+        } else {
+            return Err(anyhow!(terr::TodoError::InvalidValue(
+                max_str.to_string(),
+                "maximum number of items".to_string()
+            )));
+        }
+    }
     let soon_days = conf.fmt.colors.soon_days;
     conf.keep_empty = matches.opt_present("keep-empty");
     conf.keep_tags = matches.opt_present("keep-tags");
