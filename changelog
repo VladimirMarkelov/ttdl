@@ -1,3 +1,9 @@
+ttdl (4.10.0) unstable; urgency=medium
+
+  *  New command-line flag `--max` - it limits the number of displayed task
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 29 Apr 2025 20:05:35 -0700
+
 ttdl (4.9.0) unstable; urgency=medium
 
   *  New command "listhashtags" (with shortcuts "listhash" and "lh"). The
