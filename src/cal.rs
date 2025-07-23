@@ -230,7 +230,7 @@ impl CalPrinter {
                         stdout.set_color(&clr)?;
 
                         write!(stdout, "{:>3}", dt.day())?;
-                        dt = dt.succ_opt().unwrap_or_else(|| panic!("the next date must exist for {}", dt));
+                        dt = dt.succ_opt().unwrap_or_else(|| panic!("the next date must exist for {dt}"));
                         if dt > self.end_date {
                             break;
                         }
@@ -273,7 +273,7 @@ impl CalPrinter {
         writeln!(stdout)?;
         let wdays = if conf.first_sunday { " Su Mo Tu We Th Fr Sa" } else { " Mo Tu We Th Fr Sa Su" };
         for _i in 0..self.cols.len() {
-            write!(stdout, "   {}", wdays)?;
+            write!(stdout, "   {wdays}")?;
         }
         writeln!(stdout)?;
         Ok(())

@@ -28,7 +28,7 @@ pub fn hide_tags(subj: &mut String, tag: &str, c: &Conf) {
     if tag.is_empty() {
         return;
     }
-    let tg = if tag.ends_with(':') { format!(" {0}", tag) } else { format!(" {0}:", tag) };
+    let tg = if tag.ends_with(':') { format!(" {tag}") } else { format!(" {tag}:") };
     hide_any(subj, &tg)
 }
 

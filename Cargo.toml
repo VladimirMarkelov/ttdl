@@ -1,8 +1,8 @@
 [package]
 name = "ttdl"
-version = "4.11.0"
+version = "4.12.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
-edition = "2021"
+edition = "2024"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
 license = "MIT"
 description = "TTDL - Terminal ToDo List manager"
@@ -21,8 +21,8 @@ chrono = "^0.4"
 textwrap = "^0.16"
 lazy_static = "1"
 caseless = "^0.2"
-dirs = "5"
-toml = "^0.8"
+dirs = "6"
+toml = "^0.9"
 term_size = "^0.3"
 termcolor = "1"
 serde = "1"

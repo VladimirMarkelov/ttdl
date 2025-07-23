@@ -460,19 +460,19 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
     tsk.create_date = task.create_date;
     tsk.finish_date = task.finish_date;
     tsk.finished = task.finished;
-    let mut sbj = format!("{0}", tsk);
+    let mut sbj = format!("{tsk}");
 
     for prj in &task.projects {
-        sbj += &format!(" +{0}", prj);
+        sbj += &format!(" +{prj}");
     }
     for ctx in &task.contexts {
-        sbj += &format!(" @{0}", ctx);
+        sbj += &format!(" @{ctx}");
     }
     for (k, v) in &task.tags {
         sbj += &format!(" {k}:{v}");
     }
     for htag in &task.hashtags {
-        sbj += &format!(" #{0}", htag);
+        sbj += &format!(" #{htag}");
     }
     sbj
 }
@@ -480,7 +480,7 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
 fn create_temp_file(tasks: &mut todo::TaskVec, ids: &todo::IDVec) -> io::Result<TempPath> {
     let named = NamedTempFile::new()?;
     let filetmp = named.into_temp_path();
-    println!("Temp: {0:?}", filetmp);
+    println!("Temp: {filetmp:?}", );
     let mut file = File::create(filetmp.as_os_str())?;
     for idx in ids {
         writeln!(file, "{0}", tasks[*idx])?;

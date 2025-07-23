@@ -1495,8 +1495,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         // Read all stdin input and process it as if it was free args elements
         let stdin = io::stdin();
         let stdin = stdin.lock();
-        BufReader::new(stdin).lines().filter(Result::is_ok).map(Result::unwrap).for_each(|s| {
-            s.split_whitespace().for_each(|arg| process_single_free_arg(&mut conf, soon_days, edit_mode, &arg))
+        BufReader::new(stdin).lines().map_while(Result::ok).for_each(|s| {
+            s.split_whitespace().for_each(|arg| process_single_free_arg(&mut conf, soon_days, edit_mode, arg))
         });
     }
 
@@ -1535,7 +1535,7 @@ fn process_single_free_arg(conf: &mut Conf, soon_days: u8, edit_mode: bool, raw_
             .todo
             .subject
             .as_ref()
-            .map_or(Some(subj.to_string()), |old_subj| Some(vec![old_subj.as_str(), subj.as_str()].join(" ")));
+            .map_or(Some(subj.to_string()), |old_subj| Some([old_subj.as_str(), subj.as_str()].join(" ")));
     } else {
         conf.flt.regex = Some(arg.to_string());
     }
