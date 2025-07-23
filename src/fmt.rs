@@ -10,7 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::conv;
 use crate::human_date;
-use crate::subj_clean::{hide_contexts, hide_projects, hide_tags, Hide};
+use crate::subj_clean::{Hide, hide_contexts, hide_projects, hide_tags};
 
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &str = "description";
@@ -699,11 +699,7 @@ pub fn done_str(task: &todotxt::Task) -> String {
 }
 
 pub fn priority_str(task: &todotxt::Task) -> String {
-    if task.priority < todotxt::NO_PRIORITY {
-        format!("{} ", (b'A' + task.priority) as char)
-    } else {
-        "  ".to_string()
-    }
+    if task.priority < todotxt::NO_PRIORITY { format!("{} ", (b'A' + task.priority) as char) } else { "  ".to_string() }
 }
 
 pub fn duration_str(d: Duration) -> String {

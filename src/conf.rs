@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{stdout, BufRead, BufReader, IsTerminal, Read, Write};
+use std::io::{BufRead, BufReader, IsTerminal, Read, Write, stdout};
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
 use std::{env, io};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::Local;
 use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
@@ -132,11 +132,7 @@ impl Conf {
                 spth = p.clone();
             }
         }
-        if spth.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(spth))
-        }
+        if spth.is_empty() { None } else { Some(PathBuf::from(spth)) }
     }
 }
 
@@ -1381,7 +1377,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
                 return Err(anyhow!(terr::TodoError::InvalidValue(
                     s.to_string(),
                     "priority completion mode".to_string()
-                )))
+                )));
             }
         }
     }

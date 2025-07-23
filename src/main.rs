@@ -14,11 +14,11 @@ mod tml;
 
 use std::collections::HashMap;
 use std::env;
-use std::fs::{read_to_string, File};
+use std::fs::{File, read_to_string};
 use std::hash::Hasher;
 use std::io::{self, Read, Write};
 use std::path::Path;
-use std::process::{exit, Command};
+use std::process::{Command, exit};
 use std::str::FromStr;
 
 use chrono::NaiveDate;
@@ -328,11 +328,7 @@ fn task_list_calendar(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
 
     let res = print_calendar_body(stdout, now, start_date, end_date, &counter, conf);
     reset_colors(stdout);
-    if res.is_err() {
-        res
-    } else {
-        writeln!(stdout)
-    }
+    if res.is_err() { res } else { writeln!(stdout) }
 }
 
 fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
@@ -480,7 +476,7 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
 fn create_temp_file(tasks: &mut todo::TaskVec, ids: &todo::IDVec) -> io::Result<TempPath> {
     let named = NamedTempFile::new()?;
     let filetmp = named.into_temp_path();
-    println!("Temp: {filetmp:?}", );
+    println!("Temp: {filetmp:?}",);
     let mut file = File::create(filetmp.as_os_str())?;
     for idx in ids {
         writeln!(file, "{0}", tasks[*idx])?;
@@ -509,7 +505,10 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
     }
     let editor = conf.editor();
     if conf.use_editor && conf.editor().is_none() {
-        writeln!(stdout, "Interactive editing requires setting up a path to an editor. Either set environment variable 'EDITOR' or define a path to an editor in TTDL config in the section 'global'")?;
+        writeln!(
+            stdout,
+            "Interactive editing requires setting up a path to an editor. Either set environment variable 'EDITOR' or define a path to an editor in TTDL config in the section 'global'"
+        )?;
         std::process::exit(1);
     }
     if is_filter_empty(&conf.flt) && !conf.use_editor {

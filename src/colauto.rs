@@ -1,7 +1,7 @@
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
-use crate::fmt::{done_str, duration_str, format_relative_date, number_of_digits, priority_str, Conf};
+use crate::fmt::{Conf, done_str, duration_str, format_relative_date, number_of_digits, priority_str};
 
 // Through the entire module `field` is either a tag or special task field like `priority` or `project`.
 
@@ -98,11 +98,7 @@ fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, c:
         }
     }
     let hw = header_width(field);
-    if max == 0 || hw > max {
-        hw
-    } else {
-        max
-    }
+    if max == 0 || hw > max { hw } else { max }
 }
 
 // Removes from `fields` all fields that are empty for all todos
