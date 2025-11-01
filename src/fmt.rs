@@ -1356,6 +1356,74 @@ fn parse_subj(subj: &str) -> Vec<&str> {
     parts
 }
 
+#[derive(PartialEq)]
+enum LastItem {
+    Skip,
+    Space,
+    Letter,
+    Italic,
+    Bold,
+    Strikeout,
+    ItalicOff,
+    BoldOff,
+    StrikeoutOff,
+    OpenRoundBracket,
+    CloseRoundBracket,
+    OpenSquareBracket,
+    CloseSquareBracket,
+}
+struct Part {
+    kind: LastItem,
+    value: String,
+}
+// Convert a small subset of markdown elements to ANSI codes:
+//   * - italic
+//   ** - bold
+//   ~~ - strike out
+//   [alt](link) - URI and alternative text`
+fn parse_markdown(s: &str) -> String {
+    let mut last_item = LastItem::Space;
+    let chrs: Vec<char> = s.chars().collect();
+    let mut idx = 0;
+    let mut word = String::new();
+    let mut parts: Vec<Part> = Vec::new();
+
+    while idx < chrs.len() {
+        if chrs[idx].is_whitespace() {
+            word.push(chrs[idx]);
+            parts.push(Part{kind: LastItem::Letter, value: word.clone()});
+            word.clear();
+            idx += 1;
+            last_item = LastItem::Space;
+            continue;
+        }
+        let last_control = last_item == LastItem::Italic ||
+            last_item == LastItem::ItalicOff ||
+            last_item == LastItem::Bold ||
+            last_item == LastItem:: BoldOff ||
+            last_item == LastItem::Strikeout ||
+            last_item == LastItem:: StrikeoutOff;
+        match chrs[idx] {
+            '*' => {
+                if last_item != LastItem::Space && !last_control {
+                    word.push(chrs[idx]);
+                    idx += 1;
+                    last_item = LastItem::Letter;
+                    continue;
+                } else {
+                }
+            },
+            _ => {
+                word.push(chrs[idx]);
+                idx += 1;
+                last_item = LastItem::Letter;
+            },
+        }
+    }
+
+    String::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
