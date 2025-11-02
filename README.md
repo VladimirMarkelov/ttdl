@@ -205,6 +205,15 @@ Usually the column name and a tag name are the same, but majority of standard co
 | `due` | Task due date |
 | `thr` | Threshold date (the tag name is `t:`) |
 | `until` | The date until which a recurrent task is active |
+| `subject` | The subject(or the full text) of the task |
+
+NOTE: the field `subject` is a special field. It is printed always.
+If you do not pass `subject` in the option `--fields`, the column `Subject` is always the last one.
+All other options such as `--width`, `--wrap`, `--compact` affects the output.
+When you pass a subject in the option `--fields`, it behaves a bit differently.
+In this case, you can put the subject column at any position, but the `--wrap` option is ignored, and the option `--compact` is always set.
+In other words, when you add `subject` to the `--fields` option, TTDL always prints a task per screen line and cuts the subject text if needed.
+Also note that in all cases, TTDL never wraps or cuts the `subject` text if the total length of the rest columns is greater than the width of screen minus the minimal length of the subject column (10).
 
 If you do not like empty columns, but you do not want to fiddle with `--fields` every time, you can use the option `--auto-hide-cols` or set the configuration option `global.auto_hide_columns = true`.
 When auto hiding columns is on, TTDL automatically hides the columns which have no values.
