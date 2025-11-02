@@ -8,9 +8,10 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
+use crate::colauto::cleanup_description;
 use crate::conv;
 use crate::human_date;
-use crate::subj_clean::{Hide, hide_contexts, hide_projects, hide_tags};
+use crate::subj_clean::Hide;
 
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &str = "description";
@@ -498,7 +499,7 @@ impl Conf {
         }
         0
     }
-    fn custom_field(&self, name: &str) -> Option<&CustomField> {
+    pub fn custom_field(&self, name: &str) -> Option<&CustomField> {
         self.custom_fields.iter().find(|&f| name == f.name.as_str())
     }
 }
@@ -535,6 +536,7 @@ fn calc_width(c: &Conf, fields: &[String], widths: &[usize]) -> (usize, usize) {
 fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], widths: &[usize]) -> io::Result<()> {
     write!(stdout, "{:>wid$} ", "#", wid = field_width_cached("id", fields, widths))?;
 
+    let mut subj_printed = false;
     for f in fields {
         let width = field_width_cached(f, fields, widths);
         match f.as_str() {
@@ -558,6 +560,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], w
             "ctx" => write!(stdout, "{:wid$}", "Context", wid = width + 1)?,
             "until" => write!(stdout, "{:wid$}", "Until", wid = width + 1)?,
             n => {
+                subj_printed = default_caseless_match_str(n, "subject");
                 if let Some(f) = c.custom_field(n) {
                     write!(stdout, "{:wid$}", f.title, wid = width + 1)?;
                 } else {
@@ -571,7 +574,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], w
         }
     }
 
-    writeln!(stdout, "Subject")
+    if !subj_printed { writeln!(stdout, "Subject") } else { writeln!(stdout) }
 }
 
 fn color_for_priority(task: &todotxt::Task, c: &Conf) -> ColorSpec {
@@ -827,6 +830,9 @@ fn print_line(
 
     print_with_color(stdout, &format!("{id:>id_width$} "), &fg)?;
 
+    let fs: Vec<&str> = flist.iter().map(|it| it.as_str()).collect();
+    cleanup_description(&mut desc, &fs, c);
+    let mut subj_printed = false;
     for f in flist.iter() {
         match f.as_str() {
             "id" => {
@@ -856,7 +862,6 @@ fn print_line(
                     clr = color_for_due_date(task, days, c);
                 }
                 print_date_val(stdout, &arg, c, "due", dt, clr, flist, widths)?;
-                hide_tags(&mut desc, "due", c);
             }
             "thr" => {
                 let dt = task.threshold_date.as_ref();
@@ -866,7 +871,6 @@ fn print_line(
                     clr = color_for_threshold_date(task, days, c);
                 }
                 print_date_val(stdout, &arg, c, "thr", dt, clr, flist, widths)?;
-                hide_tags(&mut desc, "t", c);
             }
             "spent" => {
                 print_with_color(
@@ -874,8 +878,6 @@ fn print_line(
                     &format!("{:wid$} ", &duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
                     &fg,
                 )?;
-                hide_tags(&mut desc, "tmr", c);
-                hide_tags(&mut desc, "spent", c);
             }
             "uid" | "parent" => {
                 let width = field_width_cached(f, flist, widths);
@@ -883,7 +885,6 @@ fn print_line(
                 let empty_str = String::new();
                 let value = task.tags.get(name).unwrap_or(&empty_str);
                 print_with_color(stdout, &format!("{value:width$} "), &fg)?;
-                hide_tags(&mut desc, f, c);
             }
             "prj" => {
                 let width = field_width_cached(f, flist, widths);
@@ -895,7 +896,6 @@ fn print_line(
                     v += prj;
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
-                hide_projects(&mut desc, c);
             }
             "ctx" => {
                 let width = field_width_cached(f, flist, widths);
@@ -907,7 +907,6 @@ fn print_line(
                     v += ctx;
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
-                hide_contexts(&mut desc, c);
             }
             "until" => {
                 let width = field_width_cached(f, flist, widths);
@@ -936,36 +935,45 @@ fn print_line(
                     let value = conv::cut_string(&value, width);
                     let clr = f.matches(value).unwrap_or_else(|| fg.clone());
                     print_with_color(stdout, &format!("{value:width$} "), &clr)?;
-                    hide_tags(&mut desc, &f.name, c);
                 } else {
                     let width = field_width_cached(f, flist, widths);
                     let value = match task.tags.get(f) {
-                        None => String::new(),
+                        None => {
+                            if default_caseless_match_str(n, "subject") {
+                                subj_printed = true;
+                                desc.clone()
+                            } else {
+                                String::new()
+                            }
+                        }
                         Some(s) => s.to_string(),
                     };
                     let value = conv::cut_string(&value, width);
                     print_with_color(stdout, &format!("{value:width$} "), &fg)?;
-                    hide_tags(&mut desc, n, c);
                 }
             }
         }
     }
 
-    if c.width != 0 && c.long != LongLine::Simple {
-        let (skip, subj_w) = calc_width(c, flist, widths);
-        let lines = textwrap::wrap(&desc, subj_w);
-        if c.long == LongLine::Cut || lines.len() == 1 {
-            print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
-        } else {
-            for (i, line) in lines.iter().enumerate() {
-                if i != 0 {
-                    print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
+    if !subj_printed {
+        if c.width != 0 && c.long != LongLine::Simple {
+            let (skip, subj_w) = calc_width(c, flist, widths);
+            let lines = textwrap::wrap(&desc, subj_w);
+            if c.long == LongLine::Cut || lines.len() == 1 {
+                print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
+            } else {
+                for (i, line) in lines.iter().enumerate() {
+                    if i != 0 {
+                        print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
+                    }
+                    print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
                 }
-                print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
             }
+        } else {
+            print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
         }
     } else {
-        print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
+        print_with_highlight(stdout, "\n", &fg, c)?;
     }
     stdout.set_color(&c.colors.default_fg)
 }

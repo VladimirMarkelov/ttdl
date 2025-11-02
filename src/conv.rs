@@ -42,7 +42,7 @@ lazy_static! {
 
 pub fn cut_string(s: &str, max_width: usize) -> &str {
     let w = s.width();
-    if max_width == 0 || w >= max_width {
+    if max_width == 0 || w <= max_width {
         return s;
     }
     match s.char_indices().nth(max_width) {

@@ -1,7 +1,9 @@
+use caseless::default_caseless_match_str;
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
 use crate::fmt::{Conf, done_str, duration_str, format_relative_date, number_of_digits, priority_str};
+use crate::subj_clean::{hide_contexts, hide_projects, hide_tags};
 
 // Through the entire module `field` is either a tag or special task field like `priority` or `project`.
 
@@ -83,11 +85,15 @@ fn header_width(field: &str) -> usize {
     }
 }
 
-fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, c: &Conf) -> usize {
+fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fields: &[&str], c: &Conf) -> usize {
     let mut max = 0;
     for id in ids.iter() {
-        let w = if field == "id" {
+        let w = if default_caseless_match_str(field, "id") {
             number_of_digits(*id)
+        } else if default_caseless_match_str(field, "subject") {
+            let mut desc = tasks[*id].subject.clone();
+            cleanup_description(&mut desc, fields, c);
+            desc.width()
         } else if let Some(val) = get_field(&tasks[*id], field, c) {
             val.trim().width()
         } else {
@@ -112,12 +118,54 @@ pub fn filter_non_empty(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[
     res
 }
 
+pub fn cleanup_description(desc: &mut String, fields: &[&str], c: &Conf) {
+    for f in fields.iter() {
+        match *f {
+            "id" | "done" | "pri" | "created" | "finished" => continue,
+            "thr" => hide_tags(desc, "t", c),
+            "spent" => {
+                hide_tags(desc, "tmr", c);
+                hide_tags(desc, "spent", c)
+            }
+            "ctx" => hide_contexts(desc, c),
+            "prj" => hide_projects(desc, c),
+            fname => {
+                if let Some(fld) = c.custom_field(fname) {
+                    hide_tags(desc, &fld.name, c)
+                } else {
+                    hide_tags(desc, fname, c)
+                }
+            }
+        }
+    }
+}
+
 // Calculate them maximum width of all fields in `fields` list.
 pub fn col_widths(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[&str], c: &Conf) -> Vec<usize> {
     let mut widths = Vec::new();
     for field in fields.iter() {
-        let w = max_field_width(tasks, ids, field, c);
+        let w = max_field_width(tasks, ids, field, fields, c);
         widths.push(w);
+    }
+    let mut subj_found = false;
+    let mut subj_idx = 0usize;
+    for (idx, f) in fields.iter().enumerate() {
+        if default_caseless_match_str(f, "subject") {
+            subj_found = true;
+            subj_idx = idx;
+            break;
+        }
+    }
+    if subj_found && c.width != 0 {
+        let mut total_width = 0;
+        for (f, w) in fields.iter().zip(widths.iter()) {
+            if !default_caseless_match_str(f, "subject") {
+                total_width += w;
+            }
+        }
+        if total_width + 10 < c.width.into() {
+            widths[subj_idx] = usize::from(c.width) - total_width;
+        }
     }
     widths
 }
