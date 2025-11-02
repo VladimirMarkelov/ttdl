@@ -556,6 +556,7 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], w
             "parent" => write!(stdout, "{:wid$}", "Parent", wid = width + 1)?,
             "prj" => write!(stdout, "{:wid$}", "Project", wid = width + 1)?,
             "ctx" => write!(stdout, "{:wid$}", "Context", wid = width + 1)?,
+            "until" => write!(stdout, "{:wid$}", "Until", wid = width + 1)?,
             n => {
                 if let Some(f) = c.custom_field(n) {
                     write!(stdout, "{:wid$}", f.title, wid = width + 1)?;
@@ -907,6 +908,23 @@ fn print_line(
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
                 hide_contexts(&mut desc, c);
+            }
+            "until" => {
+                let width = field_width_cached(f, flist, widths);
+                if let Some(v) = task.tags.get("until") {
+                    let now = chrono::Local::now().date_naive();
+                    if let Ok(dt) = todotxt::parse_date(v, now) {
+                        let clr = fg.clone();
+                        let odt = Some(&dt);
+                        print_date_val(stdout, &arg, c, "until", odt, clr, flist, widths)?;
+                    } else {
+                        let v = "";
+                        print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+                    }
+                } else {
+                    let v = "";
+                    print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+                }
             }
             n => {
                 if let Some(f) = c.custom_field(n) {

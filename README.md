@@ -204,6 +204,7 @@ Usually the column name and a tag name are the same, but majority of standard co
 | `finished` | Task completion date |
 | `due` | Task due date |
 | `thr` | Threshold date (the tag name is `t:`) |
+| `until` | The date until which a recurrent task is active |
 
 If you do not like empty columns, but you do not want to fiddle with `--fields` every time, you can use the option `--auto-hide-cols` or set the configuration option `global.auto_hide_columns = true`.
 When auto hiding columns is on, TTDL automatically hides the columns which have no values.
@@ -218,6 +219,7 @@ NOTE: custom tags(tags which names start with `!`) are never shown in separate c
 When using `--fields` and `auto-show-cols` you can notice that some information is duplicated.
 The first occurrence is in the column, the second one is inside subject text.
 Sometimes it is helpful, e.g. if you pass `--human` option, columns with dates will display relative value(`1d ago`).
+The option `--human` does not affect custom tags that are not mentioned in the table above.
 At the same time, task subject contains the absolute value of the date(`2023-05-17`).
 Anyway, most of the time the duplication does not look good.
 To mitigate the issue, use the option `--clean-subject` or set the configuration option `global.clean_subject`.

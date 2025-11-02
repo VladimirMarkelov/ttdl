@@ -6,6 +6,7 @@ ttdl (4.13.0) unstable; urgency=medium
   *  When creating a task with `until` tag, relative values are supported.
      E.g, `due:2025-10-20 rec:1w until:2m text` creates a task that repeats
      every week while new due date is less than or equal to `2025-12-20`.
+  *  option `--fields` supports `until` to show it in a separate column
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 29 Apr 2025 20:05:35 -0700
 
