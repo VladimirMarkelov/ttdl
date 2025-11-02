@@ -1,3 +1,14 @@
+ttdl (4.13.0) unstable; urgency=medium
+
+  *  New feature for recurrent tasks: add support for tag `until`. When the
+     current task is done, a new task is created automatically only if the new
+     due date does not exceed the value of `until`
+  *  When creating a task with `until` tag, relative values are supported.
+     E.g, `due:2025-10-20 rec:1w until:2m text` creates a task that repeats
+     every week while new due date is less than or equal to `2025-12-20`.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Tue, 29 Apr 2025 20:05:35 -0700
+
 ttdl (4.10.0) unstable; urgency=medium
 
   *  New command-line flag `--max` - it limits the number of displayed task

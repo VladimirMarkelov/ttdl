@@ -390,7 +390,7 @@ It sets due date of the first task to today, and two dates after today for the s
 Note that initially you can skip setting `due` tag if you do not know due date yet: `ttdl add "first task +project when:today"`.
 The following `edit` command will create `due` tag correctly.
 
-### Recurring tasks
+### Recurrent tasks
 
 Sometimes you need to create a task that you have to do periodically - a recurrent task.
 To make a task recurrent, set the task due date and define a recurrence interval using tag `rec:`.
@@ -464,6 +464,15 @@ In this case, the next due date always is the last day of a new due date's month
 Example for strict recurrence: when completing a task `pay credit card due:2023-02-28 rec:+1m`, the new due date is `due:2023-03-31` because `2023-02-28` is the last day of February.
 
 Example for non-strict recurrence: if today is `2023-02-28` and you complete a task `pay credit card due:2023-02-25 rec:1m`, the next due date of the task is `due:2023-03-28` because `today` is the last day of a month - of February.
+
+Every time you mark a recurrent task done, a new recurrent task is created with a new due date.
+It goes on and on forever until you make the task non-recurrent or delete the task.
+There is another way to deal with it.
+You can set a special tag `until`. The value is the date after which the task stops creating new tasks automatically.
+When setting a value for `until` it is possible to use relative dates. E.g, `until:2m` sets `until` to a date that is 2 months from today.
+Example: let's assume your friend is going to travel for a month, and he asked you to come to his house once a week to water plants.
+In this case, you can create a task: `water friend's plants due:1w rec:1w until:1m`.
+The task means: starting from the next week I need to water the plants every week until 1 month passes.
 
 #### Tasks with priority
 
