@@ -192,7 +192,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
 
     if conf.dry {
         let t = todotxt::Task::parse(&subj, now);
-        let (cols, widths) = cols_with_width(&[t.clone()], &[0], conf);
+        let (cols, widths) = cols_with_width(std::slice::from_ref(&t), &[0], conf);
         writeln!(stdout, "To be added: ")?;
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
         fmt::print_todos(stdout, &[t], &[0], &[true], &conf.fmt, &cols, &widths, true)?;
@@ -337,11 +337,9 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         std::process::exit(1);
     }
     let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
-    if processed {
-        if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-            eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
-            std::process::exit(1);
-        }
+    if processed && let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+        eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
+        std::process::exit(1);
     }
     Ok(())
 }
@@ -360,11 +358,9 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     }
     let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
     let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", undone_adapter)?;
-    if processed {
-        if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
-            writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
-            std::process::exit(1);
-        }
+    if processed && let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
+        writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
+        std::process::exit(1);
     }
     Ok(())
 }
@@ -393,11 +389,11 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !flt_conf.dry {
             let removed = todo::remove(tasks, Some(&todos));
-            if calculate_updated(&removed) != 0 {
-                if let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
-                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
-                    std::process::exit(1);
-                }
+            if calculate_updated(&removed) != 0
+                && let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file))
+            {
+                writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
+                std::process::exit(1);
             }
         }
     }
@@ -431,18 +427,18 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !conf.dry {
             let cloned = todo::clone_tasks(tasks, &done_todos);
-            if !conf.wipe {
-                if let Err(e) = todo::archive(&cloned, &conf.done_file) {
-                    eprintln!("{e:?}");
-                    exit(1);
-                }
+            if !conf.wipe
+                && let Err(e) = todo::archive(&cloned, &conf.done_file)
+            {
+                eprintln!("{e:?}");
+                exit(1);
             }
             let removed = todo::remove(tasks, Some(&todos));
-            if calculate_updated(&removed) != 0 {
-                if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
-                    std::process::exit(1);
-                }
+            if calculate_updated(&removed) != 0
+                && let Err(e) = todo::save(tasks, Path::new(&conf.todo_file))
+            {
+                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+                std::process::exit(1);
             }
         }
     }
@@ -991,10 +987,10 @@ fn main() {
         conf::RunMode::ListHashtags => task_list_hashtags(&mut stdout, &tasks, &conf),
         _ => Ok(()),
     };
-    if let Err(e) = err {
-        if e.kind() != io::ErrorKind::BrokenPipe {
-            eprintln!("{e}");
-            std::process::exit(1);
-        }
+    if let Err(e) = err
+        && e.kind() != io::ErrorKind::BrokenPipe
+    {
+        eprintln!("{e}");
+        std::process::exit(1);
     }
 }

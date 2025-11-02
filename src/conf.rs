@@ -127,10 +127,10 @@ impl Conf {
     }
     pub fn editor(&self) -> Option<PathBuf> {
         let mut spth: String = env::var(EDITOR).unwrap_or_default();
-        if spth.is_empty() {
-            if let Some(p) = &self.editor_path {
-                spth = p.clone();
-            }
+        if spth.is_empty()
+            && let Some(p) = &self.editor_path
+        {
+            spth = p.clone();
         }
         if spth.is_empty() { None } else { Some(PathBuf::from(spth)) }
     }
@@ -722,11 +722,11 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
     if matches.opt_present("human") {
         c.human = true;
     }
-    if let Some(s) = matches.opt_str("human") {
-        if !s.is_empty() {
-            for f in s.split(',') {
-                c.human_fields.push(f.to_lowercase());
-            }
+    if let Some(s) = matches.opt_str("human")
+        && !s.is_empty()
+    {
+        for f in s.split(',') {
+            c.human_fields.push(f.to_lowercase());
         }
     }
     c.atty = stdout().is_terminal();
@@ -739,20 +739,20 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
         c.compact = true;
         c.long = fmt::LongLine::Cut;
     }
-    if let Some(s) = matches.opt_str("width") {
-        if let Ok(n) = s.parse::<u16>() {
-            c.width = n;
-        }
+    if let Some(s) = matches.opt_str("width")
+        && let Ok(n) = s.parse::<u16>()
+    {
+        c.width = n;
     }
 
     if !c.atty && c.width == 0 {
         c.long = fmt::LongLine::Simple;
     } else if c.atty {
         // TODO: sane limit?
-        if c.width > 2000 || c.width < 20 {
-            if let Some((w, _)) = term_size::dimensions() {
-                c.width = (w % 65536) as u16 - 1;
-            }
+        if (c.width > 2000 || c.width < 20)
+            && let Some((w, _)) = term_size::dimensions()
+        {
+            c.width = (w % 65536) as u16 - 1;
         }
     }
 
@@ -766,18 +766,18 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
-    if let Ok(val) = env::var(TODOFILE_VAR) {
-        if !val.is_empty() {
-            conf.todo_file = PathBuf::from(val);
-        }
+    if let Ok(val) = env::var(TODOFILE_VAR)
+        && !val.is_empty()
+    {
+        conf.todo_file = PathBuf::from(val);
     }
 
     if matches.opt_present("local") {
         conf.todo_file = PathBuf::from(TODO_FILE);
-    } else if let Some(val) = matches.opt_str("todo-file") {
-        if !val.is_empty() {
-            conf.todo_file = PathBuf::from(val);
-        }
+    } else if let Some(val) = matches.opt_str("todo-file")
+        && !val.is_empty()
+    {
+        conf.todo_file = PathBuf::from(val);
     }
 
     resolve_home_directory(&mut conf.todo_file);
@@ -786,15 +786,15 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
         conf.todo_file.push(TODO_FILE);
     }
 
-    if let Some(val) = matches.opt_str("done-file") {
-        if !val.is_empty() {
-            let mut pb = PathBuf::from(val.clone());
-            if pb.parent() == Some(&PathBuf::from("")) {
-                conf.done_file = conf.todo_file.with_file_name(val);
-            } else {
-                resolve_home_directory(&mut pb);
-                conf.done_file = pb;
-            }
+    if let Some(val) = matches.opt_str("done-file")
+        && !val.is_empty()
+    {
+        let mut pb = PathBuf::from(val.clone());
+        if pb.parent() == Some(&PathBuf::from("")) {
+            conf.done_file = conf.todo_file.with_file_name(val);
+        } else {
+            resolve_home_directory(&mut pb);
+            conf.done_file = pb;
         }
     }
     if conf.done_file == PathBuf::from("") {
@@ -806,10 +806,10 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
 }
 
 fn resolve_home_directory(path: &mut PathBuf) {
-    if let Ok(path_striped) = path.strip_prefix("~") {
-        if let Some(home) = dirs::home_dir() {
-            *path = home.join(path_striped);
-        }
+    if let Ok(path_striped) = path.strip_prefix("~")
+        && let Some(home) = dirs::home_dir()
+    {
+        *path = home.join(path_striped);
     }
 }
 
@@ -833,26 +833,26 @@ fn update_colors_from_conf(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     conf.fmt.colors.old = read_color(&tc.colors.old)?;
     conf.fmt.colors.default_fg = read_color(&tc.colors.default_fg)?;
 
-    if conf.fmt.color_term == fmt::TermColorType::Auto {
-        if let Some(cs) = &tc.colors.color_term {
-            conf.fmt.color_term = match cs.to_lowercase().as_str() {
-                "ansi" => fmt::TermColorType::Ansi,
-                "none" => fmt::TermColorType::None,
-                _ => fmt::TermColorType::Auto,
-            }
+    if conf.fmt.color_term == fmt::TermColorType::Auto
+        && let Some(cs) = &tc.colors.color_term
+    {
+        conf.fmt.color_term = match cs.to_lowercase().as_str() {
+            "ansi" => fmt::TermColorType::Ansi,
+            "none" => fmt::TermColorType::None,
+            _ => fmt::TermColorType::Auto,
         }
     }
     Ok(())
 }
 
 fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
-    if let Some(imp) = &tc.ranges.important {
-        if imp.len() == 1 {
-            let lowst = imp.to_lowercase();
-            let p = lowst.as_bytes()[0];
-            if p >= b'a' || p <= b'z' {
-                conf.fmt.colors.important_limit = p - b'a';
-            }
+    if let Some(imp) = &tc.ranges.important
+        && imp.len() == 1
+    {
+        let lowst = imp.to_lowercase();
+        let p = lowst.as_bytes()[0];
+        if p >= b'a' || p <= b'z' {
+            conf.fmt.colors.important_limit = p - b'a';
         }
     }
 
@@ -864,10 +864,10 @@ fn update_ranges_from_conf(tc: &tml::Conf, conf: &mut Conf) {
         }
     }
 
-    if let Some(ref old) = tc.ranges.old {
-        if let Ok(r) = todotxt::Recurrence::from_str(old) {
-            conf.fmt.colors.old_period = Some(r);
-        }
+    if let Some(ref old) = tc.ranges.old
+        && let Ok(r) = todotxt::Recurrence::from_str(old)
+    {
+        conf.fmt.colors.old_period = Some(r);
     }
 }
 
@@ -953,10 +953,10 @@ fn validate_custom_fields(conf: &Conf) -> Result<()> {
 }
 
 fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
-    if let Some(fname) = &tc.global.filename {
-        if !fname.is_empty() {
-            conf.todo_file = PathBuf::from(fname);
-        }
+    if let Some(fname) = &tc.global.filename
+        && !fname.is_empty()
+    {
+        conf.todo_file = PathBuf::from(fname);
     }
     if let Some(auto_date) = tc.global.creation_date_auto {
         conf.todo.auto_create_date = auto_date;
@@ -969,16 +969,16 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
         }
     }
 
-    if let Some(sort_fields) = &tc.global.sort {
-        if conf.sort.fields.is_none() {
-            conf.sort.fields = Some(sort_fields.to_owned());
-        }
+    if let Some(sort_fields) = &tc.global.sort
+        && conf.sort.fields.is_none()
+    {
+        conf.sort.fields = Some(sort_fields.to_owned());
     }
 
-    if let Some(sh) = &tc.global.shell {
-        if !sh.is_empty() {
-            conf.fmt.shell.clone_from(sh);
-        }
+    if let Some(sh) = &tc.global.shell
+        && !sh.is_empty()
+    {
+        conf.fmt.shell.clone_from(sh);
     }
 
     if let Some(s) = &tc.global.script_ext {

@@ -164,10 +164,10 @@ impl FmtRule {
         match &self.range {
             FmtSpec::List(l) => {
                 for item in l.iter() {
-                    if let Ok(vv) = item.parse::<i64>() {
-                        if vv == v {
-                            return Some(self.color.clone());
-                        }
+                    if let Ok(vv) = item.parse::<i64>()
+                        && vv == v
+                    {
+                        return Some(self.color.clone());
                     }
                 }
                 None
@@ -202,10 +202,10 @@ impl FmtRule {
         match &self.range {
             FmtSpec::List(l) => {
                 for item in l.iter() {
-                    if let Ok(vv) = item.parse::<f64>() {
-                        if vv == v {
-                            return Some(self.color.clone());
-                        }
+                    if let Ok(vv) = item.parse::<f64>()
+                        && vv == v
+                    {
+                        return Some(self.color.clone());
                     }
                 }
                 None
