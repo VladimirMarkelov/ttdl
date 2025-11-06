@@ -790,20 +790,46 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             return Ok(());
         }
     };
-    let todos = filter_tasks(tasks, conf);
+    let mut todos = filter_tasks(tasks, conf);
     if todos.is_empty() {
         writeln!(stdout, "No todo postponed")?
     } else if conf.dry {
         let mut clones = todo::clone_tasks(tasks, &todos);
         let mut updated: Vec<bool> = Vec::new();
+        let mut new_tasks: todo::TaskVec = Vec::new();
         for clone in clones.iter_mut() {
             if clone.finished || clone.due_date.is_none() {
                 updated.push(false);
             } else if let Some(dt) = clone.due_date {
-                let new_due = rec.next_date(dt);
-                clone.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
-                updated.push(true);
+                let task_rec = if let Some(rr) = clone.recurrence {
+                    rr
+                } else {
+                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
+                };
+                if task_rec.strict {
+                    let now = chrono::Local::now().date_naive();
+                    let dt = if let Some(dd) = clone.due_date { dd } else { now };
+                    let mut new_task = clone.clone();
+                    let new_date = rec.next_date(dt);
+                    new_task.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_date));
+                    new_task.update_tag_with_value(todotxt::REC_TAG, "");
+                    let new_due = task_rec.next_date(dt);
+                    clone.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                    updated.push(true);
+                    if new_due != new_date {
+                        new_tasks.push(new_task);
+                    }
+                } else {
+                    let new_due = rec.next_date(dt);
+                    clone.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                    updated.push(true);
+                }
             }
+        }
+        for (idx, t) in new_tasks.drain(..).enumerate() {
+            clones.push(t);
+            todos.push(tasks.len() + idx);
+            updated.push(true);
         }
         let updated_cnt = calculate_updated(&updated);
 
@@ -820,17 +846,46 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
         }
     } else {
         let mut updated: Vec<bool> = Vec::new();
+        let mut new_tasks: todo::TaskVec = Vec::new();
         for idx in todos.iter() {
             if *idx >= tasks.len() || tasks[*idx].finished {
                 updated.push(false);
             } else if let Some(dt) = tasks[*idx].due_date {
-                let new_due = rec.next_date(dt);
-                tasks[*idx].update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
-                tasks[*idx].due_date = Some(new_due);
-                updated.push(true);
+                let task_rec = if let Some(rr) = tasks[*idx].recurrence {
+                    rr
+                } else {
+                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
+                };
+                if task_rec.strict {
+                    let now = chrono::Local::now().date_naive();
+                    let dt = if let Some(dd) = tasks[*idx].due_date { dd } else { now };
+                    let mut new_task = tasks[*idx].clone();
+                    let new_date = rec.next_date(dt);
+                    new_task.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_date));
+                    new_task.update_tag_with_value(todotxt::REC_TAG, "");
+                    new_task.recurrence = None;
+                    new_task.due_date = Some(new_date);
+                    let new_due = task_rec.next_date(dt);
+                    tasks[*idx].update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                    tasks[*idx].due_date = Some(new_due);
+                    updated.push(true);
+                    if new_due != new_date {
+                        new_tasks.push(new_task);
+                    }
+                } else {
+                    let new_due = rec.next_date(dt);
+                    tasks[*idx].update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                    tasks[*idx].due_date = Some(new_due);
+                    updated.push(true);
+                }
             } else {
                 updated.push(false);
             }
+        }
+        for t in new_tasks.drain(..) {
+            tasks.push(t.clone());
+            todos.push(tasks.len() - 1);
+            updated.push(true);
         }
         let updated_cnt = calculate_updated(&updated);
         if updated_cnt == 0 {

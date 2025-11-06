@@ -88,6 +88,9 @@ fn header_width(field: &str) -> usize {
 fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fields: &[&str], c: &Conf) -> usize {
     let mut max = 0;
     for id in ids.iter() {
+        if *id >= tasks.len() {
+            continue;
+        }
         let w = if default_caseless_match_str(field, "id") {
             number_of_digits(*id)
         } else if default_caseless_match_str(field, "subject") {
