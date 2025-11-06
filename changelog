@@ -12,8 +12,12 @@ ttdl (4.13.0) unstable; urgency=medium
   *  The field `subject` in the output can be reordered. But when a subject is
      passed in the option `--fields` the ouput always uses compact mode. I.e,
      it always trims the subject to the width of the output, no word-wraps
+  * Improved `postpone` command for strictly recurrent tasks: if a task is
+    postponed for the time different from the taks's recurrency interval, TTDL
+    creates a new task without recurrency with a due date equals the postponed
+    date, and the original task's due is moved to the next due date
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 02 Nov 2025 14:14:10 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 05 Nov 2025 21:23:40 -0800
 
 ttdl (4.10.0) unstable; urgency=medium
 

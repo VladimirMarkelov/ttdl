@@ -712,7 +712,7 @@ Commands:
 - start - activate todo's timer;
 - stop - stop todo's timer and update time spent on the todo;
 - stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context;
-- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them;
+- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them (see a note below the list of command);
 - listprojects - show list of all project tags. Filters used by "list" are supported;
 - listcontexts - show list of all context tags. Filters used by "list" are supported;
 - listhashtags - show list of all hashtags. Filters used by "list" are supported.
@@ -722,6 +722,14 @@ Most of the commands can be abbreviated. Please refer to built-in TTDL help to g
 All commands(except `listhashtags`, `listcontexts` and `listprojects`) skip hidden tasks by default. To include hidden tasks, use `--hidden` option. See section [tags](#tags) for details.
 
 NOTE: `done` moves a recurrent todo's due date to the next one, but it does not check if the new due date is in the future (it is by design). So, if a monthly task is 2 months overdue, you have to execute `ttdl done ID` two times to push it to the incoming month or manually set a new due date with the command `ttdl edit ID --set-due=YYYY-MM-DD`.
+
+NOTE: `postpone` acts a bit different for strictly recurrent tasks and for the rest ones.
+Because strictness requires a task to follow certain date patterns, a single postponing must not change this flow.
+That is why in this case, TTDL does two things (as usual, you can try postponing in a dry run mode to see how it works):
+
+- First, it clones the existing recurrent task, updates its due date to the postponed date, and disables recurrence for the task
+- Second, it updates the original task by moving its due date to the next strict due date
+- Third, there is an extra condition: if the task's new due date and the calculated postponed date are equal(in other words, if postpone value is the same as the task's recurrence), no new task is created. Only the original task's due date is updated.
 
 #### Calendar
 
