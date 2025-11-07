@@ -728,7 +728,7 @@ Because strictness requires a task to follow certain date patterns, a single pos
 That is why in this case, TTDL does two things (as usual, you can try postponing in a dry run mode to see how it works):
 
 - First, it clones the existing recurrent task, updates its due date to the postponed date, and disables recurrence for the task
-- Second, it updates the original task by moving its due date to the next strict due date
+- Second, it updates the original task by moving its due date to the next strict due date that is greater than or equal to the postpone date
 - Third, there is an extra condition: if the task's new due date and the calculated postponed date are equal(in other words, if postpone value is the same as the task's recurrence), no new task is created. Only the original task's due date is updated.
 
 #### Calendar

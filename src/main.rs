@@ -771,6 +771,29 @@ fn task_start_stop(
     Ok(())
 }
 
+fn postpone_and_stop_recurrence(todo: &mut todotxt::Task, rec: &todotxt::Recurrence) -> NaiveDate {
+    let now = chrono::Local::now().date_naive();
+    let dt = if let Some(dd) = todo.due_date { dd } else { now };
+    let new_date = rec.next_date(dt);
+    todo.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_date));
+    todo.update_tag_with_value(todotxt::REC_TAG, "");
+    todo.recurrence = None;
+    todo.due_date = Some(new_date);
+    new_date
+}
+
+fn postpone_move_date_after(todo: &mut todotxt::Task, rec: &todotxt::Recurrence, after: NaiveDate) -> NaiveDate {
+    let now = chrono::Local::now().date_naive();
+    let dt = if let Some(dd) = todo.due_date { dd } else { now };
+    let mut new_due = rec.next_date(dt);
+    while new_due < after {
+        new_due = rec.next_date(new_due);
+    }
+    todo.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+    todo.due_date = Some(new_due);
+    new_due
+}
+
 fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {
         writeln!(stdout, "Warning: postponing of all tasks requested. Please specify tasks to postpone.")?;
@@ -807,14 +830,9 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
                     todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
                 };
                 if task_rec.strict {
-                    let now = chrono::Local::now().date_naive();
-                    let dt = if let Some(dd) = clone.due_date { dd } else { now };
                     let mut new_task = clone.clone();
-                    let new_date = rec.next_date(dt);
-                    new_task.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_date));
-                    new_task.update_tag_with_value(todotxt::REC_TAG, "");
-                    let new_due = task_rec.next_date(dt);
-                    clone.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
+                    let new_date = postpone_and_stop_recurrence(&mut new_task, &rec);
+                    let new_due = postpone_move_date_after(clone, &task_rec, new_date);
                     updated.push(true);
                     if new_due != new_date {
                         new_tasks.push(new_task);
@@ -857,17 +875,9 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
                     todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
                 };
                 if task_rec.strict {
-                    let now = chrono::Local::now().date_naive();
-                    let dt = if let Some(dd) = tasks[*idx].due_date { dd } else { now };
                     let mut new_task = tasks[*idx].clone();
-                    let new_date = rec.next_date(dt);
-                    new_task.update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_date));
-                    new_task.update_tag_with_value(todotxt::REC_TAG, "");
-                    new_task.recurrence = None;
-                    new_task.due_date = Some(new_date);
-                    let new_due = task_rec.next_date(dt);
-                    tasks[*idx].update_tag_with_value(todotxt::DUE_TAG, &todotxt::format_date(new_due));
-                    tasks[*idx].due_date = Some(new_due);
+                    let new_date = postpone_and_stop_recurrence(&mut new_task, &rec);
+                    let new_due = postpone_move_date_after(&mut tasks[*idx], &task_rec, new_date);
                     updated.push(true);
                     if new_due != new_date {
                         new_tasks.push(new_task);
