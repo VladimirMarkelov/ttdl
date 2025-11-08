@@ -1027,6 +1027,10 @@ fn main() {
         fmt::TermColorType::None => StandardStream::stdout(ColorChoice::Never),
     };
 
+    // Grouping is available only in List mode
+    if conf.mode != conf::RunMode::List {
+        conf.fmt.group = None;
+    }
     let err = match conf.mode {
         conf::RunMode::Add => task_add(&mut stdout, &mut tasks, &mut conf),
         conf::RunMode::List => {

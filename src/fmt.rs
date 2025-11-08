@@ -430,6 +430,7 @@ pub struct Conf {
     pub custom_fields: Vec<CustomField>,
     pub custom_names: Vec<String>, // for performance
     pub hide: Hide,
+    pub group: Option<String>,
 }
 
 impl Default for Conf {
@@ -457,6 +458,7 @@ impl Default for Conf {
             custom_fields: Vec::new(),
             custom_names: Vec::new(),
             hide: Hide::Nothing,
+            group: None,
         }
     }
 }
@@ -1228,6 +1230,77 @@ pub fn print_body_single(
     Ok(())
 }
 
+fn values_of_field(task: &todotxt::Task, field: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    let mut values = match field {
+        "prj" | "project" => task.projects.clone(),
+        "ctx" | "context" => task.contexts.clone(),
+        "hash" | "hashtag" => task.hashtags.clone(),
+        tag => {
+            if let Some(s) = task.tags.get(tag) {
+                vec![s.clone()]
+            } else {
+                vec![String::new()]
+            }
+        }
+    };
+    if values.is_empty() {
+        values.push(String::new())
+    }
+    for v in values {
+        if items.contains(&v) {
+            continue;
+        }
+        items.push(v);
+    }
+    items.sort();
+    items
+}
+fn select_uniq_values(tasks: &todo::TaskSlice, selected: &todo::IDSlice, only_selected: bool, c: &Conf) -> Vec<String> {
+    let group = match &c.group {
+        None => return vec![String::new()],
+        Some(g) => g.clone(),
+    };
+    let mut v = Vec::new();
+    if only_selected {
+        for id in selected.iter() {
+            let print = *id < tasks.len();
+            if !print {
+                continue;
+            }
+            let task_values = values_of_field(&tasks[*id], &group);
+            for tv in task_values {
+                if v.contains(&tv) {
+                    continue;
+                }
+                v.push(tv);
+            }
+        }
+    } else {
+        for (i, t) in tasks.iter().enumerate() {
+            if i < selected.len() {
+                break;
+            }
+            let task_values = values_of_field(t, &group);
+            for tv in task_values {
+                if v.contains(&tv) {
+                    continue;
+                }
+                v.push(tv);
+            }
+        }
+    }
+    if v.is_empty() || (v.len() == 1 && v[0].is_empty()) {
+        return vec![String::new()];
+    }
+    v.sort();
+    if v.len() > 1 && v[0].is_empty() {
+        v.remove(0);
+        v.push(String::new());
+    }
+    v
+}
+
 fn print_body_selected(
     stdout: &mut StandardStream,
     tasks: &todo::TaskSlice,
@@ -1237,11 +1310,35 @@ fn print_body_selected(
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    for (i, id) in selected.iter().enumerate() {
-        let print = updated.is_empty() || (i < updated.len() && updated[i]);
-        let print = print && (*id < tasks.len());
-        if print {
-            print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
+    let group = match &c.group {
+        None => String::new(),
+        Some(g) => g.clone(),
+    };
+    let groups = select_uniq_values(tasks, selected, true, c);
+    let print_groups = groups.len() > 1;
+    for g in groups {
+        if print_groups {
+            let group_name = if g.is_empty() { "[Empty]" } else { g.as_str() };
+            match group.as_str() {
+                "prj" | "project" => writeln!(stdout, "+{group_name}")?,
+                "ctx" | "context" => writeln!(stdout, "@{group_name}")?,
+                "hash" | "hashtag" => writeln!(stdout, "#{group_name}")?,
+                _ => writeln!(stdout, "{group_name}")?,
+            };
+        }
+        for (i, id) in selected.iter().enumerate() {
+            let print = updated.is_empty() || (i < updated.len() && updated[i]);
+            let print = print && (*id < tasks.len());
+            if print {
+                if print_groups {
+                    let vals = values_of_field(&tasks[*id], &group);
+                    if vals.contains(&g) {
+                        print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
+                    }
+                } else {
+                    print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
+                }
+            }
         }
     }
     Ok(())
@@ -1256,10 +1353,34 @@ fn print_body_all(
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
-    for (i, t) in tasks.iter().enumerate() {
-        let (id, print) = if i < selected.len() { (selected[i], updated[i]) } else { (0, false) };
-        if print {
-            print_line(stdout, t, id + 1, c, flist, widths)?;
+    let group = match &c.group {
+        None => String::new(),
+        Some(g) => g.clone(),
+    };
+    let groups = select_uniq_values(tasks, selected, false, c);
+    let print_groups = groups.len() > 1;
+    for g in groups {
+        if print_groups {
+            let group_name = if g.is_empty() { "[Empty]" } else { g.as_str() };
+            match group.as_str() {
+                "prj" | "project" => writeln!(stdout, "+{group_name}")?,
+                "ctx" | "context" => writeln!(stdout, "@{group_name}")?,
+                "hash" | "hashtag" => writeln!(stdout, "#{group_name}")?,
+                _ => writeln!(stdout, "{group_name}")?,
+            };
+        }
+        for (i, t) in tasks.iter().enumerate() {
+            let (id, print) = if i < selected.len() { (selected[i], updated[i]) } else { (0, false) };
+            if print {
+                if print_groups {
+                    let vals = values_of_field(t, &group);
+                    if vals.contains(&g) {
+                        print_line(stdout, t, id + 1, c, flist, widths)?;
+                    }
+                } else {
+                    print_line(stdout, t, id + 1, c, flist, widths)?;
+                }
+            }
         }
     }
     Ok(())

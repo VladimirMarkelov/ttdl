@@ -155,7 +155,7 @@ fn print_usage(program: &str, opts: &Options) {
 
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
-    --interactive | -i, --init, --init-local
+    --interactive | -i, --init, --init-local, --group
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -763,6 +763,10 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
             c.fields = s.split(':').map(|s| s.to_string()).collect();
         }
     }
+
+    if let Some(s) = matches.opt_str("group") {
+        c.group = Some(s.clone());
+    }
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
@@ -1133,6 +1137,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "FIELD1,FIELD2",
     );
     opts.optflag("", "sort-rev", "Reverse todo list after sorting. It works only if the option 'sort' is set");
+    opts.optopt("", "group", "a field name that is used to group the list of tasks", "FIELD");
     opts.optopt("", "rec", "Select only recurrent(any) or non-recurrent(none) todos", "any | none");
     opts.optopt("", "due", "Select records without due date(none), with any due date(any), overdue todos(overdue), today's todos(today), tomorrow's ones(tomorrow), or which are due in a few days(soon)", "any | none | today| tomorrow | yesterday | soon | 'range'");
     opts.optopt(
@@ -1293,6 +1298,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("", "stdin", "Read new or replacement task content from standard input");
 
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
+
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => {
