@@ -16,6 +16,7 @@
     - [Marking task completed and uncompleted](#marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
     - [Filtering](#filtering)
+    - [Grouping](#grouping)
     - [Archive](#archive)
       - [How to show archived todos](#how-to-show-archived-todos)
     - [Supported commands](#supported-commands)
@@ -662,6 +663,84 @@ Use command-line option `-e` to enable fuzzy regular expression based filter.
 
 - `ttdl list car*` - show all incomplete todos that have substring `car*` in subject, project or context
 - `ttdl list car.* -e` show all incomplete todos which project, context or subject matches regular expression `car.*`
+
+### Grouping
+
+It can be useful to display the list of tasks grouped by certain condition.
+Sometimes it can be done by using sorting.
+But it does not work well always.
+E.g, if a few tasks have more than one context or hashtag, sorting does not help.
+In this case, you can use a command-line option `--group`.
+
+The option supports only one-level grouping.
+In other words, you can group by project or by context but you cannot group by project and context at the same time.
+Another limitation is that some fields cannot be used for grouping: creation date, finish date, and priority.
+As these fields never have multiple values, you can mitigate the limitation by sorting with the command-line option `--sort`.
+
+The command-line option accepted arguments:
+
+| Value | Action |
+| --- | --- |
+| `prj` or `project` | Group by project name |
+| `ctx` or `context` | Group by context name |
+| `hash` or `hashtag` | Group by hashtags |
+| any other value | Group by a tag with that name. Note that this way allows you to group by `due` (due dates) and `rec` (recurrence) |
+
+In group mode the list can be much longer than without it.
+Because if a task has more than one item, the task will be printed in all groups.
+E.g, if a task has 3 hashtags, grouping by hashtag displays the task three times.
+
+The tasks that do not have any values are printed in the very last group with the header `[Empty]`.
+
+NOTE: if TTDL detects that there is only one value for all tasks or no task contains the tag, the output won't contain any group headers.
+In this case, the output looks the same as if you displayed the list without `--group` option.
+
+#### Examples
+
+The list:
+
+```
+$ cat todo.txt
+
+Pay rent +house #money due:2024-10-12 rec:1m type:important
+Pay credit card +bank #money #credit due:2024-10-10 rec:1m
+```
+
+Group by context displays the list without any grouping as no task has a context:
+
+```
+$ ttdl list --group ctx
+
+ # D P Created Finished Due        Subject
+-------------------------------------------
+ 1 R                    2024-10-12 Pay rent +house #money due:2024-10-12 rec:1m type:important
+ 2 R                    2024-10-10 Pay credit card +bank #money #credit due:2024-10-10 rec:1m
+```
+
+Group by hashtag displays some tasks more than once:
+
+```
+$ ttdl list --group hashtag
+ # D P Created Finished Due        Subject
+-------------------------------------------
+#credit
+ 2 R                    2024-10-10 Pay credit card +bank #money #credit due:2024-10-10 rec:1m
+#money
+ 1 R                    2024-10-12 Pay rent +house #money due:2024-10-12 rec:1m type:important
+ 2 R                    2024-10-10 Pay credit card +bank #money #credit due:2024-10-10 rec:1m
+```
+
+Group by custom tag `type` shows two groups including one that contains tasks without the tag:
+
+```
+$ ttdl list --group type
+ # D P Created Finished Due        Subject
+-------------------------------------------
+important
+ 1 R                    2024-10-12 Pay rent +house #money due:2024-10-12 rec:1m type:important
+[Empty]
+ 2 R                    2024-10-10 Pay credit card +bank #money #credit due:2024-10-10 rec:1m
+```
 
 ### Archive
 
@@ -1417,6 +1496,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl l --due=none`        | show todos that does not have due date                                                                                           |
 | `ttdl l --due=today`       | show todos that are due today                                                                                                    |
 | `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context                                              |
+
 ### Add a new todo
 
 | Command                                                                       | Description                                                                     |
