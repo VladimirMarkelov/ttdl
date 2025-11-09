@@ -1245,7 +1245,7 @@ fn values_of_field(task: &todotxt::Task, field: &str) -> Vec<String> {
         }
     };
     if values.is_empty() {
-        values.push(String::new())
+        values.push(String::new());
     }
     for v in values {
         if items.contains(&v) {
