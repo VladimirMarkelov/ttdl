@@ -431,6 +431,7 @@ pub struct Conf {
     pub custom_names: Vec<String>, // for performance
     pub hide: Hide,
     pub group: Option<String>,
+    pub hide_headers: bool,
 }
 
 impl Default for Conf {
@@ -459,6 +460,7 @@ impl Default for Conf {
             custom_names: Vec::new(),
             hide: Hide::Nothing,
             group: None,
+            hide_headers: false,
         }
     }
 }
@@ -1213,6 +1215,9 @@ fn header_len(c: &Conf, flist: &[String], widths: &[usize]) -> usize {
 }
 
 pub fn print_header(stdout: &mut StandardStream, c: &Conf, flist: &[String], widths: &[usize]) -> io::Result<()> {
+    if c.hide_headers {
+        return Ok(());
+    }
     print_header_line(stdout, c, flist, widths)?;
     writeln!(stdout, "{}", "-".repeat(header_len(c, flist, widths)))
 }
@@ -1395,6 +1400,9 @@ pub fn print_footer(
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
+    if c.hide_headers {
+        return Ok(());
+    }
     writeln!(stdout, "{}", "-".repeat(header_len(c, flist, widths)))?;
 
     if updated.is_empty() && !selected.is_empty() {

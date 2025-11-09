@@ -155,7 +155,7 @@ fn print_usage(program: &str, opts: &Options) {
 
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
-    --interactive | -i, --init, --init-local, --group
+    --interactive | -i, --init, --init-local, --group, --no-headers | -H
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -767,6 +767,7 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
     if let Some(s) = matches.opt_str("group") {
         c.group = Some(s.clone());
     }
+    c.hide_headers = matches.opt_present("no-headers");
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
@@ -1115,7 +1116,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let program = args[0].clone();
     let mut conf = Conf::new();
 
-    // Free short options: BCDEFGHIJKLMNOPQRSTUVWXYZbdfgjlmnopqruxyz"
+    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdfgjlmnopqruxyz"
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
@@ -1296,6 +1297,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("", "init", "create a default configuration file in user's configuration directory if the configuration file does not exist yet");
     opts.optflag("", "init-local", "create a default configuration file in the current working directory if the configuration file does not exist yet");
     opts.optflag("", "stdin", "Read new or replacement task content from standard input");
+    opts.optflag("H", "no-headers", "Do not show headers and footers");
 
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
 
