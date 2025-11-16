@@ -682,8 +682,10 @@ As in the other places, you can use ranges in a way `start_value..end_value`.
 Both ends of the range are inclusive.
 Open-ended ranges are available as well, e.g, `..end_value` works as `<= end_value`.
 And there are two special values `none` - means a task does not have the tag, and `any` means - a task must have the tag with any value.
+If a filter does not include a tag value, it means "show all tasks that include the tag".
+E.g, the filter `type` is the same as `type=any`.
 
-For date fields you can use predefined and calculated values:
+For date fields you can use more predefined and calculated values:
 
 | Value | Meaning |
 | --- | --- |
