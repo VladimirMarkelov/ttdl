@@ -611,7 +611,7 @@ fn color_for_creation_date(task: &todotxt::Task, c: &Conf) -> ColorSpec {
         None => {
             return spc;
         }
-        Some(r) => *r,
+        Some(r) => r.clone(),
     };
 
     if let Some(ref cd) = task.create_date {

@@ -824,10 +824,10 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             if clone.finished || clone.due_date.is_none() {
                 updated.push(false);
             } else if let Some(dt) = clone.due_date {
-                let task_rec = if let Some(rr) = clone.recurrence {
-                    rr
+                let task_rec = if let Some(rr) = &clone.recurrence {
+                    rr.clone()
                 } else {
-                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
+                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false, ..Default::default() }
                 };
                 if task_rec.strict {
                     let mut new_task = clone.clone();
@@ -869,10 +869,10 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             if *idx >= tasks.len() || tasks[*idx].finished {
                 updated.push(false);
             } else if let Some(dt) = tasks[*idx].due_date {
-                let task_rec = if let Some(rr) = tasks[*idx].recurrence {
-                    rr
+                let task_rec = if let Some(rr) = &tasks[*idx].recurrence {
+                    rr.clone()
                 } else {
-                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false }
+                    todotxt::Recurrence { period: todotxt::Period::Day, count: 0, strict: false, ..Default::default() }
                 };
                 if task_rec.strict {
                     let mut new_task = tasks[*idx].clone();
