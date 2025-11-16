@@ -1,9 +1,23 @@
-ttdl (4.14.0) unstable; urgency=medium
+ttdl (4.15.0) unstable; urgency=medium
 
   *  New command-line option `-H` or `--no-headers` to suppress printing the
      task list header and footer
+  *  New recurrence type: every week on one or more weekdays. Example:
+     `rec:tue,fri due:2025-11-05` makes a task that is due every week on
+     Tuesdays and Fridays starting from `2025-11-05`. Note that the first due
+     date is not required to be Tuesday or Friday. This kind of tasks are
+     always treated as a strict one when postponing.
+  *  Added custom filter by any tag or set of tags. A new option
+     `--filter-tag` is added for this. Use list of values or ranges to filter
+     the task list. Note that it cannot filter by entities that are not tags.
+     In other words, you can filter by `due` date but you cannot filter by
+     project or context. Example:
+     `--filter-tag="due=..2025-11-10;type:car,house`
+     It shows only tasks that have due defined and the due date is before or
+     on `2025-11-10`, also the task must have the tag `type` with a value
+     `car` or `house`.
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 09 Nov 2025 14:11:18 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 16 Nov 2025 11:44:36 -0800
 
 ttdl (4.13.0) unstable; urgency=medium
 
