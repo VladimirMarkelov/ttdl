@@ -569,6 +569,7 @@ dependencies = [
  "getopts",
  "json",
  "lazy_static",
+ "regex",
  "serde",
  "serde_derive",
  "tempfile",

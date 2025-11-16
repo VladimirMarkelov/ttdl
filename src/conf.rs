@@ -82,6 +82,7 @@ pub struct Conf {
     pub fmt: fmt::Conf,
     pub flt: tfilter::Conf,
     pub sort: tsort::Conf,
+    pub flt_ext: Option<String>,
 
     pub calendar: Option<human_date::CalendarRange>,
 }
@@ -117,6 +118,7 @@ impl Default for Conf {
             flt: Default::default(),
             sort: Default::default(),
             calendar: None,
+            flt_ext: None,
         }
     }
 }
@@ -1300,6 +1302,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("H", "no-headers", "Do not show headers and footers");
 
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
+    opts.optopt("", "filter-tag", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1408,6 +1411,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     conf.keep_empty = matches.opt_present("keep-empty");
     conf.keep_tags = matches.opt_present("keep-tags");
     parse_filter(&matches, &mut conf.flt, soon_days)?;
+    if let Some(f_str) = matches.opt_str("filter-tag") {
+        conf.flt_ext = Some(f_str.clone());
+    }
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

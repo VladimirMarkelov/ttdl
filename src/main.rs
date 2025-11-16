@@ -7,6 +7,7 @@ mod cal;
 mod colauto;
 mod conf;
 mod conv;
+mod flt;
 mod fmt;
 mod stats;
 mod subj_clean;
@@ -75,8 +76,29 @@ fn is_filter_empty(flt: &tfilter::Conf) -> bool {
     true
 }
 
+fn filter_by_custom_tags(tasks: &[todotxt::Task], c: &conf::Conf, todos: todo::IDVec) -> todo::IDVec {
+    match &c.flt_ext {
+        None => todos,
+        Some(flt) => {
+            let filter = flt::Filter::parse(flt);
+            if filter.is_empty() {
+                return todos;
+            }
+            let now = chrono::Local::now().date_naive();
+            let mut new_todos: todo::IDVec = Vec::new();
+            for idx in &todos {
+                if filter.matches(&tasks[*idx], now) {
+                    new_todos.push(*idx);
+                }
+            }
+            new_todos
+        }
+    }
+}
+
 fn filter_tasks(tasks: &[todotxt::Task], c: &conf::Conf) -> todo::IDVec {
-    let mut todos = tfilter::filter(tasks, &c.flt);
+    let todos = tfilter::filter(tasks, &c.flt);
+    let mut todos = filter_by_custom_tags(tasks, c, todos);
     if !c.show_hidden {
         todos.retain(|&id| !task_is_hidden(&tasks[id]));
     }

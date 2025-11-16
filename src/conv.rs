@@ -105,6 +105,43 @@ pub fn str_to_duration(s: &str) -> Option<i64> {
         }
     }
 }
+pub fn str_to_time(s: &str) -> Option<u32> {
+    let s = s.to_lowercase();
+    match s.find(|c: char| !c.is_ascii_digit()) {
+        None => {
+            if s.len() < 3 {
+                return None;
+            }
+            let v = s.parse::<u32>().ok()?;
+            let h = v / 100;
+            let m = v % 100;
+            if h > 23 || m > 59 {
+                return None;
+            }
+            Some(v)
+        }
+        Some(pos) => {
+            let vs = &s[..pos];
+            let mut v = vs.parse::<u32>().ok()?;
+            let suffix = &s[pos..];
+            if suffix != "am" && suffix != "pm" {
+                return None;
+            }
+            let h = v / 100;
+            let m = v % 100;
+            if h > 12 || h == 0 || m > 59 {
+                return None;
+            }
+            if (1200..=1259).contains(&v) && suffix == "am" {
+                v -= 1200;
+            }
+            if v < 1200 && suffix == "pm" {
+                v += 1200;
+            }
+            Some(v)
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -149,6 +186,29 @@ mod tests {
         for test in tests.iter() {
             let v = str_to_duration(test.s).unwrap();
             assert_eq!(v, test.d, "\n{}: {} != {}", test.s, test.d, v);
+        }
+    }
+    #[test]
+    fn str_time_test() {
+        struct Test {
+            s: &'static str,
+            d: Option<u32>,
+        }
+        let tests: Vec<Test> = vec![
+            Test { s: "7829", d: None },
+            Test { s: "1060", d: None },
+            Test { s: "60", d: None },
+            Test { s: "60am", d: None },
+            Test { s: "1320am", d: None },
+            Test { s: "1011tm", d: None },
+            Test { s: "1030", d: Some(1030) },
+            Test { s: "2359", d: Some(2359) },
+            Test { s: "1011am", d: Some(1011) },
+            Test { s: "1011pm", d: Some(2211) },
+        ];
+        for test in tests.iter() {
+            let v = str_to_time(test.s);
+            assert_eq!(v, test.d, "\n{0:?}: {1:?} != {2:?}", test.s, test.d, v);
         }
     }
 }
