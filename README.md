@@ -16,6 +16,7 @@
     - [Marking task completed and uncompleted](#marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
     - [Filtering](#filtering)
+        - [Filter by any tag](#filter-by-any-tag)
     - [Grouping](#grouping)
     - [Archive](#archive)
       - [How to show archived todos](#how-to-show-archived-todos)
@@ -663,6 +664,78 @@ Use command-line option `-e` to enable fuzzy regular expression based filter.
 
 - `ttdl list car*` - show all incomplete todos that have substring `car*` in subject, project or context
 - `ttdl list car.* -e` show all incomplete todos which project, context or subject matches regular expression `car.*`
+
+#### Filter by any tag
+
+If you have a lot of tasks, you may need more sophisticated filter.
+TTDL command-line option `--filter-tag` allows you to use a complex filter expressions that works with any tag.
+In this mode, TTDL also treats some tag values as strictly-typed ones, that allows filtering with ranges.
+
+Note that because it filter by tag value, you cannot use in expression fields that are not tags.
+The list of such fields is: `created`, `finished`, `priority`, `done`, `project`, and `context`.
+To filter by this fields, use the options described above.
+
+The option value is a string that contains all filter rules.
+Every tag expression is separated from another tag with character `;`.
+List of filter values for a tag is separated with commas: `,`.
+As in the other places, you can use ranges in a way `start_value..end_value`.
+Both ends of the range are inclusive.
+Open-ended ranges are available as well, e.g, `..end_value` works as `<= end_value`.
+And there are two special values `none` - means a task does not have the tag, and `any` means - a task must have the tag with any value.
+
+For date fields you can use predefined and calculated values:
+
+| Value | Meaning |
+| --- | --- |
+| `today` | Today's date |
+| `tomorrow` | Tomorrow's date |
+| `yesterday` | Yesterday's date |
+| relative date expression like `1w` | A week after today |
+| negative date expression like `-1y` | A year ago |
+
+To compare tags correctly, TTDL tries to detect the tag type beforehand.
+If it fails to auto-detect a tag type, it compares values as strings.
+That is OK for exact values but does not make sense for ranges.
+
+Rules TTDL follows when detecting a tag type:
+
+1. By a tag name (the rest are treated as Strings):
+
+| Tag | Type |
+| --- | --- |
+| `due` | Date |
+| `t` | Date |
+| `spent` | Time duration |
+| name ends with `_time` | Time of a day |
+| name ends with `_dur` or `_duration` | Time duration |
+| name ends with `_date` | Date |
+| names ends with `_sz` or `_size` | Date size in bytes |
+
+2. If it fails to auto-detect by a tag name, it tries to detect the type by the tag value (the fallback type is String):
+
+In the table `#` means any digit.
+Character `N` means any integer number.
+Character `F` means any floating point number.
+Values in square brackets can be omitted.
+
+| Format | Type |
+| --- | --- |
+| `####-##-##` | Date |
+| `[Nw][Nd][Nh][Nm][Ns]` | Time interval, e.g 1h5s = one hour and 5 seconds |
+| An integer number that ends with data size suffix like `GiB` | Date size |
+| `N[am]` or `N[pm]` | Time of the day. If the string does not contain either `am` or `pm`, the values is treated as a time in 24-hours format, otherwise it is treated as time in `AM/PM`-format |
+| `N` | An integer |
+| `F` | A floating point number |
+
+If TTDL fails to parse a value as a date or as a time, it defaults to String type. E.g, `1080` cannot be parse as time as it means `10:80` - an hour cannot have 80 minutes, or `1310pm` - if `AM/PM` is used the value of hours must be within `1..12` interval.
+
+A task must follow all rules separated by `;`.
+As for values separated by a comma, a tag must match any of them.
+Filter examples:
+
+- `due=today;show_time=..1200` - show all tasks that are due today and their `show_time` is before noon
+- `type=car,house;weight=1,6..10` - show all tasks that have a tag `type` with values `car` or `house` and have tag `weight` with values `1` or from `6` to `10` inclusive
+- `spent=1h..` - show all tasks which took more than 1 hour of time to complete
 
 ### Grouping
 
