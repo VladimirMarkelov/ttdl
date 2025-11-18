@@ -1,3 +1,10 @@
+ttdl (4.15.1) unstable; urgency=medium
+
+  *  Fix new tag filtering: now ranges with `none` at any end include tasks
+     that have the tag missing
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 17 Nov 2025 21:38:18 -0800
+
 ttdl (4.15.0) unstable; urgency=medium
 
   *  New command-line option `-H` or `--no-headers` to suppress printing the

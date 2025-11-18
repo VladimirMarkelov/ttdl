@@ -219,23 +219,25 @@ impl FilterCond {
             FilterCond::One(self_value) => match value {
                 None => self_value == "none",
                 Some(s) => {
-                    if self_value == "any" {
+                    if self_value.is_empty() || self_value == "any" {
                         true
+                    } else if self_value == "none" {
+                        false
                     } else {
                         values_equal(s, self_value, t, base)
                     }
                 }
             },
             FilterCond::Range(bg, en) => match value {
-                None => bg == "none" && en == "none",
+                None => bg == "none" || en == "none",
                 Some(s) => {
                     if bg == "none" && en == "none" && s == "none" {
                         true
                     } else if bg == "none" && en == "none" {
                         false
-                    } else if bg == "none" {
+                    } else if bg.is_empty() || bg == "none" {
                         values_compare(s, en, t, base, true)
-                    } else if en == "none" {
+                    } else if en.is_empty() || en == "none" {
                         values_compare(s, bg, t, base, false)
                     } else {
                         values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
@@ -275,9 +277,6 @@ pub struct Filter {
 
 impl Filter {
     pub fn parse(s: &str) -> Filter {
-        fn coerce_none(v: &str) -> String {
-            if v.is_empty() { "none".to_string() } else { v.to_string() }
-        }
         let mut rules: Vec<FilterRule> = Vec::new();
         for rl in s.split(';') {
             if rl.is_empty() {
@@ -296,9 +295,9 @@ impl Filter {
                     }
                     let items: Vec<&str> = rl_value.splitn(2, "..").collect();
                     if items.len() == 1 {
-                        values.push(FilterCond::One(coerce_none(items[0])));
+                        values.push(FilterCond::One(items[0].to_string()));
                     } else {
-                        values.push(FilterCond::Range(coerce_none(items[0]), coerce_none(items[1])));
+                        values.push(FilterCond::Range(items[0].to_string(), items[1].to_string()));
                     }
                 }
                 rules.push(FilterRule { tag: tag_name, flt: values });
