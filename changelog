@@ -2,8 +2,9 @@ ttdl (4.15.1) unstable; urgency=medium
 
   *  Fix new tag filtering: now ranges with `none` at any end include tasks
      that have the tag missing
+  *  Fix `--set-rec` when a new type of recurrence(weekdays) is used
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 17 Nov 2025 21:38:18 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 17 Nov 2025 21:59:55 -0800
 
 ttdl (4.15.0) unstable; urgency=medium
 
