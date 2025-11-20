@@ -1,3 +1,11 @@
+ttdl (4.16.0) unstable; urgency=medium
+
+  *  Improve filtering by custom tags: now you can combine filters by OR. E.g,
+     "due=..yesterday|due=today;d_time=..1200" filters tasks that have either
+    due date before today or ones that have due date today and d_time<=12:00
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 19 Nov 2025 21:56:39 -0800
+
 ttdl (4.15.1) unstable; urgency=medium
 
   *  Fix new tag filtering: now ranges with `none` at any end include tasks

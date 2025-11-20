@@ -676,14 +676,32 @@ The list of such fields is: `created`, `finished`, `priority`, `done`, `project`
 To filter by this fields, use the options described above.
 
 The option value is a string that contains all filter rules.
-Every tag expression is separated from another tag with character `;`.
-List of filter values for a tag is separated with commas: `,`.
+The string contains all filter rules separated by pipe character `|`.
+Every rule is a list of conditions separated by character `;`.
+A condition's format is `TAG_NAME=<tag_value|tagList, ..>`.
+In other words after the character `=` a list of values and ranges of values separated by character `,`.
 As in the other places, you can use ranges in a way `start_value..end_value`.
 Both ends of the range are inclusive.
 Open-ended ranges are available as well, e.g, `..end_value` works as `<= end_value`.
 And there are two special values `none` - means a task does not have the tag, and `any` means - a task must have the tag with any value.
 If a filter does not include a tag value, it means "show all tasks that include the tag".
 E.g, the filter `type` is the same as `type=any`.
+
+The TTDL treats all the mentioned parts of the passed value in the following way:
+
+- All rules separated by `|` are independent rules. A task must match any of the rules
+- A task must match all conditions separated by `;`
+- A tag value must match any of values or ranges separated by `,`
+
+Example of reading a filter `due=..yesterday|due=..today;severity=2..3,999`.
+The string contains two independent rules: `due=..yesterday` and `due=..today;severity=2..3,999`.
+The first rule is simple and contains only one condition.
+The second rule contains two conditions: `due=..today` and `severity=2..3,999`.
+The last condition is a list of allowed values: `2..3` and `999`.
+Combining everything together, we can declare the whole rule: filter tasks that matches one of two rules:
+
+- `due` date before today
+- `due` date today AND (`severity` is either `999` OR in a range from `2` to `3` inclusive)
 
 For date fields you can use more predefined and calculated values:
 
