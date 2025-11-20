@@ -79,16 +79,27 @@ fn is_filter_empty(flt: &tfilter::Conf) -> bool {
 fn filter_by_custom_tags(tasks: &[todotxt::Task], c: &conf::Conf, todos: todo::IDVec) -> todo::IDVec {
     match &c.flt_ext {
         None => todos,
-        Some(flt) => {
-            let filter = flt::Filter::parse(flt);
-            if filter.is_empty() {
+        Some(flt_str) => {
+            let mut flt_vec: Vec<flt::Filter> = Vec::new();
+            for fstr in flt_str.split('|') {
+                if fstr.trim().is_empty() {
+                    continue;
+                }
+                let flt = flt::Filter::parse(fstr);
+                if !flt.is_empty() {
+                    flt_vec.push(flt);
+                }
+            }
+            if flt_vec.is_empty() {
                 return todos;
             }
             let now = chrono::Local::now().date_naive();
             let mut new_todos: todo::IDVec = Vec::new();
-            for idx in &todos {
-                if filter.matches(&tasks[*idx], now) {
-                    new_todos.push(*idx);
+            for filter in &flt_vec {
+                for idx in &todos {
+                    if filter.matches(&tasks[*idx], now) {
+                        new_todos.push(*idx);
+                    }
                 }
             }
             new_todos
