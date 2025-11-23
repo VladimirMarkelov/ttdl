@@ -884,7 +884,7 @@ Commands:
 - start - activate todo's timer;
 - stop - stop todo's timer and update time spent on the todo;
 - stats - display todo statistics: total number of todos, done and overdue ones, spent time, and detailed statistics grouped by project and context;
-- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them (see a note below the list of command);
+- postpone - push task's due date (modifies only incomplete tasks with due date defined), argument is the number of days/weeks/months/years to push the date in format: single digit and d/w/m/y without a space between them (see a note below the list of command). See also a command-line option `--update-threshold`;
 - listprojects - show list of all project tags. Filters used by "list" are supported;
 - listcontexts - show list of all context tags. Filters used by "list" are supported;
 - listhashtags - show list of all hashtags. Filters used by "list" are supported.
@@ -1626,6 +1626,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl e --pri=none --set-pri=z`              | set the lowest priority for all incomplete todos which do not have a priority set                                                          |
 | `ttdl e @bug1000 --set-pri=+`                | increase priority for all incomplete todos which have context `bug1000`, todos which did not have priority set get the lowest priority `z` |
 | `ttdl postpone 3 5d`                         | push back due date of task #3 by 5 days                                                                                                    |
+| `ttdl postpone 3 5d --update-threshold`      | push back due date of task #3 by 5 days; if task's threshold date is set, it is also pushed back to the same number of days                |
 
 ### Use human-readable dates
 

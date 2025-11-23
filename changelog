@@ -1,3 +1,11 @@
+ttdl (4.17.0) unstable; urgency=medium
+
+  *  New option `--update-threshold` for the command `postpone`. By default
+     task's threshold date does not change when you postpone the task. This
+     option enables updating the threshold date when a task is postponed.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 22 Nov 2025 23:50:29 -0800
+
 ttdl (4.16.0) unstable; urgency=medium
 
   *  Improve filtering by custom tags: now you can combine filters by OR. E.g,

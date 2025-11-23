@@ -83,6 +83,7 @@ pub struct Conf {
     pub flt: tfilter::Conf,
     pub sort: tsort::Conf,
     pub flt_ext: Option<String>,
+    pub postpone_threshold: bool,
 
     pub calendar: Option<human_date::CalendarRange>,
 }
@@ -119,6 +120,7 @@ impl Default for Conf {
             sort: Default::default(),
             calendar: None,
             flt_ext: None,
+            postpone_threshold: false,
         }
     }
 }
@@ -152,7 +154,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let newones = r#"Modifying options are:
-    --set-pri, --set-due, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold, --set-tag, --set-hashtag, --del-tag, --del-hashtag, --repl-hashtag
+    --set-pri, --set-due, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold, --set-tag, --set-hashtag, --del-tag, --del-hashtag, --repl-hashtag, --update-threshold
     "#;
 
     let extras = r#"Extra options:
@@ -1303,6 +1305,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
 
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
     opts.optopt("", "filter-tag", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
+    opts.optflag("", "update-threshold", "Update threshold in addition to changing due date when a task is postponed");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1414,6 +1417,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if let Some(f_str) = matches.opt_str("filter-tag") {
         conf.flt_ext = Some(f_str.clone());
     }
+    conf.postpone_threshold = matches.opt_present("update-threshold");
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {
