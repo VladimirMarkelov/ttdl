@@ -159,7 +159,7 @@ fn print_usage(program: &str, opts: &Options) {
 
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
-    --interactive | -i, --init, --init-local, --group, --no-headers | -H
+    --interactive | -i, --init, --init-local, --group, --no-headers | -H, --hide-fields
     "#;
     let commands = r#"Available commands:
     list | l - list todos

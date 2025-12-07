@@ -1589,6 +1589,7 @@ By default todos from a given range are processed only if they are incomplete. T
 | `ttdl l --due=none`        | show todos that does not have due date                                                                                           |
 | `ttdl l --due=today`       | show todos that are due today                                                                                                    |
 | `ttdl l +myproj @ui @rest` | show todos related to project 'myproj' which contains either 'ui' or 'rest' context                                              |
+| `ttdl l --hide-fields=ts`  | show todos and hide their field `ts` in subject and hide a column for the field if it is visible by default                      |
 
 ### Add a new todo
 

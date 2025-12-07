@@ -1,3 +1,11 @@
+ttdl (4.18.0) unstable; urgency=medium
+
+  *  New option `--hide-fields` to hide a tag in description and the
+     corresponding colum. If you need to hide some fields always, modify TTDL
+     configuration file - edit `global.hide_fields` in `ttdl.toml`.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 07 Dec 2025 11:58:47 -0800
+
 ttdl (4.17.0) unstable; urgency=medium
 
   *  New option `--update-threshold` for the command `postpone`. By default
