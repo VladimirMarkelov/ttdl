@@ -273,6 +273,9 @@ fn build_col_list(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Con
     if !id_exists {
         cols.push("id".to_string());
     }
+    if !conf.fmt.hide_fields.is_empty() {
+        cols.retain(|col| !conf.fmt.hide_fields.contains(col));
+    }
     cols
 }
 

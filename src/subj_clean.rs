@@ -32,7 +32,7 @@ pub fn hide_tags(subj: &mut String, tag: &str, c: &Conf) {
     hide_any(subj, &tg)
 }
 
-fn hide_any(subj: &mut String, what: &str) {
+pub fn hide_any(subj: &mut String, what: &str) {
     let mut st = format!(" {subj} ");
     let mut s = st.as_str();
     if !s.contains(what) {

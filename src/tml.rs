@@ -37,6 +37,7 @@ pub struct Global {
     pub priority_on_done: Option<String>,
     pub add_completion_date_always: Option<bool>,
     pub editor: Option<String>,
+    pub hide_fields: Option<String>,
 }
 
 #[derive(Deserialize)]

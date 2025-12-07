@@ -164,6 +164,10 @@ old = "1y"
 # It is used when 'edit' command includes the option `--interactive`.
 # editor = ""
 
+# Comma-separated list of fields that are hidden everywhere:
+# columns and tags in subject
+# hide_fields = "ts,tmr"
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject

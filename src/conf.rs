@@ -1027,6 +1027,10 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
     if let Some(p) = &tc.global.editor {
         conf.editor_path = Some(p.clone());
     }
+    if let Some(flist) = &tc.global.hide_fields {
+        let lst: Vec<String> = flist.split(',').map(|itm| itm.to_string()).collect();
+        conf.fmt.hide_fields = lst;
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {
@@ -1306,6 +1310,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
     opts.optopt("", "filter-tag", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
     opts.optflag("", "update-threshold", "Update threshold in addition to changing due date when a task is postponed");
+    opts.optopt(
+        "",
+        "hide-fields",
+        "Comma-separated list of fields to hide in both columns and subject",
+        "FIELD1,FIELD2",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1418,6 +1428,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         conf.flt_ext = Some(f_str.clone());
     }
     conf.postpone_threshold = matches.opt_present("update-threshold");
+    if let Some(f_str) = matches.opt_str("hide-fields") {
+        conf.fmt.hide_fields = f_str.split(',').map(|itm| itm.to_string()).collect();
+    }
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

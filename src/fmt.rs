@@ -11,7 +11,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::colauto::cleanup_description;
 use crate::conv;
 use crate::human_date;
-use crate::subj_clean::Hide;
+use crate::subj_clean::{Hide, hide_any};
 
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &str = "description";
@@ -432,6 +432,7 @@ pub struct Conf {
     pub hide: Hide,
     pub group: Option<String>,
     pub hide_headers: bool,
+    pub hide_fields: Vec<String>,
 }
 
 impl Default for Conf {
@@ -461,6 +462,7 @@ impl Default for Conf {
             hide: Hide::Nothing,
             group: None,
             hide_headers: false,
+            hide_fields: Vec::new(),
         }
     }
 }
@@ -836,6 +838,12 @@ fn print_line(
 
     let fs: Vec<&str> = flist.iter().map(|it| it.as_str()).collect();
     cleanup_description(&mut desc, &fs, c);
+    if !c.hide_fields.is_empty() {
+        for fld in c.hide_fields.iter() {
+            let tg = format!(" {fld}:");
+            hide_any(&mut desc, &tg);
+        }
+    }
     let mut subj_printed = false;
     for f in flist.iter() {
         match f.as_str() {
