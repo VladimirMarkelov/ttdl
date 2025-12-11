@@ -1,3 +1,13 @@
+ttdl (4.19.0) unstable; urgency=medium
+
+  *  The option `--filter-tag` now supports negative condition. Add `-` before
+     the tag name to negate the condition. Also you can use `-` as a synonym
+     for `none`: `--filter-tag "tag=-"` is the same as `--filter-tag
+      "tag=none"` and the same as `--filter-tag "-tag"`.
+     Instead of `-` you can use `!`: `--filter-tag "!tag=value"`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 10 Dec 2025 23:02:14 -0800
+
 ttdl (4.18.0) unstable; urgency=medium
 
   *  New option `--hide-fields` to hide a tag in description and the

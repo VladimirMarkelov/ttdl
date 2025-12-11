@@ -698,7 +698,7 @@ The string contains two independent rules: `due=..yesterday` and `due=..today;se
 The first rule is simple and contains only one condition.
 The second rule contains two conditions: `due=..today` and `severity=2..3,999`.
 The last condition is a list of allowed values: `2..3` and `999`.
-Combining everything together, we can declare the whole rule: filter tasks that matches one of two rules:
+Combining everything together, we can declare the whole rule: filter tasks that matches any of two rules (or both):
 
 - `due` date before today
 - `due` date today AND (`severity` is either `999` OR in a range from `2` to `3` inclusive)
@@ -712,6 +712,19 @@ For date fields you can use more predefined and calculated values:
 | `yesterday` | Yesterday's date |
 | relative date expression like `1w` | A week after today |
 | negative date expression like `-1y` | A year ago |
+
+Conditions can be negative. To make a condition negative, prepend a character `-` or `!` to a tag name.
+Instead prepending the character to a tag name, you can prepend it to a tag value.
+But it works only in case of single value is used, for ranges you must prepend `-` to the tag name.
+In other words, `"id=-10` and `-id=10` mean the same, but `id=-10..-10` and `-id=10..10` mean different things.
+
+Examples:
+
+- `--filter-tag "-tagname"` - matches only tasks that do not include tag `tagname`. Another ways to define the same condition are: `"tagname=none"` and `"tagname=-"`
+- `--filter-tag "-tagname=2..4"` - matches only tasks that include tag `tagname` and its value in out of range `2..4`
+- `--filter-tag "tagname=-done"` - matches only tasks that include tag `tagname` and its value is not `done`
+- `--filter-tag "id=-10..-20"` - in this case, the character `-` means "minus", not negation, because a range is used, so it matches tasks that include tag `id` with values between `-10` and `-20`.
+- `--filter-tag "!id=10,11,12;id=5..15"` - matches only tasks that include tag `id`, its value is between `5` and `15` (inclusive), and its value is not one of `10`, `11`, and `12`.
 
 To compare tags correctly, TTDL tries to detect the tag type beforehand.
 If it fails to auto-detect a tag type, it compares values as strings.
