@@ -56,6 +56,10 @@ fn str_to_date(s: &str, base: NaiveDate) -> Result<NaiveDate, i32> {
     }
 }
 
+fn is_negative(s: &str) -> bool {
+    s.starts_with('-') || s.starts_with('!')
+}
+
 fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate) -> bool {
     match t {
         ValueType::Date => {
@@ -217,14 +221,22 @@ impl FilterCond {
     pub fn matches(&self, value: Option<&String>, t: ValueType, base: NaiveDate) -> bool {
         match self {
             FilterCond::One(self_value) => match value {
-                None => self_value == "none",
+                None => self_value == "none" || self_value == "-",
                 Some(s) => {
-                    if self_value.is_empty() || self_value == "any" {
-                        true
-                    } else if self_value == "none" {
+                    let is_negative = is_negative(self_value);
+                    let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+
+                    if self_value == "-" {
                         false
+                    } else if rule_value.is_empty() {
+                        true
+                    } else if rule_value == "any" {
+                        !is_negative
+                    } else if self_value == "none" {
+                        is_negative
                     } else {
-                        values_equal(s, self_value, t, base)
+                        let equals = values_equal(s, rule_value, t, base);
+                        if is_negative { !equals } else { equals }
                     }
                 }
             },
@@ -255,19 +267,23 @@ pub struct FilterRule {
 
 impl FilterRule {
     pub fn matches(&self, task: &todotxt::Task, base: NaiveDate) -> bool {
-        let tag_opt = task.tags.get(&self.tag);
+        let is_negative = is_negative(&self.tag);
+        let tag_full_name = self.tag.as_str();
+        let tag_name = if is_negative { &tag_full_name[1..] } else { tag_full_name };
+
+        println!("Tag {0}: {tag_name} is negative {is_negative}", self.tag);
+        let tag_opt = task.tags.get(tag_name);
         let vt = if tag_opt.is_none() {
             ValueType::String
         } else {
-            let t = filter_type_by_tag(&self.tag);
+            let t = filter_type_by_tag(tag_name);
             if t == ValueType::Unknown { filter_type_by_value(tag_opt) } else { t }
         };
+        let mut matched = false;
         for cond in &self.flt {
-            if cond.matches(tag_opt, vt, base) {
-                return true;
-            }
+            matched |= cond.matches(tag_opt, vt, base);
         }
-        false
+        if is_negative { !matched } else { matched }
     }
 }
 
@@ -315,5 +331,59 @@ impl Filter {
     }
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+    use todo_lib::todotxt;
+
+    #[test]
+    fn filter_test() {
+        let tasks: Vec<&'static str> = vec![
+            "test2 pri:B id:11",
+            "test1 val:-2 pri:A id:10",
+            "test3 pri:C id:12",
+            "test4 val:10 id:13",
+            "test5 val:15 id:14",
+        ];
+        let mut task_vec: Vec<todotxt::Task> = Vec::new();
+        let base = NaiveDate::from_ymd_opt(2020, 2, 2).unwrap();
+        for t in &tasks {
+            let task = todotxt::Task::parse(t, base);
+            task_vec.push(task);
+        }
+
+        struct Test {
+            f: &'static str,
+            o: Vec<usize>,
+        }
+        let tests: Vec<Test> = vec![
+            Test { f: "pri", o: vec![1, 2, 3] },
+            Test { f: "!pri", o: vec![4, 5] },
+            Test { f: "-pri", o: vec![4, 5] },
+            Test { f: "val=-2..-2", o: vec![2] },
+            Test { f: "-val=-2..-2", o: vec![1, 3, 4, 5] },
+            Test { f: "pri=-C", o: vec![1, 2] },
+            Test { f: "pri=-C", o: vec![1, 2] },
+            Test { f: "pri=B,C;id=-12", o: vec![1] },
+            Test { f: "pri=B,C;id=12..17", o: vec![3] },
+            Test { f: "id=11..14", o: vec![1, 3, 4, 5] },
+            Test { f: "-id=11..14", o: vec![2] },
+            Test { f: "-pri=B,C;id=-12", o: vec![2, 4, 5] },
+        ];
+        for (idx, t) in tests.iter().enumerate() {
+            let flt = Filter::parse(t.f);
+            assert!(!flt.is_empty(), "Failed to parse {0}", t.f);
+            let mut res: Vec<usize> = Vec::new();
+            for (idx, task) in task_vec.iter().enumerate() {
+                if flt.matches(task, base) {
+                    res.push(idx + 1);
+                }
+            }
+            assert_eq!(res, t.o, "{idx}. {0}: expected {1:?}, got {2:?}", t.f, t.o, res);
+        }
     }
 }
