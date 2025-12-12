@@ -270,9 +270,8 @@ impl FilterRule {
         let is_negative = is_negative(&self.tag);
         let tag_full_name = self.tag.as_str();
         let tag_name = if is_negative { &tag_full_name[1..] } else { tag_full_name };
-
-        println!("Tag {0}: {tag_name} is negative {is_negative}", self.tag);
         let tag_opt = task.tags.get(tag_name);
+
         let vt = if tag_opt.is_none() {
             ValueType::String
         } else {

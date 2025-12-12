@@ -508,7 +508,6 @@ fn copy_tags_from_task(subj: &str, task: &mut todotxt::Task) -> String {
 fn create_temp_file(tasks: &mut todo::TaskVec, ids: &todo::IDVec) -> io::Result<TempPath> {
     let named = NamedTempFile::new()?;
     let filetmp = named.into_temp_path();
-    println!("Temp: {filetmp:?}",);
     let mut file = File::create(filetmp.as_os_str())?;
     for idx in ids {
         writeln!(file, "{0}", tasks[*idx])?;
