@@ -1,3 +1,9 @@
+ttdl (4.19.1) unstable; urgency=medium
+
+  *  Remove debug output when filtering a task list
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 12 Dec 2025 13:30:23 -0800
+
 ttdl (4.19.0) unstable; urgency=medium
 
   *  The option `--filter-tag` now supports negative condition. Add `-` before
