@@ -1308,7 +1308,13 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("H", "no-headers", "Do not show headers and footers");
 
     opts.optopt("", "max", "Set maximum number of todos to display", "NUMBER");
-    opts.optopt("", "filter-tag", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
+    opts.optopt(
+        "",
+        "filter-tag",
+        "Custom filter by user-defined tag values",
+        "TAG1=RANGE1;TAG2=RANGE2. Deprecated, use 'filter' instead",
+    );
+    opts.optopt("", "filter", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
     opts.optflag("", "update-threshold", "Update threshold in addition to changing due date when a task is postponed");
     opts.optopt(
         "",
@@ -1425,6 +1431,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     conf.keep_tags = matches.opt_present("keep-tags");
     parse_filter(&matches, &mut conf.flt, soon_days)?;
     if let Some(f_str) = matches.opt_str("filter-tag") {
+        conf.flt_ext = Some(f_str.clone());
+    }
+    if let Some(f_str) = matches.opt_str("filter") {
         conf.flt_ext = Some(f_str.clone());
     }
     conf.postpone_threshold = matches.opt_present("update-threshold");

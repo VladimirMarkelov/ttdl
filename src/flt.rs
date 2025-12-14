@@ -5,6 +5,11 @@ use todo_lib::*;
 use crate::conv::{str_to_bytes, str_to_duration, str_to_time};
 use crate::human_date;
 
+const DATE_TAGS: [&str; 3] = ["started", "finished", "completed"];
+const STR_TAGS: [&str; 11] =
+    ["pri", "priority", "@", "ctx", "context", "+", "prj", "project", "proj", "subj", "subject"];
+const INT_TAGS: [&str; 2] = ["ID", "done"];
+
 fn filter_type_by_tag(tag: &str) -> ValueType {
     if tag.ends_with("_time") {
         ValueType::Time
@@ -14,6 +19,12 @@ fn filter_type_by_tag(tag: &str) -> ValueType {
         ValueType::Duration
     } else if tag.ends_with("_size") || tag.ends_with("_sz") {
         ValueType::Size
+    } else if DATE_TAGS.contains(&tag) {
+        ValueType::Date
+    } else if STR_TAGS.contains(&tag) || tag.starts_with('#') {
+        ValueType::String
+    } else if INT_TAGS.contains(&tag) {
+        ValueType::Integer
     } else {
         ValueType::Unknown
     }
@@ -60,6 +71,23 @@ fn is_negative(s: &str) -> bool {
     s.starts_with('-') || s.starts_with('!')
 }
 
+fn str_match(f_val: &str, t_val: &str) -> bool {
+    let left = f_val.starts_with('*');
+    let right = f_val.ends_with('*');
+    if !left && !right {
+        f_val == t_val
+    } else if left && right {
+        let v = f_val.trim_matches('*');
+        t_val.contains(v)
+    } else if left {
+        let v = f_val.trim_matches('*');
+        t_val.ends_with(v)
+    } else {
+        let v = f_val.trim_matches('*');
+        t_val.starts_with(v)
+    }
+}
+
 fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate) -> bool {
     match t {
         ValueType::Date => {
@@ -99,7 +127,7 @@ fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate) -> bool
                 _ => false,
             }
         }
-        _ => t_val == f_val,
+        _ => str_match(f_val, t_val),
     }
 }
 
@@ -218,45 +246,305 @@ pub enum FilterCond {
 }
 
 impl FilterCond {
-    pub fn matches(&self, value: Option<&String>, t: ValueType, base: NaiveDate) -> bool {
-        match self {
-            FilterCond::One(self_value) => match value {
-                None => self_value == "none" || self_value == "-",
-                Some(s) => {
+    pub fn matches(&self, id: usize, name: &str, task: &todotxt::Task, t: ValueType, base: NaiveDate) -> bool {
+        match name {
+            "ID" => match self {
+                FilterCond::One(self_value) => {
+                    println!("DBG: select by ID one {self_value}");
+                    if self_value == "-" || self_value == "none" {
+                        return false;
+                    };
                     let is_negative = is_negative(self_value);
                     let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                    if rule_value == "any" {
+                        return !is_negative;
+                    } else if rule_value == "none" {
+                        return is_negative;
+                    }
+                    let eq = compare_usize(id, rule_value, Operation::Eq);
+                    if is_negative { !eq } else { eq }
+                }
+                FilterCond::Range(bg, en) => {
+                    println!("DBG: select by ID range {bg} -- {en}");
+                    if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                        false
+                    } else if bg == "none" || bg == "-" || bg.is_empty() {
+                        compare_usize(id, en, Operation::Ls)
+                    } else if en == "none" || en == "-" || en.is_empty() {
+                        compare_usize(id, bg, Operation::Gt)
+                    } else {
+                        compare_usize(id, bg, Operation::Gt) && compare_usize(id, en, Operation::Ls)
+                    }
+                }
+            },
+            "pri" | "priority" => {
+                println!("DBG: select by priority");
+                match self {
+                    FilterCond::One(self_value) => {
+                        if self_value == "-" || self_value == "none" {
+                            return task.priority == todotxt::NO_PRIORITY;
+                        };
+                        if self_value == "any" {
+                            return task.priority != todotxt::NO_PRIORITY;
+                        };
+                        let is_negative = is_negative(self_value);
+                        let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                        if rule_value == "any" {
+                            return !is_negative;
+                        } else if rule_value == "none" {
+                            return is_negative;
+                        }
+                        let rule_pri = todotxt::str_to_priority(rule_value);
+                        if rule_pri == todotxt::NO_PRIORITY {
+                            false
+                        } else {
+                            let matched = rule_pri == task.priority;
+                            if is_negative {
+                                task.priority != todotxt::NO_PRIORITY && !matched
+                            } else {
+                                task.priority != todotxt::NO_PRIORITY && matched
+                            }
+                        }
+                    }
+                    FilterCond::Range(bg, en) => {
+                        println!("DBG {id} priority range: [{bg}] - [{en}] : {0}", task.priority);
+                        if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                            task.priority == todotxt::NO_PRIORITY
+                        } else if bg.is_empty() && en.is_empty() {
+                            task.priority != todotxt::NO_PRIORITY
+                        } else if bg == "none" || bg == "-" || bg.is_empty() {
+                            let rule_en = todotxt::str_to_priority(en);
+                            println!("  DBG priority bg = {rule_en}");
+                            (rule_en != todotxt::NO_PRIORITY
+                                && task.priority <= rule_en
+                                && task.priority != todotxt::NO_PRIORITY)
+                                || (task.priority == todotxt::NO_PRIORITY && !bg.is_empty())
+                        } else if en == "none" || en == "-" || en.is_empty() {
+                            let rule_bg = todotxt::str_to_priority(bg);
+                            println!("  DBG priority en = {rule_bg}");
+                            (rule_bg != todotxt::NO_PRIORITY
+                                && task.priority >= rule_bg
+                                && task.priority != todotxt::NO_PRIORITY)
+                                || (task.priority == todotxt::NO_PRIORITY && !en.is_empty())
+                        } else {
+                            let rule_en = todotxt::str_to_priority(en);
+                            let rule_bg = todotxt::str_to_priority(bg);
+                            rule_en != todotxt::NO_PRIORITY
+                                && rule_bg != todotxt::NO_PRIORITY
+                                && task.priority != todotxt::NO_PRIORITY
+                                && task.priority >= rule_bg
+                                && task.priority <= rule_en
+                        }
+                    }
+                }
+            }
+            "done" => {
+                println!("DBG done");
+                match self {
+                    FilterCond::One(self_value) => {
+                        if self_value.is_empty() || self_value == "any" {
+                            task.finished
+                        } else if self_value == "none" || self_value == "-" {
+                            !task.finished
+                        } else {
+                            false
+                        }
+                    }
+                    FilterCond::Range(_bg, _en) => false,
+                }
+            }
+            "subj" | "subject" => {
+                println!("DBG: select by subject");
+                match self {
+                    FilterCond::One(self_value) => {
+                        let is_negative = is_negative(self_value);
+                        let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                        let rule_value = rule_value.trim_matches('*').to_lowercase();
+                        let found = task.subject.to_lowercase().contains(&rule_value);
+                        if is_negative { !found } else { found }
+                    }
+                    FilterCond::Range(_bg, _en) => {
+                        // Range does not make sense for subject
+                        false
+                    }
+                }
+            }
+            "@" | "+" | "#" | "prj" | "project" | "ctx" | "context" | "hashtag" => {
+                println!("DBG: select by project/context/hashtag: {name}");
+                let values = if name == "@" || name == "ctx" || name == "context" {
+                    &task.contexts
+                } else if name == "+" || name == "prj" || name == "project" {
+                    &task.projects
+                } else {
+                    &task.hashtags
+                };
+                match self {
+                    FilterCond::One(self_value) => {
+                        println!("  DBG {id}: self_value: {self_value}");
+                        if self_value == "-" || self_value == "none" {
+                            values.is_empty()
+                        } else if self_value == "any" {
+                            !values.is_empty()
+                        } else {
+                            let is_negative = is_negative(self_value);
+                            let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                            let mut all_matched = !values.is_empty();
+                            println!(
+                                "  DBG: neg: {is_negative}, starting value {all_matched}, values: {0}",
+                                values.len()
+                            );
+                            for val in values {
+                                let matched = str_match(rule_value, val);
+                                if is_negative {
+                                    all_matched = all_matched && !matched;
+                                } else {
+                                    all_matched = all_matched && matched
+                                }
+                                println!("    DBG: [{rule_value}] == [{val}] : {matched} --> {all_matched}");
+                            }
+                            all_matched
+                        }
+                    }
+                    FilterCond::Range(_be, _en) => {
+                        // Range does not make sense for projects, contexts and hashtags
+                        false
+                    }
+                }
+            }
+            "completed" | "created" | "create" => {
+                let date = if name == "created" || name == "create" { task.create_date } else { task.finish_date };
+                match self {
+                    FilterCond::One(self_value) => {
+                        println!("DBG: select by date one: {name}/{self_value}, value {date:?}");
+                        match date {
+                            None => {
+                                println!("  DBG: None {name} date of task");
+                                self_value == "-" || self_value == "none"
+                            }
+                            Some(dt) => {
+                                if self_value == "none" || self_value == "-" {
+                                    false
+                                } else if self_value == "any" || self_value.is_empty() {
+                                    true
+                                } else {
+                                    let is_negative = is_negative(self_value);
+                                    let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                                    let matched = compare_dates(dt, rule_value, Operation::Eq, base);
+                                    if is_negative { !matched } else { matched }
+                                }
+                            }
+                        }
+                    }
+                    FilterCond::Range(bg, en) => {
+                        println!("DBG: select by date range: {name}[{bg} - {en}], value {date:?}");
+                        match date {
+                            None => bg == "none" || bg == "-" || en == "none" || en == "-",
+                            Some(dt) => {
+                                if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                                    date.is_none()
+                                } else if bg == "none" || bg == "-" || bg.is_empty() {
+                                    compare_dates(dt, en, Operation::Ls, base)
+                                } else if en == "none" || en == "-" || en.is_empty() {
+                                    compare_dates(dt, bg, Operation::Gt, base)
+                                } else {
+                                    compare_dates(dt, en, Operation::Ls, base)
+                                        && compare_dates(dt, bg, Operation::Gt, base)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {
+                let value = task.tags.get(name);
+                match self {
+                    FilterCond::One(self_value) => {
+                        println!("DBG: generic select one: {name} : {self_value}");
+                        match value {
+                            None => self_value == "none" || self_value == "-",
+                            Some(s) => {
+                                let t = if self_value.contains('*') { ValueType::String } else { t };
+                                let is_negative = is_negative(self_value);
+                                let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
 
-                    if self_value == "-" {
-                        false
-                    } else if rule_value.is_empty() {
-                        true
-                    } else if rule_value == "any" {
-                        !is_negative
-                    } else if self_value == "none" {
-                        is_negative
-                    } else {
-                        let equals = values_equal(s, rule_value, t, base);
-                        if is_negative { !equals } else { equals }
+                                if self_value == "-" {
+                                    false
+                                } else if rule_value.is_empty() {
+                                    true
+                                } else if rule_value == "any" {
+                                    !is_negative
+                                } else if self_value == "none" {
+                                    is_negative
+                                } else {
+                                    println!("  DBG {rule_value} == {s}, {t:?}");
+                                    let equals = values_equal(s, rule_value, t, base);
+                                    if is_negative { !equals } else { equals }
+                                }
+                            }
+                        }
+                    }
+                    FilterCond::Range(bg, en) => {
+                        println!("DBG: generic select range: {name} : {bg} -- {en}");
+                        match value {
+                            None => bg == "none" || bg == "-" || en == "none" || en == "-",
+                            Some(s) => {
+                                if bg == "none" && en == "none" && s == "none" {
+                                    true
+                                } else if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                                    false
+                                } else if bg.is_empty() || bg == "none" || bg == "-" {
+                                    values_compare(s, en, t, base, true)
+                                } else if en.is_empty() || en == "none" || en == "-" {
+                                    values_compare(s, bg, t, base, false)
+                                } else {
+                                    values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
+                                }
+                            }
+                        }
                     }
                 }
-            },
-            FilterCond::Range(bg, en) => match value {
-                None => bg == "none" || en == "none",
-                Some(s) => {
-                    if bg == "none" && en == "none" && s == "none" {
-                        true
-                    } else if bg == "none" && en == "none" {
-                        false
-                    } else if bg.is_empty() || bg == "none" {
-                        values_compare(s, en, t, base, true)
-                    } else if en.is_empty() || en == "none" {
-                        values_compare(s, bg, t, base, false)
-                    } else {
-                        values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
-                    }
-                }
-            },
+            }
         }
+    }
+}
+
+#[derive(PartialEq)]
+enum Operation {
+    Eq,
+    Ls,
+    Gt,
+}
+fn compare_usize(val: usize, f_value: &str, op: Operation) -> bool {
+    if f_value == "any" {
+        return true;
+    }
+    if f_value == "none" || f_value == "-" || f_value.is_empty() {
+        return op == Operation::Eq || f_value.is_empty();
+    }
+    match f_value.parse::<usize>() {
+        Err(_) => false,
+        Ok(v) => match op {
+            Operation::Eq => v == val,
+            Operation::Ls => val <= v,
+            Operation::Gt => val >= v,
+        },
+    }
+}
+
+fn compare_dates(val: NaiveDate, f_value: &str, op: Operation, base: NaiveDate) -> bool {
+    if f_value == "any" {
+        return true;
+    }
+    if f_value == "none" || f_value == "-" || f_value.is_empty() {
+        return op == Operation::Eq;
+    }
+    match str_to_date(f_value, base) {
+        Err(_) => false,
+        Ok(d) => match op {
+            Operation::Eq => d == val,
+            Operation::Ls => val <= d,
+            Operation::Gt => val >= d,
+        },
     }
 }
 
@@ -266,7 +554,7 @@ pub struct FilterRule {
 }
 
 impl FilterRule {
-    pub fn matches(&self, task: &todotxt::Task, base: NaiveDate) -> bool {
+    pub fn matches(&self, task: &todotxt::Task, id: usize, base: NaiveDate) -> bool {
         let is_negative = is_negative(&self.tag);
         let tag_full_name = self.tag.as_str();
         let tag_name = if is_negative { &tag_full_name[1..] } else { tag_full_name };
@@ -280,7 +568,7 @@ impl FilterRule {
         };
         let mut matched = false;
         for cond in &self.flt {
-            matched |= cond.matches(tag_opt, vt, base);
+            matched |= cond.matches(id, tag_name, task, vt, base);
         }
         if is_negative { !matched } else { matched }
     }
@@ -308,7 +596,10 @@ impl Filter {
                     if rl_value.is_empty() {
                         continue;
                     }
-                    let items: Vec<&str> = rl_value.splitn(2, "..").collect();
+                    let mut items: Vec<&str> = rl_value.splitn(2, "..").collect();
+                    if rl_value.ends_with("..") {
+                        items.push(&rl_value[..0]);
+                    }
                     if items.len() == 1 {
                         values.push(FilterCond::One(items[0].to_string()));
                     } else {
@@ -320,9 +611,9 @@ impl Filter {
         }
         Filter { rules }
     }
-    pub fn matches(&self, task: &todotxt::Task, base: NaiveDate) -> bool {
+    pub fn matches(&self, task: &todotxt::Task, id: usize, base: NaiveDate) -> bool {
         for rule in &self.rules {
-            if !rule.matches(task, base) {
+            if !rule.matches(task, id, base) {
                 return false;
             }
         }
@@ -340,11 +631,11 @@ mod tests {
     use todo_lib::todotxt;
 
     #[test]
-    fn filter_test() {
+    fn basic_filter_test() {
         let tasks: Vec<&'static str> = vec![
-            "test2 pri:B id:11",
-            "test1 val:-2 pri:A id:10",
-            "test3 pri:C id:12",
+            "test2 pr:B id:11",
+            "test1 val:-2 pr:A id:10",
+            "test3 pr:C id:12",
             "test4 val:10 id:13",
             "test5 val:15 id:14",
         ];
@@ -360,25 +651,113 @@ mod tests {
             o: Vec<usize>,
         }
         let tests: Vec<Test> = vec![
-            Test { f: "pri", o: vec![1, 2, 3] },
-            Test { f: "!pri", o: vec![4, 5] },
-            Test { f: "-pri", o: vec![4, 5] },
+            Test { f: "pr", o: vec![1, 2, 3] },
+            Test { f: "!pr", o: vec![4, 5] },
+            Test { f: "-pr", o: vec![4, 5] },
             Test { f: "val=-2..-2", o: vec![2] },
             Test { f: "-val=-2..-2", o: vec![1, 3, 4, 5] },
-            Test { f: "pri=-C", o: vec![1, 2] },
-            Test { f: "pri=-C", o: vec![1, 2] },
-            Test { f: "pri=B,C;id=-12", o: vec![1] },
-            Test { f: "pri=B,C;id=12..17", o: vec![3] },
+            Test { f: "pr=-C", o: vec![1, 2] },
+            Test { f: "pr=-C", o: vec![1, 2] },
+            Test { f: "pr=B,C;id=-12", o: vec![1] },
+            Test { f: "pr=B,C;id=12..17", o: vec![3] },
             Test { f: "id=11..14", o: vec![1, 3, 4, 5] },
             Test { f: "-id=11..14", o: vec![2] },
-            Test { f: "-pri=B,C;id=-12", o: vec![2, 4, 5] },
+            Test { f: "-pr=B,C;id=-12", o: vec![2, 4, 5] },
         ];
         for (idx, t) in tests.iter().enumerate() {
             let flt = Filter::parse(t.f);
             assert!(!flt.is_empty(), "Failed to parse {0}", t.f);
             let mut res: Vec<usize> = Vec::new();
             for (idx, task) in task_vec.iter().enumerate() {
-                if flt.matches(task, base) {
+                if flt.matches(task, idx, base) {
+                    res.push(idx + 1);
+                }
+            }
+            assert_eq!(res, t.o, "{idx}. {0}: expected {1:?}, got {2:?}", t.f, t.o, res);
+        }
+    }
+
+    #[test]
+    fn ext_filter_test() {
+        let tasks: Vec<&'static str> = vec![
+            "(B) test2 #this",
+            "x 2020-07-09 2020-07-12 test1 @ctx1 id:250",
+            "x (D) 2020-07-08 2020-07-15 test3 something @ctx2",
+            "(C) test4 anything #that id:251",
+            "(A) 2020-07-14 test5 +proj1",
+            "test5 +proj2 @ctx2 id:300",
+        ];
+        let mut task_vec: Vec<todotxt::Task> = Vec::new();
+        let base = NaiveDate::from_ymd_opt(2020, 2, 2).unwrap();
+        for t in &tasks {
+            let task = todotxt::Task::parse(t, base);
+            task_vec.push(task);
+        }
+
+        struct Test {
+            f: &'static str,
+            o: Vec<usize>,
+        }
+        let tests: Vec<Test> = vec![
+            Test { f: "pri=B,C", o: vec![1, 4] },
+            Test { f: "pri=A..B", o: vec![1, 5] },
+            Test { f: "pri=none..B", o: vec![1, 2, 5, 6] },
+            Test { f: "pri=..B", o: vec![1, 5] },
+            Test { f: "pri=B..", o: vec![1, 3, 4] },
+            Test { f: "pri=-B", o: vec![3, 4, 5] },
+            Test { f: "pri=any;-pri=A,C", o: vec![1, 3] },
+            Test { f: "ID=-", o: vec![] },
+            Test { f: "ID=any", o: vec![1, 2, 3, 4, 5, 6] },
+            Test { f: "ID=2..3", o: vec![2, 3] },
+            Test { f: "-ID=2..3", o: vec![1, 4, 5, 6] },
+            Test { f: "ID=-5", o: vec![1, 2, 3, 4, 6] },
+            Test { f: "-ID=2,5", o: vec![1, 3, 4, 6] },
+            Test { f: "ID=2,5", o: vec![2, 5] },
+            Test { f: "subj=test4", o: vec![4] },
+            Test { f: "subject=test4,test5", o: vec![4, 5, 6] },
+            Test { f: "subj=-", o: vec![] },
+            Test { f: "subj=any", o: vec![4] },
+            Test { f: "subj=none", o: vec![] },
+            Test { f: "#=that", o: vec![4] },
+            Test { f: "#=th*", o: vec![1, 4] },
+            Test { f: "#=*is", o: vec![1] },
+            Test { f: "#=this,that", o: vec![1, 4] },
+            Test { f: "#=-that", o: vec![1] },
+            Test { f: "@=ctx1,ctx2,ctx3", o: vec![2, 3, 6] },
+            Test { f: "ctx=ctx1,ctx2,ctx3", o: vec![2, 3, 6] },
+            Test { f: "context=ctx1,ctx2,ctx3", o: vec![2, 3, 6] },
+            Test { f: "@=ctx*,ctx3;@=-ctx2", o: vec![2] },
+            Test { f: "+=proj2,proj1", o: vec![5, 6] },
+            Test { f: "+=proj2;@=ctx2", o: vec![6] },
+            Test { f: "done", o: vec![2, 3] },
+            Test { f: "done=any", o: vec![2, 3] },
+            Test { f: "done=-", o: vec![1, 4, 5, 6] },
+            Test { f: "done=none", o: vec![1, 4, 5, 6] },
+            Test { f: "created=..2020-08-01", o: vec![2, 3, 5] },
+            Test { f: "created=none..2020-07-14", o: vec![1, 2, 4, 5, 6] },
+            Test { f: "created=2020-07-14..", o: vec![3, 5] },
+            Test { f: "created=2020-07-14..none", o: vec![1, 3, 4, 5, 6] },
+            Test { f: "-created=2020-07-14..", o: vec![1, 2, 4, 6] },
+            Test { f: "created=any", o: vec![2, 3, 5] },
+            Test { f: "created", o: vec![2, 3, 5] },
+            Test { f: "created=none", o: vec![1, 4, 6] },
+            Test { f: "created=-", o: vec![1, 4, 6] },
+            Test { f: "completed=any", o: vec![2, 3] },
+            Test { f: "id=250", o: vec![2] },
+            Test { f: "id=-250", o: vec![4, 6] },
+            Test { f: "id=240..251", o: vec![2, 4] },
+            Test { f: "-id=240..251", o: vec![1, 3, 5, 6] },
+            Test { f: "id=25*", o: vec![2, 4] },
+            Test { f: "id=..251", o: vec![2, 4] },
+            Test { f: "id=251..", o: vec![4, 6] },
+            Test { f: "id=none..251", o: vec![1, 2, 3, 4, 5] },
+        ];
+        for (idx, t) in tests.iter().enumerate() {
+            let flt = Filter::parse(t.f);
+            assert!(!flt.is_empty(), "Failed to parse {0}", t.f);
+            let mut res: Vec<usize> = Vec::new();
+            for (idx, task) in task_vec.iter().enumerate() {
+                if flt.matches(task, idx + 1, base) {
                     res.push(idx + 1);
                 }
             }

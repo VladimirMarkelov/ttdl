@@ -97,7 +97,7 @@ fn filter_by_custom_tags(tasks: &[todotxt::Task], c: &conf::Conf, todos: todo::I
             let mut new_todos: todo::IDVec = Vec::new();
             for filter in &flt_vec {
                 for idx in &todos {
-                    if filter.matches(&tasks[*idx], now) {
+                    if filter.matches(&tasks[*idx], *idx + 1, now) {
                         new_todos.push(*idx);
                     }
                 }
