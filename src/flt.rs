@@ -713,6 +713,7 @@ mod tests {
             Test { f: "pri=..B", o: vec![1, 5] },
             Test { f: "pri=B..", o: vec![1, 3, 4] },
             Test { f: "pri=-B", o: vec![3, 4, 5] },
+            Test { f: "-pri=B", o: vec![2, 3, 4, 5, 6] },
             Test { f: "pri=any;-pri=A,C", o: vec![1, 3] },
             Test { f: "ID=-", o: vec![] },
             Test { f: "ID=any", o: vec![1, 2, 3, 4, 5, 6] },
