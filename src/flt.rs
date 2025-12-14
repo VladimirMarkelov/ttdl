@@ -228,6 +228,14 @@ fn values_compare(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate, less_
     }
 }
 
+fn match_none(s: &str) -> bool {
+    s == "none" || s == "-"
+}
+
+fn match_none_or_empty(s: &str) -> bool {
+    s == "none" || s == "-" || s.is_empty()
+}
+
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum ValueType {
     Unknown,
@@ -266,11 +274,11 @@ impl FilterCond {
                 }
                 FilterCond::Range(bg, en) => {
                     println!("DBG: select by ID range {bg} -- {en}");
-                    if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                    if match_none(bg) && match_none(en) {
                         false
-                    } else if bg == "none" || bg == "-" || bg.is_empty() {
+                    } else if match_none_or_empty(bg) {
                         compare_usize(id, en, Operation::Ls)
-                    } else if en == "none" || en == "-" || en.is_empty() {
+                    } else if match_none_or_empty(en) {
                         compare_usize(id, bg, Operation::Gt)
                     } else {
                         compare_usize(id, bg, Operation::Gt) && compare_usize(id, en, Operation::Ls)
@@ -281,7 +289,7 @@ impl FilterCond {
                 println!("DBG: select by priority");
                 match self {
                     FilterCond::One(self_value) => {
-                        if self_value == "-" || self_value == "none" {
+                        if match_none(self_value) {
                             return task.priority == todotxt::NO_PRIORITY;
                         };
                         if self_value == "any" {
@@ -308,18 +316,18 @@ impl FilterCond {
                     }
                     FilterCond::Range(bg, en) => {
                         println!("DBG {id} priority range: [{bg}] - [{en}] : {0}", task.priority);
-                        if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                        if match_none(bg) && match_none(en) {
                             task.priority == todotxt::NO_PRIORITY
                         } else if bg.is_empty() && en.is_empty() {
                             task.priority != todotxt::NO_PRIORITY
-                        } else if bg == "none" || bg == "-" || bg.is_empty() {
+                        } else if match_none_or_empty(bg) {
                             let rule_en = todotxt::str_to_priority(en);
                             println!("  DBG priority bg = {rule_en}");
                             (rule_en != todotxt::NO_PRIORITY
                                 && task.priority <= rule_en
                                 && task.priority != todotxt::NO_PRIORITY)
                                 || (task.priority == todotxt::NO_PRIORITY && !bg.is_empty())
-                        } else if en == "none" || en == "-" || en.is_empty() {
+                        } else if match_none_or_empty(en) {
                             let rule_bg = todotxt::str_to_priority(bg);
                             println!("  DBG priority en = {rule_bg}");
                             (rule_bg != todotxt::NO_PRIORITY
@@ -344,7 +352,7 @@ impl FilterCond {
                     FilterCond::One(self_value) => {
                         if self_value.is_empty() || self_value == "any" {
                             task.finished
-                        } else if self_value == "none" || self_value == "-" {
+                        } else if match_none(self_value) {
                             !task.finished
                         } else {
                             false
@@ -381,7 +389,7 @@ impl FilterCond {
                 match self {
                     FilterCond::One(self_value) => {
                         println!("  DBG {id}: self_value: {self_value}");
-                        if self_value == "-" || self_value == "none" {
+                        if match_none(self_value) {
                             values.is_empty()
                         } else if self_value == "any" {
                             !values.is_empty()
@@ -419,10 +427,10 @@ impl FilterCond {
                         match date {
                             None => {
                                 println!("  DBG: None {name} date of task");
-                                self_value == "-" || self_value == "none"
+                                match_none(self_value)
                             }
                             Some(dt) => {
-                                if self_value == "none" || self_value == "-" {
+                                if match_none(self_value) {
                                     false
                                 } else if self_value == "any" || self_value.is_empty() {
                                     true
@@ -438,13 +446,13 @@ impl FilterCond {
                     FilterCond::Range(bg, en) => {
                         println!("DBG: select by date range: {name}[{bg} - {en}], value {date:?}");
                         match date {
-                            None => bg == "none" || bg == "-" || en == "none" || en == "-",
+                            None => match_none(bg) || match_none(en),
                             Some(dt) => {
-                                if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                                if match_none(bg) && match_none(en) {
                                     date.is_none()
-                                } else if bg == "none" || bg == "-" || bg.is_empty() {
+                                } else if match_none_or_empty(bg) {
                                     compare_dates(dt, en, Operation::Ls, base)
-                                } else if en == "none" || en == "-" || en.is_empty() {
+                                } else if match_none_or_empty(en) {
                                     compare_dates(dt, bg, Operation::Gt, base)
                                 } else {
                                     compare_dates(dt, en, Operation::Ls, base)
@@ -461,7 +469,7 @@ impl FilterCond {
                     FilterCond::One(self_value) => {
                         println!("DBG: generic select one: {name} : {self_value}");
                         match value {
-                            None => self_value == "none" || self_value == "-",
+                            None => match_none(self_value),
                             Some(s) => {
                                 let t = if self_value.contains('*') { ValueType::String } else { t };
                                 let is_negative = is_negative(self_value);
@@ -486,15 +494,15 @@ impl FilterCond {
                     FilterCond::Range(bg, en) => {
                         println!("DBG: generic select range: {name} : {bg} -- {en}");
                         match value {
-                            None => bg == "none" || bg == "-" || en == "none" || en == "-",
+                            None => match_none(bg) || match_none(en),
                             Some(s) => {
                                 if bg == "none" && en == "none" && s == "none" {
                                     true
-                                } else if (bg == "none" || bg == "-") && (en == "none" || en == "-") {
+                                } else if match_none(bg) && match_none(en) {
                                     false
-                                } else if bg.is_empty() || bg == "none" || bg == "-" {
+                                } else if match_none_or_empty(bg) {
                                     values_compare(s, en, t, base, true)
-                                } else if en.is_empty() || en == "none" || en == "-" {
+                                } else if match_none_or_empty(en) {
                                     values_compare(s, bg, t, base, false)
                                 } else {
                                     values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
