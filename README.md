@@ -853,10 +853,10 @@ If TTDL fails to parse a value as a date or as a time, it defaults to String typ
 Examples:
 
 - `"-tagname"` - matches only tasks that do not include tag `tagname`. Another ways to define the same condition are: `"tagname=none"` and `"tagname=-"`
-- `"-tagname=2..4"` - matches only tasks that include tag `tagname` and its value in out of range `2..4`
+- `"-tagname=2..4"` - matches tasks that do not have the tag `tagname` and or their tag value is out of range `2..4`
 - `"tagname=-done"` - matches only tasks that include tag `tagname` and its value is not `done`
 - `"id=-10..-20"` - in this case, the character `-` means "minus", not negation, because a range is used, so it matches tasks that include tag `id` with values between `-10` and `-20`.
-- `"!id=10,11,12;id=5..15"` - matches only tasks that include tag `id`, its value is between `5` and `15` (inclusive), and its value is not one of `10`, `11`, and `12`.
+- `"!id=10,11,12;id=5..15"` - matches only tasks that have tag value between `5` and `15` (inclusive), and the value is not one of `10`, `11`, and `12`.
 - `due=today;show_time=..1200` - show all tasks that are due today and their `show_time` is before noon
 - `type=car,house;weight=1,6..10` - show all tasks that have a tag `type` with values `car` or `house` and have tag `weight` with values `1` or from `6` to `10` inclusive
 - `spent=1h..` - show all tasks which took more than 1 hour of time to complete
