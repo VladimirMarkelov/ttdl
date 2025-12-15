@@ -258,7 +258,6 @@ impl FilterCond {
         match name {
             "ID" => match self {
                 FilterCond::One(self_value) => {
-                    println!("DBG: select by ID one {self_value}");
                     if self_value == "-" || self_value == "none" {
                         return false;
                     };
@@ -273,7 +272,6 @@ impl FilterCond {
                     if is_negative { !eq } else { eq }
                 }
                 FilterCond::Range(bg, en) => {
-                    println!("DBG: select by ID range {bg} -- {en}");
                     if match_none(bg) && match_none(en) {
                         false
                     } else if match_none_or_empty(bg) {
@@ -285,84 +283,74 @@ impl FilterCond {
                     }
                 }
             },
-            "pri" | "priority" => {
-                println!("DBG: select by priority");
-                match self {
-                    FilterCond::One(self_value) => {
-                        if match_none(self_value) {
-                            return task.priority == todotxt::NO_PRIORITY;
-                        };
-                        if self_value == "any" {
-                            return task.priority != todotxt::NO_PRIORITY;
-                        };
-                        let is_negative = is_negative(self_value);
-                        let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
-                        if rule_value == "any" {
-                            return !is_negative;
-                        } else if rule_value == "none" {
-                            return is_negative;
-                        }
-                        let rule_pri = todotxt::str_to_priority(rule_value);
-                        if rule_pri == todotxt::NO_PRIORITY {
-                            false
-                        } else {
-                            let matched = rule_pri == task.priority;
-                            if is_negative {
-                                task.priority != todotxt::NO_PRIORITY && !matched
-                            } else {
-                                task.priority != todotxt::NO_PRIORITY && matched
-                            }
-                        }
+            "pri" | "priority" => match self {
+                FilterCond::One(self_value) => {
+                    if match_none(self_value) {
+                        return task.priority == todotxt::NO_PRIORITY;
+                    };
+                    if self_value == "any" {
+                        return task.priority != todotxt::NO_PRIORITY;
+                    };
+                    let is_negative = is_negative(self_value);
+                    let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                    if rule_value == "any" {
+                        return !is_negative;
+                    } else if rule_value == "none" {
+                        return is_negative;
                     }
-                    FilterCond::Range(bg, en) => {
-                        println!("DBG {id} priority range: [{bg}] - [{en}] : {0}", task.priority);
-                        if match_none(bg) && match_none(en) {
-                            task.priority == todotxt::NO_PRIORITY
-                        } else if bg.is_empty() && en.is_empty() {
-                            task.priority != todotxt::NO_PRIORITY
-                        } else if match_none_or_empty(bg) {
-                            let rule_en = todotxt::str_to_priority(en);
-                            println!("  DBG priority bg = {rule_en}");
-                            (rule_en != todotxt::NO_PRIORITY
-                                && task.priority <= rule_en
-                                && task.priority != todotxt::NO_PRIORITY)
-                                || (task.priority == todotxt::NO_PRIORITY && !bg.is_empty())
-                        } else if match_none_or_empty(en) {
-                            let rule_bg = todotxt::str_to_priority(bg);
-                            println!("  DBG priority en = {rule_bg}");
-                            (rule_bg != todotxt::NO_PRIORITY
-                                && task.priority >= rule_bg
-                                && task.priority != todotxt::NO_PRIORITY)
-                                || (task.priority == todotxt::NO_PRIORITY && !en.is_empty())
+                    let rule_pri = todotxt::str_to_priority(rule_value);
+                    if rule_pri == todotxt::NO_PRIORITY {
+                        false
+                    } else {
+                        let matched = rule_pri == task.priority;
+                        if is_negative {
+                            task.priority != todotxt::NO_PRIORITY && !matched
                         } else {
-                            let rule_en = todotxt::str_to_priority(en);
-                            let rule_bg = todotxt::str_to_priority(bg);
-                            rule_en != todotxt::NO_PRIORITY
-                                && rule_bg != todotxt::NO_PRIORITY
-                                && task.priority != todotxt::NO_PRIORITY
-                                && task.priority >= rule_bg
-                                && task.priority <= rule_en
+                            task.priority != todotxt::NO_PRIORITY && matched
                         }
                     }
                 }
-            }
-            "done" => {
-                println!("DBG done");
-                match self {
-                    FilterCond::One(self_value) => {
-                        if self_value.is_empty() || self_value == "any" {
-                            task.finished
-                        } else if match_none(self_value) {
-                            !task.finished
-                        } else {
-                            false
-                        }
+                FilterCond::Range(bg, en) => {
+                    if match_none(bg) && match_none(en) {
+                        task.priority == todotxt::NO_PRIORITY
+                    } else if bg.is_empty() && en.is_empty() {
+                        task.priority != todotxt::NO_PRIORITY
+                    } else if match_none_or_empty(bg) {
+                        let rule_en = todotxt::str_to_priority(en);
+                        (rule_en != todotxt::NO_PRIORITY
+                            && task.priority <= rule_en
+                            && task.priority != todotxt::NO_PRIORITY)
+                            || (task.priority == todotxt::NO_PRIORITY && !bg.is_empty())
+                    } else if match_none_or_empty(en) {
+                        let rule_bg = todotxt::str_to_priority(bg);
+                        (rule_bg != todotxt::NO_PRIORITY
+                            && task.priority >= rule_bg
+                            && task.priority != todotxt::NO_PRIORITY)
+                            || (task.priority == todotxt::NO_PRIORITY && !en.is_empty())
+                    } else {
+                        let rule_en = todotxt::str_to_priority(en);
+                        let rule_bg = todotxt::str_to_priority(bg);
+                        rule_en != todotxt::NO_PRIORITY
+                            && rule_bg != todotxt::NO_PRIORITY
+                            && task.priority != todotxt::NO_PRIORITY
+                            && task.priority >= rule_bg
+                            && task.priority <= rule_en
                     }
-                    FilterCond::Range(_bg, _en) => false,
                 }
-            }
+            },
+            "done" => match self {
+                FilterCond::One(self_value) => {
+                    if self_value.is_empty() || self_value == "any" {
+                        task.finished
+                    } else if match_none(self_value) {
+                        !task.finished
+                    } else {
+                        false
+                    }
+                }
+                FilterCond::Range(_bg, _en) => false,
+            },
             "subj" | "subject" => {
-                println!("DBG: select by subject");
                 match self {
                     FilterCond::One(self_value) => {
                         let is_negative = is_negative(self_value);
@@ -378,7 +366,6 @@ impl FilterCond {
                 }
             }
             "@" | "+" | "#" | "prj" | "project" | "ctx" | "context" | "hashtag" => {
-                println!("DBG: select by project/context/hashtag: {name}");
                 let values = if name == "@" || name == "ctx" || name == "context" {
                     &task.contexts
                 } else if name == "+" || name == "prj" || name == "project" {
@@ -388,7 +375,6 @@ impl FilterCond {
                 };
                 match self {
                     FilterCond::One(self_value) => {
-                        println!("  DBG {id}: self_value: {self_value}");
                         if match_none(self_value) {
                             values.is_empty()
                         } else if self_value == "any" {
@@ -397,10 +383,6 @@ impl FilterCond {
                             let is_negative = is_negative(self_value);
                             let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
                             let mut all_matched = !values.is_empty();
-                            println!(
-                                "  DBG: neg: {is_negative}, starting value {all_matched}, values: {0}",
-                                values.len()
-                            );
                             for val in values {
                                 let matched = str_match(rule_value, val);
                                 if is_negative {
@@ -408,7 +390,6 @@ impl FilterCond {
                                 } else {
                                     all_matched = all_matched && matched
                                 }
-                                println!("    DBG: [{rule_value}] == [{val}] : {matched} --> {all_matched}");
                             }
                             all_matched
                         }
@@ -422,94 +403,77 @@ impl FilterCond {
             "completed" | "created" | "create" => {
                 let date = if name == "created" || name == "create" { task.create_date } else { task.finish_date };
                 match self {
-                    FilterCond::One(self_value) => {
-                        println!("DBG: select by date one: {name}/{self_value}, value {date:?}");
-                        match date {
-                            None => {
-                                println!("  DBG: None {name} date of task");
-                                match_none(self_value)
-                            }
-                            Some(dt) => {
-                                if match_none(self_value) {
-                                    false
-                                } else if self_value == "any" || self_value.is_empty() {
-                                    true
-                                } else {
-                                    let is_negative = is_negative(self_value);
-                                    let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
-                                    let matched = compare_dates(dt, rule_value, Operation::Eq, base);
-                                    if is_negative { !matched } else { matched }
-                                }
+                    FilterCond::One(self_value) => match date {
+                        None => match_none(self_value),
+                        Some(dt) => {
+                            if match_none(self_value) {
+                                false
+                            } else if self_value == "any" || self_value.is_empty() {
+                                true
+                            } else {
+                                let is_negative = is_negative(self_value);
+                                let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                                let matched = compare_dates(dt, rule_value, Operation::Eq, base);
+                                if is_negative { !matched } else { matched }
                             }
                         }
-                    }
-                    FilterCond::Range(bg, en) => {
-                        println!("DBG: select by date range: {name}[{bg} - {en}], value {date:?}");
-                        match date {
-                            None => match_none(bg) || match_none(en),
-                            Some(dt) => {
-                                if match_none(bg) && match_none(en) {
-                                    date.is_none()
-                                } else if match_none_or_empty(bg) {
-                                    compare_dates(dt, en, Operation::Ls, base)
-                                } else if match_none_or_empty(en) {
-                                    compare_dates(dt, bg, Operation::Gt, base)
-                                } else {
-                                    compare_dates(dt, en, Operation::Ls, base)
-                                        && compare_dates(dt, bg, Operation::Gt, base)
-                                }
+                    },
+                    FilterCond::Range(bg, en) => match date {
+                        None => match_none(bg) || match_none(en),
+                        Some(dt) => {
+                            if match_none(bg) && match_none(en) {
+                                date.is_none()
+                            } else if match_none_or_empty(bg) {
+                                compare_dates(dt, en, Operation::Ls, base)
+                            } else if match_none_or_empty(en) {
+                                compare_dates(dt, bg, Operation::Gt, base)
+                            } else {
+                                compare_dates(dt, en, Operation::Ls, base) && compare_dates(dt, bg, Operation::Gt, base)
                             }
                         }
-                    }
+                    },
                 }
             }
             _ => {
                 let value = task.tags.get(name);
                 match self {
-                    FilterCond::One(self_value) => {
-                        println!("DBG: generic select one: {name} : {self_value}");
-                        match value {
-                            None => match_none(self_value),
-                            Some(s) => {
-                                let t = if self_value.contains('*') { ValueType::String } else { t };
-                                let is_negative = is_negative(self_value);
-                                let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
+                    FilterCond::One(self_value) => match value {
+                        None => match_none(self_value),
+                        Some(s) => {
+                            let t = if self_value.contains('*') { ValueType::String } else { t };
+                            let is_negative = is_negative(self_value);
+                            let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
 
-                                if self_value == "-" {
-                                    false
-                                } else if rule_value.is_empty() {
-                                    true
-                                } else if rule_value == "any" {
-                                    !is_negative
-                                } else if self_value == "none" {
-                                    is_negative
-                                } else {
-                                    println!("  DBG {rule_value} == {s}, {t:?}");
-                                    let equals = values_equal(s, rule_value, t, base);
-                                    if is_negative { !equals } else { equals }
-                                }
+                            if self_value == "-" {
+                                false
+                            } else if rule_value.is_empty() {
+                                true
+                            } else if rule_value == "any" {
+                                !is_negative
+                            } else if self_value == "none" {
+                                is_negative
+                            } else {
+                                let equals = values_equal(s, rule_value, t, base);
+                                if is_negative { !equals } else { equals }
                             }
                         }
-                    }
-                    FilterCond::Range(bg, en) => {
-                        println!("DBG: generic select range: {name} : {bg} -- {en}");
-                        match value {
-                            None => match_none(bg) || match_none(en),
-                            Some(s) => {
-                                if bg == "none" && en == "none" && s == "none" {
-                                    true
-                                } else if match_none(bg) && match_none(en) {
-                                    false
-                                } else if match_none_or_empty(bg) {
-                                    values_compare(s, en, t, base, true)
-                                } else if match_none_or_empty(en) {
-                                    values_compare(s, bg, t, base, false)
-                                } else {
-                                    values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
-                                }
+                    },
+                    FilterCond::Range(bg, en) => match value {
+                        None => match_none(bg) || match_none(en),
+                        Some(s) => {
+                            if bg == "none" && en == "none" && s == "none" {
+                                true
+                            } else if match_none(bg) && match_none(en) {
+                                false
+                            } else if match_none_or_empty(bg) {
+                                values_compare(s, en, t, base, true)
+                            } else if match_none_or_empty(en) {
+                                values_compare(s, bg, t, base, false)
+                            } else {
+                                values_compare(s, en, t, base, true) && values_compare(s, bg, t, base, false)
                             }
                         }
-                    }
+                    },
                 }
             }
         }
