@@ -1,3 +1,14 @@
+ttdl (4.20.0) unstable; urgency=medium
+
+  *  Option `--filter-tag` is renamed to `--filter` due to the latest changes.
+     Both options are still available, `filter-tag` is marked deprecated.
+  *  Filtering is vastly improved: `--filter`(`--filter-tag`) now supports
+     all fields in conditions. You can use tags, hashtags, and special fields.
+     For string tags you can use basic pattern matching: add `*` to the end,
+     beginning or to both ends.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 14 Dec 2025 15:20:42 -0800
+
 ttdl (4.19.1) unstable; urgency=medium
 
   *  Remove debug output when filtering a task list

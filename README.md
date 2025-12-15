@@ -16,7 +16,7 @@
     - [Marking task completed and uncompleted](#marking-task-completed-and-uncompleted)
     - [Output example](#output-example)
     - [Filtering](#filtering)
-        - [Filter by any tag](#filter-by-any-tag)
+        - [Filter by anything](#filter-by-anything)
     - [Grouping](#grouping)
     - [Archive](#archive)
       - [How to show archived todos](#how-to-show-archived-todos)
@@ -665,27 +665,25 @@ Use command-line option `-e` to enable fuzzy regular expression based filter.
 - `ttdl list car*` - show all incomplete todos that have substring `car*` in subject, project or context
 - `ttdl list car.* -e` show all incomplete todos which project, context or subject matches regular expression `car.*`
 
-#### Filter by any tag
+#### Filter by anything
 
 If you have a lot of tasks, you may need more sophisticated filter.
-TTDL command-line option `--filter-tag` allows you to use a complex filter expressions that works with any tag.
+TTDL command-line option `--filter` allows you to use complex filter expressions that work with any part of a task: tags, hashtags, fields, and the whole subject.
 In this mode, TTDL also treats some tag values as strictly-typed ones, that allows filtering with ranges.
 
-Note that because it filter by tag value, you cannot use in expression fields that are not tags.
-The list of such fields is: `created`, `finished`, `priority`, `done`, `project`, and `context`.
-To filter by this fields, use the options described above.
+This filter can replace a bunch of command-line options described above.
+The only thing this filter cannot do yet is searching with regular expression.
+But it has a simpler alternative that can be enough in most case.
 
-The option value is a string that contains all filter rules.
-The string contains all filter rules separated by pipe character `|`.
-Every rule is a list of conditions separated by character `;`.
-A condition's format is `TAG_NAME=<tag_value|tagList, ..>`.
-In other words after the character `=` a list of values and ranges of values separated by character `,`.
-As in the other places, you can use ranges in a way `start_value..end_value`.
-Both ends of the range are inclusive.
-Open-ended ranges are available as well, e.g, `..end_value` works as `<= end_value`.
-And there are two special values `none` - means a task does not have the tag, and `any` means - a task must have the tag with any value.
-If a filter does not include a tag value, it means "show all tasks that include the tag".
-E.g, the filter `type` is the same as `type=any`.
+Every filter expression follows these rules:
+
+- The string contains all filter rules separated by pipe character `|`.
+- Every rule is a list of conditions separated by character `;`.
+- A condition's format is `TAG_NAME=<tag_value|tagList, ..>`.
+- In other words after the character `=` a list of values and ranges of values separated by character `,`.
+- As in the other places, you can use ranges in a way `start_value..end_value`. Both ends of the range are inclusive. Open-ended ranges are available as well, e.g, `..end_value` works as `<= end_value`.
+- And there are two special values `none` - means a task does not have the tag, and `any` means - a task must have the tag with any value.
+- If a filter does not include a tag value, it means "show all tasks that include the tag". E.g, the filter `type` is the same as `type=any`.
 
 The TTDL treats all the mentioned parts of the passed value in the following way:
 
@@ -713,22 +711,98 @@ For date fields you can use more predefined and calculated values:
 | relative date expression like `1w` | A week after today |
 | negative date expression like `-1y` | A year ago |
 
+##### On tag values
+
+When defining a tag values for a filter, you can use this types of values:
+
+- special value `any` - a task must have the field with any value
+- special value `none` or `-` - a task must have the field undefined
+- arbitrary single value - a task must have a field with the value. Example: `due=today` - choose only tasks with due date equals today date
+- a list of values - a task must have either of the values. Example: `priority=A,C` - choose only tasks that have priority either `A` or `C`
+- an open range of values - a task must have a field value within the range (inclusive). Examples: 1) `priority=C..` - tasks with priority `C` or lower; 2) `priority=..B` - tasks with priority `B` or higher
+- an open range of value with none value - a task must have a field value within the range (inclusive) or the field is undefined. Examples: `priority=C..none` - tasks with priority `C` or lower, and tasks that do not have priority set
+- a range with values at both ends - a task must have a field value within the range (inclusive). Example: `priority=B..D` - tasks with priority from `B` through `D` (or in other words with priority `B`, `C`, or `D`)
+
+Note that for some fields that are of string kind ranges are not supported and filtering with a range always results in an empty list.
+Example: `project` or `context`.
+Such fields can be filtered only with special values, a single value or with a list of values.
+On the other hand, only string fields support fuzzy search.
+
+##### Available field names and shortcuts
+
+There are a few predefined field names that TTDL treats separately.
+If you pass a field name that TTDL does not know, it always treated as a tag.
+
+| Full name | Short names | Description |
+| --- | --- | --- |
+| `ID` |   | The task ID that is printed in the first column when you list tasks |
+| `priority` | `pri` | Task priority |
+| `done` |   | Task is marked completed |
+| `subject` | `subj` | The whole task subject. You can use it to do full-text search |
+| `project` | `prj` or `proj` or `+` | Task's project |
+| `context` | `ctx` or `@` | Task's context |
+| `hashtag` | `#` | Task's hashtag |
+| `completed` |   | Task completion date |
+| `created` | `create` | Task creation date |
+
+The rest name are treated as task's tags.
+
+##### Negative conditions
+
 Conditions can be negative. To make a condition negative, prepend a character `-` or `!` to a tag name.
 Instead prepending the character to a tag name, you can prepend it to a tag value.
 But it works only in case of single value is used, for ranges you must prepend `-` to the tag name.
-In other words, `"id=-10` and `-id=10` mean the same, but `id=-10..-10` and `-id=10..10` mean different things.
+In other words, `"id=-10` and `-id=10` mean almost the same, but `id=-10..-10` and `-id=10..10` mean different things.
+
+Note that the position of the negation sign `-` affects the filter.
+Choose carefully where you put it: before a tag name or before a tag value.
+If `-` is in front of a tag name, TTDL first determines what tasks match the condition and then selects the rest.
+If `-` is in front of a tag value, TTDL filters out tasks that include this value.
+
+Examples of the importance of the position of the `-` mark:
+
+- no negation: `priority=A,C` - selects all tasks that have either `A` or `C` priority
+- negate the tag name: `-priority=A,C` - selects all tasks that either *have no* priority or their priority is not `A` or `C`
+- negate a single tag value: `priority=-A,C` - selects all tasks that *have priority set* and the priority is either `C` or not equal `A`. In other words, `C` is redundant and simpler expression `priority=-A` works the same
+- negate all tag values: `priority=-A,-C` - selects all tasks that *have priority set* and it neither equal `A` nor equal `C`. In other words, it the same as just `priority=any`
+
+The default behavior of negation can be not convenient in some case as it can include tasks with empty values.
+If you want to select only tasks that have the field set, you can make the expression a bit longer:
+
+- simple negation: `-priority=A,C` - selects all tasks that either *have no* priority or their priority is not `A` or `C`
+- extra condition: `priority=any;-priority=A,C` - selects all tasks that both *have a priority set* and it is not equal `A` and `C`
+
+##### Fuzzy search
+
+If a field is a string type or a field is a tag that can be coerced to a string, you can use simple fuzzy search.
+A character `*` can be put to a start, an end, or to both sides of a value.
+The character `*` inside a value is treated as `*`, not fuzzy search marker.
+Obviously, fuzzy search is unsupported in ranges.
 
 Examples:
 
-- `--filter-tag "-tagname"` - matches only tasks that do not include tag `tagname`. Another ways to define the same condition are: `"tagname=none"` and `"tagname=-"`
-- `--filter-tag "-tagname=2..4"` - matches only tasks that include tag `tagname` and its value in out of range `2..4`
-- `--filter-tag "tagname=-done"` - matches only tasks that include tag `tagname` and its value is not `done`
-- `--filter-tag "id=-10..-20"` - in this case, the character `-` means "minus", not negation, because a range is used, so it matches tasks that include tag `id` with values between `-10` and `-20`.
-- `--filter-tag "!id=10,11,12;id=5..15"` - matches only tasks that include tag `id`, its value is between `5` and `15` (inclusive), and its value is not one of `10`, `11`, and `12`.
+- `context="My*"` - selects tasks that have a context that starts with `My`
+- `context="*money"` - selects tasks that have a context that ends with `money`
+- `context="*important*"` - selects tasks which context contains `important`
+
+**Note** about `subject`: when you search for a task subject containing some value, you do not have to add character `*`.
+Searching `subject` is always fuzzy, case-insensitive, and it looks for a substring at any position.
+In other words, `subject=look` is the same as `subject=*look*`.
+
+##### Data types
 
 To compare tags correctly, TTDL tries to detect the tag type beforehand.
 If it fails to auto-detect a tag type, it compares values as strings.
-That is OK for exact values but does not make sense for ranges.
+If the type is detected by the filter value cannot be converted to this data type, the matching always fails.
+E.g, `--filter="due=abc"` does not show any tasks because `abc` cannot be converted to a date.
+
+If you use `*` to do fuzzy search, tag type is automatically considered a string type.
+This automatic coercion works only for tag fields, i.e, it does not work for `priority`, `creation` and `completion` dates.
+
+The difference between default and coerced data type:
+
+- `due=2025-12-02` - `due` is a date field, so `2025-12-02` is converted to a date and then filter does its job
+- `due=2025-12*` - now `due` is treated as a string, so the filter selects tasks that have due date in December, 2025
 
 Rules TTDL follows when detecting a tag type:
 
@@ -762,10 +836,15 @@ Values in square brackets can be omitted.
 
 If TTDL fails to parse a value as a date or as a time, it defaults to String type. E.g, `1080` cannot be parse as time as it means `10:80` - an hour cannot have 80 minutes, or `1310pm` - if `AM/PM` is used the value of hours must be within `1..12` interval.
 
-A task must follow all rules separated by `;`.
-As for values separated by a comma, a tag must match any of them.
-Filter examples:
+##### Examples
 
+Examples:
+
+- `"-tagname"` - matches only tasks that do not include tag `tagname`. Another ways to define the same condition are: `"tagname=none"` and `"tagname=-"`
+- `"-tagname=2..4"` - matches only tasks that include tag `tagname` and its value in out of range `2..4`
+- `"tagname=-done"` - matches only tasks that include tag `tagname` and its value is not `done`
+- `"id=-10..-20"` - in this case, the character `-` means "minus", not negation, because a range is used, so it matches tasks that include tag `id` with values between `-10` and `-20`.
+- `"!id=10,11,12;id=5..15"` - matches only tasks that include tag `id`, its value is between `5` and `15` (inclusive), and its value is not one of `10`, `11`, and `12`.
 - `due=today;show_time=..1200` - show all tasks that are due today and their `show_time` is before noon
 - `type=car,house;weight=1,6..10` - show all tasks that have a tag `type` with values `car` or `house` and have tag `weight` with values `1` or from `6` to `10` inclusive
 - `spent=1h..` - show all tasks which took more than 1 hour of time to complete

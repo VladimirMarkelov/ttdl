@@ -148,7 +148,7 @@ fn print_usage(program: &str, opts: &Options) {
 ");
 
     let filter = r#"Filter options include:
-    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold, --hidden, --hashtag
+    --all | -a, --complete | -A, --rec, --due, --pri, --regex, --context, --project, --tag | -e, --threshold, --hidden, --hashtag, --filter
     +project - select todos which are related to project "project"; if more than one project name is defined in command line, they are combined with OR;
     @context - select todos which have context "project"; if more than one context is set, they are combined with OR;
     "#;
