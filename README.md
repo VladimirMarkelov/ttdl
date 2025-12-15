@@ -746,7 +746,7 @@ If you pass a field name that TTDL does not know, it always treated as a task ta
 | `priority` | `pri` | Task priority |
 | `done` |   | Task is marked completed |
 | `subject` | `subj` | The whole task subject. Useful for full-text search |
-| `project` | `prj` or `proj` or `+` | Task project |
+| `project` | `prj` or `+` | Task project |
 | `context` | `ctx` or `@` | Task context |
 | `hashtag` | `#` | Task hashtag |
 | `completed` |   | Task completion date |
