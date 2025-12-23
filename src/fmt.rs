@@ -23,7 +23,6 @@ const PLUG_PREFIX: &str = "ttdl-";
 const INT_LENGTH: usize = 12;
 const FLOAT_LENGTH: usize = 15;
 const DURATION_LENGTH: usize = 10;
-const STR_LENGTH: usize = 15;
 const BYTES_LENGTH: usize = 8;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -485,7 +484,7 @@ impl Conf {
 
         false
     }
-    fn custom_field_width(&self, name: &str) -> usize {
+    pub fn custom_field_width(&self, name: &str) -> usize {
         for f in self.custom_fields.iter() {
             if name != f.name.as_str() {
                 continue;
@@ -499,7 +498,6 @@ impl Conf {
                 "duration" => return DURATION_LENGTH,
                 "date" => return "2002-10-10".width(),
                 "bytes" => return BYTES_LENGTH,
-                "str" | "string" => return STR_LENGTH,
                 _ => return 0,
             }
         }
@@ -939,7 +937,7 @@ fn print_line(
             }
             n => {
                 if let Some(f) = c.custom_field(n) {
-                    let width = c.custom_field_width(n);
+                    let width = field_width_cached(n, flist, widths);
                     let value = match task.tags.get(&f.name) {
                         None => String::new(),
                         Some(s) => s.to_string(),

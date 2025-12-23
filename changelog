@@ -1,3 +1,16 @@
+ttdl (4.21.0) unstable; urgency=medium
+
+  *  Fixed bug when printing a task when custom columns are defined in the
+     configuration file. The width of the colum affected the task but never
+     affected the header. It resulted in that column titles in the header and
+     task column values did not match
+  *  Improved custom columns output: in case of a custom string column's width
+     is set to zero in the config, the width is calculated as the maximum
+     width of all values of the tag and column title. Before the fix, the
+     width defaulted to 15.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 22 Dec 2025 19:05:45 -0800
+
 ttdl (4.20.0) unstable; urgency=medium
 
   *  Option `--filter-tag` is renamed to `--filter` due to the latest changes.

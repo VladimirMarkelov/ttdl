@@ -147,7 +147,12 @@ pub fn cleanup_description(desc: &mut String, fields: &[&str], c: &Conf) {
 pub fn col_widths(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[&str], c: &Conf) -> Vec<usize> {
     let mut widths = Vec::new();
     for field in fields.iter() {
-        let w = max_field_width(tasks, ids, field, fields, c);
+        let (w, c_hdr_len) =
+            if let Some(f) = c.custom_field(field) { (c.custom_field_width(field), f.title.width()) } else { (0, 0) };
+        let mut w = if w == 0 { max_field_width(tasks, ids, field, fields, c) } else { w };
+        if c_hdr_len > 0 && w < c_hdr_len {
+            w = c_hdr_len;
+        }
         widths.push(w);
     }
     let mut subj_found = false;
