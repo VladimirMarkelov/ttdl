@@ -159,7 +159,7 @@ fn print_usage(program: &str, opts: &Options) {
 
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
-    --interactive | -i, --init, --init-local, --group, --no-headers | -H, --hide-fields
+    --interactive | -i, --init, --init-local, --group, --no-headers | -H, --hide-fields, --date-format
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -772,6 +772,9 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
         c.group = Some(s.clone());
     }
     c.hide_headers = matches.opt_present("no-headers");
+    if let Some(s) = matches.opt_str("date-format") {
+        c.date_format = s.clone();
+    }
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
@@ -1321,6 +1324,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "hide-fields",
         "Comma-separated list of fields to hide in both columns and subject",
         "FIELD1,FIELD2",
+    );
+    opts.optopt(
+        "",
+        "date-format",
+        "Display format for dates. Format string includes %Y, %M, %D and more",
+        "default|human|short|FORMAT-STRING",
     );
 
     let matches: Matches = match opts.parse(&args[1..]) {

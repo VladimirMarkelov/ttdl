@@ -18,6 +18,9 @@ const JSON_DESC: &str = "description";
 const JSON_OPT: &str = "optional";
 const JSON_SPEC: &str = "specialTags";
 const PLUG_PREFIX: &str = "ttdl-";
+const DATE_FMT_DEFAULT: &str = "default";
+const DATE_FMT_SHORT: &str = "short";
+const DATE_FMT_HUMAN: &str = "human";
 
 // Default sizes for custom field types
 const INT_LENGTH: usize = 12;
@@ -432,6 +435,7 @@ pub struct Conf {
     pub group: Option<String>,
     pub hide_headers: bool,
     pub hide_fields: Vec<String>,
+    pub date_format: String,
 }
 
 impl Default for Conf {
@@ -462,6 +466,7 @@ impl Default for Conf {
             group: None,
             hide_headers: false,
             hide_fields: Vec::new(),
+            date_format: String::new(),
         }
     }
 }
@@ -505,6 +510,29 @@ impl Conf {
     }
     pub fn custom_field(&self, name: &str) -> Option<&CustomField> {
         self.custom_fields.iter().find(|&f| name == f.name.as_str())
+    }
+    pub fn format_date(&self, field: &str, date: Option<NaiveDate>) -> String {
+        match date {
+            None => String::new(),
+            Some(dt) => {
+                let in_human_list = self.human_fields.is_empty() || self.human_fields.contains(&field.to_string());
+                if in_human_list && !self.date_format.is_empty() && self.date_format != DATE_FMT_DEFAULT {
+                    match self.date_format.as_str() {
+                        DATE_FMT_SHORT => dt.format("%m-%d").to_string(),
+                        DATE_FMT_HUMAN => {
+                            let (s, _) = format_relative_date(dt, self.compact);
+                            s
+                        }
+                        fmt => dt.format(fmt).to_string(),
+                    }
+                } else if self.is_human(field) {
+                    let (s, _) = format_relative_date(dt, self.compact);
+                    s
+                } else {
+                    dt.format("%Y-%m-%d").to_string()
+                }
+            }
+        }
     }
 }
 
@@ -796,16 +824,8 @@ fn print_date_val(
     widths: &[usize],
 ) -> io::Result<()> {
     let width = field_width_cached(field, flist, widths);
-    let mut st = if let Some(d) = dt {
-        if c.is_human(field) {
-            let (s, _) = format_relative_date(*d, c.compact);
-            format!("{s:width$} ")
-        } else {
-            format!("{:wid$} ", (*d).format("%Y-%m-%d"), wid = width)
-        }
-    } else {
-        format!("{:wid$} ", " ", wid = width)
-    };
+    let formatted = c.format_date(field, dt.copied());
+    let mut st = format!("{:wid$} ", formatted, wid = width);
     if !arg.is_empty() {
         let tags = if field == "created" || field == "finished" { &arg[JSON_OPT] } else { &arg[JSON_SPEC] };
         if let Some(v) = arg_field_as_str(tags, field) {

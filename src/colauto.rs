@@ -2,24 +2,10 @@ use caseless::default_caseless_match_str;
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
-use crate::fmt::{Conf, done_str, duration_str, format_relative_date, number_of_digits, priority_str};
+use crate::fmt::{Conf, done_str, duration_str, number_of_digits, priority_str};
 use crate::subj_clean::{hide_contexts, hide_projects, hide_tags};
 
 // Through the entire module `field` is either a tag or special task field like `priority` or `project`.
-
-fn fmt_date(v: Option<chrono::NaiveDate>, field: &str, c: &Conf) -> String {
-    match v {
-        None => String::new(),
-        Some(dt) => {
-            if c.is_human(field) {
-                let (s, _) = format_relative_date(dt, c.compact);
-                s
-            } else {
-                dt.format("%Y-%m-%d").to_string()
-            }
-        }
-    }
-}
 
 fn get_field(task: &todotxt::Task, field: &str, c: &Conf) -> Option<String> {
     if !has_field(task, field) {
@@ -28,10 +14,10 @@ fn get_field(task: &todotxt::Task, field: &str, c: &Conf) -> Option<String> {
     match field {
         "done" => Some(done_str(task)),
         "pri" => Some(priority_str(task)),
-        "created" => Some(fmt_date(task.create_date, field, c)),
-        "finished" => Some(fmt_date(task.finish_date, field, c)),
-        "due" => Some(fmt_date(task.due_date, field, c)),
-        "thr" => Some(fmt_date(task.threshold_date, field, c)),
+        "created" => Some(c.format_date(field, task.create_date)),
+        "finished" => Some(c.format_date(field, task.finish_date)),
+        "due" => Some(c.format_date(field, task.due_date)),
+        "thr" => Some(c.format_date(field, task.threshold_date)),
         "ctx" => {
             let mut s = String::new();
             for ctx in &task.contexts {
