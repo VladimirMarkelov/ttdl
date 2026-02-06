@@ -1152,7 +1152,7 @@ $ ttdl.exe list --date-format "%d %b, %a"
 -------------------------------------------
 1                      12 Oct, Sat Pay rent +house #money due:2024-10-12
 
-$ ttdl list --date-format %m/%d
+$ ttdl list --date-format "%m/%d"
 # D P Created Finished Due   Subject
 --------------------------------------
 1                      10/12 Pay rent +house #money due:2024-10-12
