@@ -26,7 +26,7 @@
     - [Hashtags](#hashtags)
     - [Time tracking](#time-tracking)
     - [Statistics](#statistics)
-    - [Custom date format string](#custom-date-format-string)
+    - [Date display format](#date-display-format)
     - [Custom formatting](#custom-formatting)
       - [How to enable custom formatting](#how-to-enable-custom-formatting)
       - [Plugin interaction](#plugin-interaction)
@@ -1128,7 +1128,30 @@ myproj                        1( 12%)               1(100%)
 4. Done and overdue percentage is always calculated from the total of the current line
 5. Spent time adds low-cased letters for time spans less than a day (s - seconds, m - minutes, h - hours), and upper-cased letter for longer spans (D - days, M - months, Y - years).
 
-### Custom date format string
+### Date display format
+
+The todo.txt format accepts dates only in the Year-Month-Day format.
+It is the default date output.
+But you can define a custom display format via either the configuration file (use `global.date_format` option) or the command-line option `--date-format`.
+
+Available values for date format:
+
+| Value | Definition | Custom format |
+| --- | --- | --- |
+| `default` | The default value that displays dates in todo.txt format | `%Y-%m-%d` |
+| `short` | Show only month and day | `%m-%d` |
+| `human` | The same output as when `--human` is used | `No` |
+| any other string | Passed to the date formatting function as-is | `No` |
+
+Note that the command-line option works in two modes:
+
+- when no arguments follows the option, TTDL turns human-readable output for all default date columns (created, finished, due, threshold)
+- when a string follows the options, the string is a comma-separated list of columns that should be displayed in human-readable format. E.g, `--human=due` shows due dates in human-readable format, but the rest of date columns in todo.txt format
+
+At the same, the alternative way `--date-format=human` does no accept a list of columns to display in human-readable format.
+But you can use both command-line options to show only some of date columns in a custom date format, e.g. `--human=due --date-format=short` show only due dates in short format.
+
+#### Custom date format string
 
 The list of available formatting options:
 
@@ -1143,6 +1166,9 @@ The list of available formatting options:
 | `%a` | Weekday, shortened to 3 letters |
 | `%A` | Weekday, full |
 | `%j` | Day of the year, 3 digits |
+
+If any character in the format string is not recognized, it will be displayed as-is.
+See the second example in which the character `/` is used.
 
 Examples:
 
@@ -1546,29 +1572,6 @@ If removal is successful, TTDL appends the new tasks to the end of file.
 Note: as you can see, it is impossible to keep the same task IDs after editing in interactive mode.
 The only way to keep the original IDs is editing the entire task list with `ttdl edit -i` command.
 But even in this case if you move tasks around or remove any, IDs will changes.
-
-### Date display format
-
-The todo.txt format accepts dates only in the Year-Month-Day format.
-It is the default date output.
-But you can define a custom display format via either the configuration file (use `global.date_format` option) or the command-line option `--date-format`.
-
-Available values for date format:
-
-| Value | Definition | Custom format |
-| --- | --- | --- |
-| `default` | The default value that displays dates in todo.txt format | `%Y-%m-%d` |
-| `short` | Show only month and day | `%m-%d` |
-| `human` | The same output as when `--human` is used | `No` |
-| any other string | Passed to the date formatting function as-is | `No` |
-
-Note that the command-line option works in two modes:
-
-- when no arguments follows the option, TTDL turns human-readable output for all default date columns (created, finished, due, threshold)
-- when a string follows the options, the string is a comma-separated list of columns that should be displayed in human-readable format. E.g, `--human=due` shows due dates in human-readable format, but the rest of date columns in todo.txt format
-
-At the same, the alternative way `--date-format=human` does no accept a list of columns to display in human-readable format.
-But you can use both command-line options to show only some of date columns in a custom date format, e.g. `--human=due --date-format=short` show only due dates in short format.
 
 ### Human-readable dates
 
