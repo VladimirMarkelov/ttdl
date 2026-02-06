@@ -168,6 +168,10 @@ old = "1y"
 # columns and tags in subject
 # hide_fields = "ts,tmr"
 
+# Date display format.
+# Choose from: 'default', 'short', 'human', and formatting string like '%Y-%m-%d'
+# date_format = "default"
+
 [syntax]
 # Set enabled to 'true' to highlight projects, contexts, tags, and hashtags
 #     inside the subject

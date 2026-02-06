@@ -1034,6 +1034,9 @@ fn update_global_from_conf(tc: &tml::Conf, conf: &mut Conf) {
         let lst: Vec<String> = flist.split(',').map(|itm| itm.to_string()).collect();
         conf.fmt.hide_fields = lst;
     }
+    if let Some(df) = &tc.global.date_format {
+        conf.fmt.date_format = df.clone();
+    }
 }
 
 fn detect_conf_file_path() -> PathBuf {

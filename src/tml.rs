@@ -38,6 +38,7 @@ pub struct Global {
     pub add_completion_date_always: Option<bool>,
     pub editor: Option<String>,
     pub hide_fields: Option<String>,
+    pub date_format: Option<String>,
 }
 
 #[derive(Deserialize)]
