@@ -1,3 +1,13 @@
+ttdl (4.22.0) unstable; urgency=medium
+
+  *  New command-line option to set the display format for dates:
+     `--date-format`. It supports `default`, `short`, `human`, and
+     custom format string.
+  *  Display format for dates can be defined in the configuration file.
+     Section `global`, option `date_format`.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 05 Feb 2026 20:28:16 -0800
+
 ttdl (4.21.0) unstable; urgency=medium
 
   *  Fixed bug when printing a task when custom columns are defined in the
