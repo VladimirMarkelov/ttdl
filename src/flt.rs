@@ -71,7 +71,19 @@ fn is_negative(s: &str) -> bool {
     s.starts_with('-') || s.starts_with('!')
 }
 
-fn str_match(f_val: &str, t_val: &str) -> bool {
+fn str_match(f_val: &str, t_val: &str, use_regex: bool) -> bool {
+    if use_regex {
+        let rx = match Regex::new(&format!("(?i){f_val}")) {
+            Err(e) => {
+                eprintln!("Invalid regex: {e}");
+                return false;
+            }
+            Ok(v) => v,
+        };
+        return rx.is_match(t_val);
+    }
+    let f_val = f_val.to_lowercase();
+    let t_val = t_val.to_lowercase();
     let left = f_val.starts_with('*');
     let right = f_val.ends_with('*');
     if !left && !right {
@@ -88,7 +100,7 @@ fn str_match(f_val: &str, t_val: &str) -> bool {
     }
 }
 
-fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate) -> bool {
+fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate, use_regex: bool) -> bool {
     match t {
         ValueType::Date => {
             let res = str_to_date(f_val, base);
@@ -127,7 +139,7 @@ fn values_equal(t_val: &str, f_val: &str, t: ValueType, base: NaiveDate) -> bool
                 _ => false,
             }
         }
-        _ => str_match(f_val, t_val),
+        _ => str_match(f_val, t_val, use_regex),
     }
 }
 
@@ -254,7 +266,15 @@ pub enum FilterCond {
 }
 
 impl FilterCond {
-    pub fn matches(&self, id: usize, name: &str, task: &todotxt::Task, t: ValueType, base: NaiveDate) -> bool {
+    pub fn matches(
+        &self,
+        id: usize,
+        name: &str,
+        task: &todotxt::Task,
+        t: ValueType,
+        base: NaiveDate,
+        use_regex: bool,
+    ) -> bool {
         match name {
             "ID" => match self {
                 FilterCond::One(self_value) => {
@@ -355,9 +375,13 @@ impl FilterCond {
                     FilterCond::One(self_value) => {
                         let is_negative = is_negative(self_value);
                         let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
-                        let rule_value = rule_value.trim_matches('*').to_lowercase();
-                        let found = task.subject.to_lowercase().contains(&rule_value);
-                        if is_negative { !found } else { found }
+                        let matched = if !use_regex && !rule_value.starts_with('*') && !rule_value.ends_with('*') {
+                            let rule_value = format!("*{rule_value}*");
+                            str_match(&rule_value, &task.subject, use_regex)
+                        } else {
+                            str_match(rule_value, &task.subject, use_regex)
+                        };
+                        if is_negative { !matched } else { matched }
                     }
                     FilterCond::Range(_bg, _en) => {
                         // Range does not make sense for subject
@@ -384,7 +408,7 @@ impl FilterCond {
                             let rule_value = if is_negative { &self_value[1..] } else { &self_value[..] };
                             let mut all_matched = !values.is_empty();
                             for val in values {
-                                let matched = str_match(rule_value, val);
+                                let matched = str_match(rule_value, val, use_regex);
                                 if is_negative {
                                     all_matched = all_matched && !matched;
                                 } else {
@@ -453,7 +477,7 @@ impl FilterCond {
                             } else if self_value == "none" {
                                 is_negative
                             } else {
-                                let equals = values_equal(s, rule_value, t, base);
+                                let equals = values_equal(s, rule_value, t, base, use_regex);
                                 if is_negative { !equals } else { equals }
                             }
                         }
@@ -526,7 +550,7 @@ pub struct FilterRule {
 }
 
 impl FilterRule {
-    pub fn matches(&self, task: &todotxt::Task, id: usize, base: NaiveDate) -> bool {
+    pub fn matches(&self, task: &todotxt::Task, id: usize, base: NaiveDate, use_regex: bool) -> bool {
         let is_negative = is_negative(&self.tag);
         let tag_full_name = self.tag.as_str();
         let tag_name = if is_negative { &tag_full_name[1..] } else { tag_full_name };
@@ -540,18 +564,19 @@ impl FilterRule {
         };
         let mut matched = false;
         for cond in &self.flt {
-            matched |= cond.matches(id, tag_name, task, vt, base);
+            matched |= cond.matches(id, tag_name, task, vt, base, use_regex);
         }
         if is_negative { !matched } else { matched }
     }
 }
 
 pub struct Filter {
+    use_regex: bool,
     pub rules: Vec<FilterRule>,
 }
 
 impl Filter {
-    pub fn parse(s: &str) -> Filter {
+    pub fn parse(s: &str, use_regex: bool) -> Filter {
         let mut rules: Vec<FilterRule> = Vec::new();
         for rl in s.split(';') {
             if rl.is_empty() {
@@ -581,11 +606,11 @@ impl Filter {
                 rules.push(FilterRule { tag: tag_name, flt: values });
             }
         }
-        Filter { rules }
+        Filter { use_regex, rules }
     }
     pub fn matches(&self, task: &todotxt::Task, id: usize, base: NaiveDate) -> bool {
         for rule in &self.rules {
-            if !rule.matches(task, id, base) {
+            if !rule.matches(task, id, base, self.use_regex) {
                 return false;
             }
         }
@@ -637,7 +662,7 @@ mod tests {
             Test { f: "-pr=B,C;id=-12", o: vec![2, 4, 5] },
         ];
         for (idx, t) in tests.iter().enumerate() {
-            let flt = Filter::parse(t.f);
+            let flt = Filter::parse(t.f, false);
             assert!(!flt.is_empty(), "Failed to parse {0}", t.f);
             let mut res: Vec<usize> = Vec::new();
             for (idx, task) in task_vec.iter().enumerate() {
@@ -726,7 +751,7 @@ mod tests {
             Test { f: "id=none..251", o: vec![1, 2, 3, 4, 5] },
         ];
         for (idx, t) in tests.iter().enumerate() {
-            let flt = Filter::parse(t.f);
+            let flt = Filter::parse(t.f, false);
             assert!(!flt.is_empty(), "Failed to parse {0}", t.f);
             let mut res: Vec<usize> = Vec::new();
             for (idx, task) in task_vec.iter().enumerate() {

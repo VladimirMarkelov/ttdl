@@ -84,6 +84,7 @@ pub struct Conf {
     pub sort: tsort::Conf,
     pub flt_ext: Option<String>,
     pub postpone_threshold: bool,
+    pub use_regex: bool,
 
     pub calendar: Option<human_date::CalendarRange>,
 }
@@ -121,6 +122,7 @@ impl Default for Conf {
             calendar: None,
             flt_ext: None,
             postpone_threshold: false,
+            use_regex: false,
         }
     }
 }
@@ -1130,7 +1132,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let program = args[0].clone();
     let mut conf = Conf::new();
 
-    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdfgjlmnopqruxyz"
+    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdgjlmnopqruxyz"
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
@@ -1320,7 +1322,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "Custom filter by user-defined tag values",
         "TAG1=RANGE1;TAG2=RANGE2. Deprecated, use 'filter' instead",
     );
-    opts.optopt("", "filter", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
+    opts.optopt("f", "filter", "Custom filter by user-defined tag values", "TAG1=RANGE1;TAG2=RANGE2");
     opts.optflag("", "update-threshold", "Update threshold in addition to changing due date when a task is postponed");
     opts.optopt(
         "",
@@ -1441,12 +1443,23 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let soon_days = conf.fmt.colors.soon_days;
     conf.keep_empty = matches.opt_present("keep-empty");
     conf.keep_tags = matches.opt_present("keep-tags");
+    // Parse filter must be called before checking `filter` or `fiter-tag`.
+    // Reason: fitter needs to know if regex is used beforehand.
     parse_filter(&matches, &mut conf.flt, soon_days)?;
+    conf.use_regex = conf.flt.use_regex;
     if let Some(f_str) = matches.opt_str("filter-tag") {
-        conf.flt_ext = Some(f_str.clone());
+        if !f_str.contains('=') {
+            conf.flt_ext = Some(format!("subj={f_str}"));
+        } else {
+            conf.flt_ext = Some(f_str.clone());
+        }
     }
     if let Some(f_str) = matches.opt_str("filter") {
-        conf.flt_ext = Some(f_str.clone());
+        if !f_str.contains('=') {
+            conf.flt_ext = Some(format!("subj={f_str}"));
+        } else {
+            conf.flt_ext = Some(f_str.clone());
+        }
     }
     conf.postpone_threshold = matches.opt_present("update-threshold");
     if let Some(f_str) = matches.opt_str("hide-fields") {
@@ -1585,7 +1598,8 @@ fn process_single_free_arg(conf: &mut Conf, soon_days: u8, edit_mode: bool, raw_
             .as_ref()
             .map_or(Some(subj.to_string()), |old_subj| Some([old_subj.as_str(), subj.as_str()].join(" ")));
     } else {
-        conf.flt.regex = Some(arg.to_string());
+        let flt_val = if let Some(f) = &conf.flt_ext { format!("subj={arg};{f}") } else { format!("subj={arg}") };
+        conf.flt_ext = Some(flt_val);
     }
 }
 
