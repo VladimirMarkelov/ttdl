@@ -1,3 +1,20 @@
+ttdl (4.23.0) unstable; urgency=medium
+
+  *  Added short option `-f` for `--filter`
+  *  Now a free argument in the list mode is treated as the filter. It means
+     that it supports negation. E.g, `ttdl l -value` means the same as
+     `ttdl l --filter subj=-value` or `ttdl l -f -subj=value`
+  *  Filter now supports regular expressions for all string-like fields. Pass
+     the command-line option `-e` (`--use-regex`) to enable regular
+     expressions. Though, there are some incompatibilies: as regex uses `|`
+     internally, you cannot use the same character for list of fiters. Use the
+     character `~` instead. But in regular mode, the character `|` works as
+     before. Example: in regular mode you can write `-f subj=val1|subj=val2`
+     but in regex it must be `-e -f subj=val1~subj=val2`.
+     Regex search is case-insensitive like a regular one.
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 16 Feb 2026 16:19:38 -0800
+
 ttdl (4.22.0) unstable; urgency=medium
 
   *  New command-line option to set the display format for dates:
