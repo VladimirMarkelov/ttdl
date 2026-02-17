@@ -666,6 +666,9 @@ Use command-line option `-e` to enable fuzzy regular expression based filter.
 - `ttdl list car*` - show all incomplete todos that have substring `car*` in subject, project or context
 - `ttdl list car.* -e` show all incomplete todos which project, context or subject matches regular expression `car.*`
 
+Prepend the character `!` to negate the filter.
+The command `ttdl list !car` shows all tasks that do not contain `car` in their subjects.
+
 #### Filter by anything
 
 If you have a lot of tasks, you may need more sophisticated filter.
@@ -673,12 +676,12 @@ TTDL command-line option `--filter` allows you to use complex filter expressions
 In this mode, TTDL also treats some tag values as strictly-typed ones, that allows filtering with ranges.
 
 This filter can replace a bunch of command-line options described above.
-The only thing this filter cannot do yet is searching with regular expressions.
-But it has a simpler alternative that can be enough in most cases.
+The option `--use-regex`(`-e`) affects the filter.
+Regular expressions in the range filters are not supported.
 
 Every filter expression follows these rules:
 
-- The string contains all filter rules separated by pipe character `|`
+- The string contains all filter rules separated by tilde `~` or pipe `|` character. In case of using regular expression, you can use only `~`. But in the regular case, any of two characters can be used. The rule: if the expression contains `~` it is used as the separator. Otherwise, the character `|` is used
 - Every rule is a list of conditions separated by character `;`
 - A condition's format is `TAG_NAME=<tagValue|tagList|tagRange, ..>`
 - In other words, after the character `=` there is a list of values and ranges of values separated by character `,`
@@ -693,9 +696,17 @@ Though, some value can work: `done=any` means the same as bare `done`, and `done
 
 The TTDL treats all the mentioned parts of the passed value in the following way:
 
-- All rules separated by `|` are independent rules. A task must match *any* of the rules
+- All rules separated by `~`(or `|`) are independent rules. A task must match *any* of the rules
 - A task must match *all* conditions separated by `;`
 - A tag value must match *any* of values or ranges separated by `,`
+
+Examples of the pitfalls when using `~` and `|`:
+
+- `--filter subj=val1|subj=val2` - it works as expected: shows tasks that contain either `val1` or `val2` in their subjects
+- `--filter subj=val1|subj=val2~subj=val3` - as the character `~` is used, it becomes the separator. So, the filter means: show tasks that contains either `val3` or `val1|subj=val2` in their subjects
+- - `-e --filter subj=val1|subj=val2` - regular expressions are enabled, it means the character `~` must be the separator. So, the filter shows tasks that contain `val1|subj=val2`
+
+Note that in the last example you can rewrite the filter using regex rules: `-e -f subj=val1|val2` to show tasks that contain either `val1` or `val2` in their subjects
 
 Example of reading a filter `due=..yesterday|due=..today;severity=2..3,999`:
 
@@ -788,11 +799,24 @@ A character `*` can be put to a start, an end, or to both sides of a value.
 The character `*` inside a value is treated as `*`, not fuzzy search marker.
 Obviously, fuzzy search is unsupported in ranges.
 
-Examples:
+The field `subject` gets a special rule.
+The filter value for the subject is enclosed in `*` if you do not add this character manually.
+In other words, while for any field `value` means looking for a task that has the field value with the exact value, for the subject `value` means searching a task that contain `value` in its subject anywhere.
 
+In regex mode, you can use regular expression syntax to create more complex filters.
+By default, the regular expression looks for inclusion.
+If you need exact equality, use regular expression anchors like `$` or `^`.
+
+In all modes, the search is case-insensitive.
+
+Examples (`context` was chosen arbitraty, you can replace it with any field, e.g, `subj`):
+
+- `context="My"` - selects tasks that has context that equals `My`
 - `context="My*"` - selects tasks that include a context that starts with `My`
 - `context="*money"` - selects tasks that include a context that ends with `money`
 - `context="*important*"` - selects tasks which context contains `important`
+- `-e -f context="My|Yours"` - selects tasks which context contains either `my` or `yours`
+- `-e -f context="value[12]"` - selects task which context contains either `value1` or `value2`
 
 **Note** about `subject`: when you search for a task subject containing some value, you do not have to add character `*`.
 Searching `subject` is always fuzzy, case-insensitive, and it looks for a substring at any position.

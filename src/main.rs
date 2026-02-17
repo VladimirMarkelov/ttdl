@@ -81,7 +81,7 @@ fn filter_by_custom_tags(tasks: &[todotxt::Task], c: &conf::Conf, todos: todo::I
         None => todos,
         Some(flt_str) => {
             let mut flt_vec: Vec<flt::Filter> = Vec::new();
-            let or_char = if c.use_regex || flt_str.contains('^') { '^' } else { '|' };
+            let or_char = if c.use_regex || flt_str.contains('~') { '~' } else { '|' };
             for fstr in flt_str.split(or_char) {
                 if fstr.trim().is_empty() {
                     continue;
