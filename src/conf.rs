@@ -51,6 +51,7 @@ pub enum RunMode {
     ListProjects,
     ListContexts,
     ListHashtags,
+    Agenda,
 }
 
 #[derive(Debug, Clone)]
@@ -87,6 +88,16 @@ pub struct Conf {
     pub use_regex: bool,
 
     pub calendar: Option<human_date::CalendarRange>,
+    // For agenda: choose date to show. Also you can set a field to check.
+    // Format: FIELD1[,FIELD2][=][DATE]
+    // Default field list is `due`.
+    // Default date is today
+    pub on: Option<String>,
+    // Time range for the agenda. Usual range: either 800-1700 or 800..1700
+    // Default is `800..2000`
+    pub time_range: Option<String>,
+    // Interval between time slots in the agenda
+    pub slot: Option<String>,
 }
 
 impl Default for Conf {
@@ -108,6 +119,9 @@ impl Default for Conf {
             editor_path: None,
             use_editor: false,
             max_items: None,
+            on: None,
+            time_range: None,
+            slot: None,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -248,6 +262,7 @@ fn str_to_mode(s: &str) -> RunMode {
         "lp" | "listproj" | "listprojects" => RunMode::ListProjects,
         "lc" | "listcon" | "listcontexts" => RunMode::ListContexts,
         "lh" | "listhash" | "listhashtags" => RunMode::ListHashtags,
+        "ag" | "agenda" => RunMode::Agenda,
         _ => RunMode::None,
     }
 }
@@ -1336,6 +1351,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "Display format for dates. Format string includes %Y, %M, %D and more",
         "default|human|short|FORMAT-STRING",
     );
+    opts.optopt("", "on", "Set the date, default is today, for an agenda to show and optional field to use for checking date (default is 'due')", "FIELD1[,FIELD2][=][DATE]");
+    opts.optopt("", "time", "Show an agenda for this time interval. Time is defined without a separator between hours and minutes, e.g, '930' means '9:30'", "[START][-][END]");
+    opts.optopt("", "slot", "A slot size for an agenda. Default is 30 minutes", "[SLOT_SIZE]");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1465,6 +1483,10 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     if let Some(f_str) = matches.opt_str("hide-fields") {
         conf.fmt.hide_fields = f_str.split(',').map(|itm| itm.to_string()).collect();
     }
+
+    conf.on = matches.opt_str("on");
+    conf.time_range = matches.opt_str("time");
+    conf.slot = matches.opt_str("slot");
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

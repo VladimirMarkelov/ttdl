@@ -12,6 +12,7 @@ mod fmt;
 mod stats;
 mod subj_clean;
 mod tml;
+mod agenda;
 
 use std::collections::HashMap;
 use std::env;
@@ -380,6 +381,13 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
     }
     Ok(())
 }
+
+fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
+    let now = chrono::Local::now().date_naive();
+    let mut ag = agenda::Agenda::new(stdout, now, conf)?;
+    Ok(())
+}
+
 
 fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {
@@ -1113,6 +1121,7 @@ fn main() {
         conf::RunMode::ListProjects => task_list_projects(&mut stdout, &tasks, &conf),
         conf::RunMode::ListContexts => task_list_contexts(&mut stdout, &tasks, &conf),
         conf::RunMode::ListHashtags => task_list_hashtags(&mut stdout, &tasks, &conf),
+        conf::RunMode::Agenda => task_list_agenda(&mut stdout, &tasks, &conf),
         _ => Ok(()),
     };
     if let Err(e) = err
