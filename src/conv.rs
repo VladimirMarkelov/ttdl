@@ -10,7 +10,8 @@ const TB: u64 = GB * 1024;
 const PB: u64 = TB * 1024;
 const EB: u64 = PB * 1024;
 
-const SEC_IN_MINUTE: i64 = 60;
+pub const SEC_IN_MINUTE: i64 = 60;
+pub const SEC_IN_MINUTE_U32: u32 = 60;
 const SEC_IN_HOUR: i64 = SEC_IN_MINUTE * 60;
 const SEC_IN_DAY: i64 = SEC_IN_HOUR * 24;
 const SEC_IN_WEEK: i64 = SEC_IN_DAY * 7;

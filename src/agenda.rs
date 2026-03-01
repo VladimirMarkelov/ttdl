@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 use todo_lib::{todo, todotxt};
 
 use crate::conf;
-use crate::conv;
+use crate::conv::{self, SEC_IN_MINUTE_U32};
 
 const TIME_FIELD: &str = "time";
 const ID_RESERVED: usize = 999_999_999;
@@ -122,8 +122,8 @@ pub struct Agenda {
 impl Agenda {
     pub fn new(dt: NaiveDate, conf: &conf::Conf) -> Self {
         let mut ag = Agenda {
-            time_start: 8 * 60, // 8:00
-            time_end: 20 * 60,  // 20:00
+            time_start: 8 * SEC_IN_MINUTE_U32, // 8:00
+            time_end: 20 * SEC_IN_MINUTE_U32,  // 20:00
             date: dt,
             fields: vec!["due".to_string()],
             slot_size: 30, // 30 minutes
@@ -134,19 +134,19 @@ impl Agenda {
             match conv::str_to_time_interval(s) {
                 conv::TimeInterval::Single(val) => {
                     if let Some(t) = val {
-                        ag.time_start = t / 100 * 60 + t % 100;
+                        ag.time_start = t / 100 * SEC_IN_MINUTE_U32 + t % 100;
                     }
                 }
                 conv::TimeInterval::Range(valb, vale) => {
                     if let Some(st) = valb {
-                        ag.time_start = st / 100 * 60 + st % 100;
+                        ag.time_start = st / 100 * SEC_IN_MINUTE_U32 + st % 100;
                     } else {
                         ag.time_start = 0;
                     }
                     if let Some(en) = vale {
-                        ag.time_end = en / 100 * 60 + en % 100;
+                        ag.time_end = en / 100 * SEC_IN_MINUTE_U32 + en % 100;
                     } else {
-                        ag.time_end = 24 * 60;
+                        ag.time_end = 24 * SEC_IN_MINUTE_U32;
                     }
                 }
             }
@@ -158,8 +158,10 @@ impl Agenda {
                         eprintln!("Slot must be a positive integer number: '{d_str}'");
                     }
                     Ok(n) => {
-                        if n >= 24 * 60 {
-                            eprintln!("Slot value must not exceed 24 hours: '{d_str}'");
+                        if !(15..24 * SEC_IN_MINUTE_U32).contains(&n) {
+                            eprintln!(
+                                "Slot value must be between 15 minutes and 24 hours: '{d_str}'. Using default slot size"
+                            );
                         } else {
                             ag.slot_size = n;
                         }
@@ -171,10 +173,13 @@ impl Agenda {
                         eprintln!("Failed to parse duration '{d_str}'");
                     }
                     Some(dur) => {
-                        if dur >= 24 * 60 {
-                            eprintln!("Slot value must not exceed 24 hours: '{d_str}'");
+                        let dur = (dur as u32) / SEC_IN_MINUTE_U32;
+                        if !(15..24 * SEC_IN_MINUTE_U32).contains(&dur) {
+                            eprintln!(
+                                "Slot value must be between 15 minutes and 24 hours: '{d_str}'. Using default slot size"
+                            );
                         } else {
-                            ag.slot_size = dur as u32;
+                            ag.slot_size = dur;
                         }
                     }
                 }
@@ -231,13 +236,13 @@ impl Agenda {
         let range = task.tags.get(TIME_FIELD).map(|sval| conv::str_to_time_interval(sval));
         match range {
             Some(conv::TimeInterval::Single(s)) => s.map(|sval| {
-                let st = sval / 100 * 60 + sval % 100;
+                let st = sval / 100 * SEC_IN_MINUTE_U32 + sval % 100;
                 let en = st + self.slot_size;
                 (st, en)
             }),
             Some(conv::TimeInterval::Range(sb, se)) => {
-                let st = if let Some(v) = sb { v / 100 * 60 + v % 100 } else { 0 };
-                let en = if let Some(v) = se { v / 100 * 60 + v % 100 } else { 24 * 60 };
+                let st = if let Some(v) = sb { v / 100 * SEC_IN_MINUTE_U32 + v % 100 } else { 0 };
+                let en = if let Some(v) = se { v / 100 * SEC_IN_MINUTE_U32 + v % 100 } else { 24 * SEC_IN_MINUTE_U32 };
                 Some((st, en))
             }
             None => None,
