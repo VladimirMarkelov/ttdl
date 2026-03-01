@@ -6,13 +6,14 @@ use crate::conv::{self, SEC_IN_MINUTE_U32};
 
 const TIME_FIELD: &str = "time";
 const ID_RESERVED: usize = 999_999_999;
-const SLOT_NONE: char = ' ';
-const SLOT_START: char = '┌';
-const SLOT_STARTEARLY: char = '╎';
-const SLOT_FINISH: char = '└';
-const SLOT_FINISHLATE: char = '╎';
-const SLOT_MIDDLE: char = '│';
-const SLOT_SINGLE: char = '─';
+
+const SLOT_START: usize = 0;
+const SLOT_STARTEARLY: usize = 3;
+const SLOT_FINISH: usize = 2;
+const SLOT_FINISHLATE: usize = 4;
+const SLOT_MIDDLE: usize = 1;
+const SLOT_SINGLE: usize = 5;
+const SLOT_NONE: usize = 6;
 
 #[derive(PartialEq)]
 pub enum SlotKind {
@@ -26,7 +27,7 @@ pub enum SlotKind {
 }
 
 impl SlotKind {
-    pub fn to_char(&self) -> char {
+    pub fn to_char_index(&self) -> usize {
         match self {
             SlotKind::None => SLOT_NONE,
             SlotKind::Start => SLOT_START,
@@ -37,7 +38,7 @@ impl SlotKind {
             SlotKind::Single => SLOT_SINGLE,
         }
     }
-    pub fn to_char_before(&self) -> char {
+    pub fn to_char_before_index(&self) -> usize {
         match self {
             SlotKind::None => SLOT_NONE,
             SlotKind::Start => SLOT_MIDDLE,
@@ -48,7 +49,7 @@ impl SlotKind {
             SlotKind::Single => SLOT_NONE,
         }
     }
-    pub fn to_char_after(&self) -> char {
+    pub fn to_char_after_index(&self) -> usize {
         match self {
             SlotKind::None => SLOT_NONE,
             SlotKind::Start => SLOT_NONE,
@@ -117,6 +118,8 @@ pub struct Agenda {
 
     pub slots: Vec<Slot>,
     pub all_day: Vec<usize>,
+
+    marks: Vec<char>,
 }
 
 impl Agenda {
@@ -125,11 +128,16 @@ impl Agenda {
             time_start: 8 * SEC_IN_MINUTE_U32, // 8:00
             time_end: 20 * SEC_IN_MINUTE_U32,  // 20:00
             date: dt,
-            fields: vec!["due".to_string()],
+            fields: Vec::new(),
             slot_size: 30, // 30 minutes
             slots: Vec::new(),
             all_day: Vec::new(),
+            marks: "┌│└╎╎─ ".chars().collect(),
         };
+        if let Some(s) = &conf.marks {
+            ag.marks = s.chars().collect();
+            ag.marks.push(' ');
+        }
         if let Some(s) = &conf.time_range {
             match conv::str_to_time_interval(s) {
                 conv::TimeInterval::Single(val) => {
@@ -185,6 +193,14 @@ impl Agenda {
                 }
             }
         }
+        match &conf.on_fields {
+            None => ag.fields = vec!["due".to_string()],
+            Some(s) => {
+                for f in s.split(',') {
+                    ag.fields.push(f.to_string());
+                }
+            }
+        };
         if let Some(on_date) = &conf.on {
             if let Some((s_fields, s_date)) = on_date.split_once('=') {
                 if !s_date.is_empty() {
@@ -366,5 +382,9 @@ impl Agenda {
             }
         }
         max
+    }
+
+    pub fn mark(&self, idx: usize) -> char {
+        if idx > 5 { ' ' } else { self.marks[idx] }
     }
 }

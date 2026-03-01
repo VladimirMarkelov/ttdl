@@ -66,10 +66,20 @@ pub struct CustomField {
 }
 
 #[derive(Deserialize)]
+pub struct Agenda {
+    pub hide_all_day: Option<bool>,
+    pub slot: Option<String>,
+    pub time: Option<String>,
+    pub fields: Option<String>,
+    pub marks: Option<String>,
+}
+
+#[derive(Deserialize)]
 pub struct Conf {
     pub colors: Colors,
     pub ranges: Ranges,
     pub global: Global,
     pub syntax: Option<Syntax>,
     pub fields: Option<Vec<CustomField>>,
+    pub agenda: Agenda,
 }

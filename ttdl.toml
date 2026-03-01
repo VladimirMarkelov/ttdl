@@ -194,3 +194,26 @@ context_color = "green"
 # [[fields.rules]]
 # range = "today..soon" # check must be done soon: between today and today+7 days, inclusive
 # color = "bright yellow"
+
+[agenda]
+# Do not display section "All day"
+# hide_all_day = false
+# The size of a time slot. The default value is 30 minutes.
+# A bare number means the number of minutes. But you can use duration special characters:
+#   m - minutes (slot="30" and slot="30m" mean the same)
+#   h - hours (slot="1h" and slot="60" mean the same)
+# Slot size must be between 15 minutes and 24 hours.
+# slot = "30"
+# Agenda time range display (default value from 8:00 to 20:00)
+# time = "800-2000"
+# What fields to check when picking out tasks for an agenda
+# fields = "due"
+# Characters to use when drawing agenda
+#   Index   Used to display
+#   0       Task starts
+#   1       Task continues
+#   2       Task finishes
+#   3       Task has started before the agenda time range (e.g., task has `time:700-900` and you display agenda for 800-1200)
+#   4       Task finishes after the agenda time range ends
+#   5       Task is shorter than the time slot. It stars and ends within this time slot
+# marks = "┌│└╎╎─"

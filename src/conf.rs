@@ -12,6 +12,7 @@ use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
 use unicode_width::UnicodeWidthStr;
 
+use crate::conv::{self, SEC_IN_MINUTE_U32};
 use crate::fmt;
 use crate::subj_clean::Hide;
 use crate::tml;
@@ -87,6 +88,11 @@ pub struct Conf {
     pub use_regex: bool,
 
     pub calendar: Option<human_date::CalendarRange>,
+    // For agenda: what fields to check.
+    // Format: FIELD1[,FIELD2]
+    // Overrided by command-line option that sets `on` field. Though if the command-line option
+    // does not include field names, `on_fields` is used
+    pub on_fields: Option<String>,
     // For agenda: choose date to show. Also you can set a field to check.
     // Format: FIELD1[,FIELD2][=][DATE]
     // Default field list is `due`.
@@ -99,6 +105,8 @@ pub struct Conf {
     pub slot: Option<String>,
     // Hide section 'All day' in agenda
     pub hide_all_day: bool,
+    // The list of special characters to display agenda
+    pub marks: Option<String>,
 }
 
 impl Default for Conf {
@@ -124,6 +132,8 @@ impl Default for Conf {
             time_range: None,
             slot: None,
             hide_all_day: false,
+            marks: None,
+            on_fields: None,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -960,6 +970,38 @@ fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     Ok(())
 }
 
+fn validate_agenda_config(conf: &Conf) -> Result<()> {
+    if let Some(slot) = &conf.slot {
+        match conv::str_to_duration(slot) {
+            None => return Err(anyhow!("Failed to parse duraion: '{slot}'")),
+            Some(d) => {
+                let in_minutes = (d as u32) / SEC_IN_MINUTE_U32;
+                if !(15..24 * SEC_IN_MINUTE_U32).contains(&in_minutes) {
+                    return Err(anyhow!("The slot size must be between 15 minutes and 24 hours. It is '{slot}'"));
+                }
+            }
+        }
+    }
+    if let Some(marks) = &conf.marks
+        && marks.chars().count() != 6
+    {
+        return Err(anyhow!("Agenda marks must contain 6 characters"));
+    }
+    Ok(())
+}
+
+fn update_agenda_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
+    if let Some(hide) = tc.agenda.hide_all_day {
+        conf.hide_all_day = hide;
+    }
+    conf.time_range = tc.agenda.time.clone();
+    conf.slot = tc.agenda.slot.clone();
+    conf.marks = tc.agenda.marks.clone();
+    conf.on_fields = tc.agenda.fields.clone();
+    validate_agenda_config(conf)?;
+    Ok(())
+}
+
 fn validate_custom_fields(conf: &Conf) -> Result<()> {
     for field in conf.fmt.custom_fields.iter() {
         if field.name.is_empty() {
@@ -1126,6 +1168,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     update_global_from_conf(&info_toml, conf);
     update_syntax_from_config(&info_toml, conf)?;
     update_fields_from_config(&info_toml, conf)?;
+    update_agenda_from_config(&info_toml, conf)?;
     if let Some(strict) = info_toml.global.strict_mode {
         conf.strict_mode = strict;
     }

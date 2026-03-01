@@ -423,19 +423,19 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
 
             for (idx, tslot) in slot.tasks.iter().enumerate() {
                 if tslot.is_empty() {
-                    signs.push(agenda::SlotKind::None.to_char());
+                    signs.push(ag.mark(agenda::SlotKind::None.to_char_index()));
                 } else if duplicates == 0 {
-                    signs.push(tslot.kind.to_char());
+                    signs.push(ag.mark(tslot.kind.to_char_index()));
                     if tslot.kind.is_start() {
                         subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
                     }
                 } else if idx == mutate_until {
-                    signs.push(tslot.kind.to_char());
+                    signs.push(ag.mark(tslot.kind.to_char_index()));
                     subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
                 } else if idx < mutate_until {
-                    signs.push(tslot.kind.to_char_before());
+                    signs.push(ag.mark(tslot.kind.to_char_before_index()));
                 } else {
-                    signs.push(tslot.kind.to_char_after());
+                    signs.push(ag.mark(tslot.kind.to_char_after_index()));
                 }
             }
             if dbl == 0 {
