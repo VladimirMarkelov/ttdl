@@ -13,10 +13,9 @@ use termcolor::{Color, ColorSpec};
 use unicode_width::UnicodeWidthStr;
 
 use crate::fmt;
-use crate::human_date;
 use crate::subj_clean::Hide;
 use crate::tml;
-use todo_lib::{terr, tfilter, todo, todotxt, tsort};
+use todo_lib::{human_date, terr, tfilter, todo, todotxt, tsort};
 
 const TODOFILE_VAR: &str = "TTDL_FILENAME";
 const APP_DIR: &str = "ttdl";
@@ -94,10 +93,12 @@ pub struct Conf {
     // Default date is today
     pub on: Option<String>,
     // Time range for the agenda. Usual range: either 800-1700 or 800..1700
-    // Default is `800..2000`
+    // Default is `800..2000` or `800-2000`
     pub time_range: Option<String>,
     // Interval between time slots in the agenda
     pub slot: Option<String>,
+    // Hide section 'All day' in agenda
+    pub hide_all_day: bool,
 }
 
 impl Default for Conf {
@@ -122,6 +123,7 @@ impl Default for Conf {
             on: None,
             time_range: None,
             slot: None,
+            hide_all_day: false,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -1353,7 +1355,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     );
     opts.optopt("", "on", "Set the date, default is today, for an agenda to show and optional field to use for checking date (default is 'due')", "FIELD1[,FIELD2][=][DATE]");
     opts.optopt("", "time", "Show an agenda for this time interval. Time is defined without a separator between hours and minutes, e.g, '930' means '9:30'", "[START][-][END]");
-    opts.optopt("", "slot", "A slot size for an agenda. Default is 30 minutes", "[SLOT_SIZE]");
+    opts.optopt("", "slot", "A slot size for an agenda in minutes. Default is 30 minutes", "[SLOT_SIZE]");
+    opts.optflag("", "hide-all-day", "Do not show section 'All day' in agenda");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1487,6 +1490,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     conf.on = matches.opt_str("on");
     conf.time_range = matches.opt_str("time");
     conf.slot = matches.opt_str("slot");
+    conf.hide_all_day = matches.opt_present("hide-all-day");
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

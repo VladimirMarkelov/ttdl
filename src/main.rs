@@ -3,6 +3,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 
+mod agenda;
 mod cal;
 mod colauto;
 mod conf;
@@ -12,7 +13,6 @@ mod fmt;
 mod stats;
 mod subj_clean;
 mod tml;
-mod agenda;
 
 use std::collections::HashMap;
 use std::env;
@@ -384,10 +384,76 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
 
 fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: &conf::Conf) -> io::Result<()> {
     let now = chrono::Local::now().date_naive();
-    let mut ag = agenda::Agenda::new(stdout, now, conf)?;
+    let mut ag = agenda::Agenda::new(now, conf);
+    let todos = filter_tasks(tasks, conf);
+    if todos.is_empty() {
+        return writeln!(stdout, "No task found for agenda");
+    }
+    let mut max_id = 0;
+    for tid in &todos {
+        if max_id < *tid {
+            max_id = *tid;
+        }
+    }
+    ag.fill_agenda(tasks, &todos, now);
+
+    let width = fmt::number_of_digits(max_id);
+    let col_cnt = ag.max_columns();
+
+    for slot in &ag.slots {
+        let start_cnt = slot.start_cnt();
+        let duplicates = start_cnt.saturating_sub(1);
+        for dbl in 0..=duplicates {
+            let mut signs = String::new();
+            let mut subj = String::new();
+            let mutate_until = if duplicates > 0 {
+                match slot.nth_start(dbl) {
+                    None => {
+                        eprintln!(
+                            "Failed to detect task start #{dbl} for time {0}",
+                            conv::format_time_in_minutes(slot.time)
+                        );
+                        return Ok(());
+                    }
+                    Some(n) => n,
+                }
+            } else {
+                0
+            };
+
+            for (idx, tslot) in slot.tasks.iter().enumerate() {
+                if tslot.is_empty() {
+                    signs.push(agenda::SlotKind::None.to_char());
+                } else if duplicates == 0 {
+                    signs.push(tslot.kind.to_char());
+                    if tslot.kind.is_start() {
+                        subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
+                    }
+                } else if idx == mutate_until {
+                    signs.push(tslot.kind.to_char());
+                    subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
+                } else if idx < mutate_until {
+                    signs.push(tslot.kind.to_char_before());
+                } else {
+                    signs.push(tslot.kind.to_char_after());
+                }
+            }
+            if dbl == 0 {
+                writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", conv::format_time_in_minutes(slot.time), signs, subj)?;
+            } else {
+                writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", " ", signs, subj)?;
+            }
+        }
+    }
+    if !conf.hide_all_day && !ag.all_day.is_empty() {
+        writeln!(stdout, "\nAll day:")?;
+        for tid in &ag.all_day {
+            writeln!(stdout, "{0:width$}.{1}", *tid + 1, tasks[*tid].subject)?;
+        }
+    }
+
     Ok(())
 }
-
 
 fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {

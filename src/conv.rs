@@ -1,4 +1,7 @@
+use chrono::NaiveDate;
 use unicode_width::UnicodeWidthStr;
+
+use todo_lib::{human_date, todotxt};
 
 const KB: u64 = 1024;
 const MB: u64 = KB * 1024;
@@ -38,6 +41,12 @@ lazy_static! {
         ByteSize { s: "kb", m: KB },
         ByteSize { s: "k", m: KB },
     ];
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum TimeInterval {
+    Single(Option<u32>),
+    Range(Option<u32>, Option<u32>),
 }
 
 pub fn cut_string(s: &str, max_width: usize) -> &str {
@@ -143,6 +152,32 @@ pub fn str_to_time(s: &str) -> Option<u32> {
     }
 }
 
+pub fn str_to_time_interval(s: &str) -> TimeInterval {
+    let parts = if let Some(spl) = s.split_once('-') {
+        vec![spl.0, spl.1]
+    } else if let Some(spl) = s.split_once("..") {
+        vec![spl.0, spl.1]
+    } else {
+        vec![s]
+    };
+
+    if parts.len() == 1 {
+        TimeInterval::Single(str_to_time(parts[0]))
+    } else {
+        TimeInterval::Range(str_to_time(parts[0]), str_to_time(parts[1]))
+    }
+}
+
+pub fn str_to_date(s: &str, today: NaiveDate) -> Option<NaiveDate> {
+    if let Ok(d) = todotxt::parse_date(s, today) { Some(d) } else { human_date::human_to_date(today, s, 7).ok() }
+}
+
+pub fn format_time_in_minutes(tm: u32) -> String {
+    let h = tm / 60;
+    let m = tm % 60;
+    format!("{h:02}:{m:02}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,6 +243,24 @@ mod tests {
         ];
         for test in tests.iter() {
             let v = str_to_time(test.s);
+            assert_eq!(v, test.d, "\n{0:?}: {1:?} != {2:?}", test.s, test.d, v);
+        }
+    }
+    #[test]
+    fn str_time_interval_test() {
+        struct Test {
+            s: &'static str,
+            d: TimeInterval,
+        }
+        let tests: Vec<Test> = vec![
+            Test { s: "7829", d: TimeInterval::Single(None) },
+            Test { s: "1020", d: TimeInterval::Single(Some(1020)) },
+            Test { s: "..930", d: TimeInterval::Range(None, Some(930)) },
+            Test { s: "930am-", d: TimeInterval::Range(Some(930), None) },
+            Test { s: "930am-930pm", d: TimeInterval::Range(Some(930), Some(2130)) },
+        ];
+        for test in tests.iter() {
+            let v = str_to_time_interval(test.s);
             assert_eq!(v, test.d, "\n{0:?}: {1:?} != {2:?}", test.s, test.d, v);
         }
     }
