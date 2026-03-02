@@ -243,7 +243,10 @@ impl Agenda {
                 ag.time_start = 8 * SEC_IN_MINUTE_U32;
                 ag.time_end = 20 * SEC_IN_MINUTE_U32;
             } else if ag.time_end - ag.time_start < ag.slot_size {
-                eprintln!("Too small difference between start and end time: {s}. It should be at least a slot size '{0}'. Update the end time", ag.slot_size);
+                eprintln!(
+                    "Too small difference between start and end time: {s}. It should be at least a slot size '{0}'. Update the end time",
+                    ag.slot_size
+                );
                 ag.time_end = ag.time_start + ag.slot_size;
             }
         }
