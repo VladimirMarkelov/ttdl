@@ -22,6 +22,7 @@
       - [How to show archived todos](#how-to-show-archived-todos)
     - [Supported commands](#supported-commands)
       - [Calendar](#calendar)
+      - [Agenda](#agenda)
     - [Tags](#tags)
     - [Hashtags](#hashtags)
     - [Time tracking](#time-tracking)
@@ -1017,6 +1018,7 @@ Commands:
 - listprojects - show list of all project tags. Filters used by "list" are supported;
 - listcontexts - show list of all context tags. Filters used by "list" are supported;
 - listhashtags - show list of all hashtags. Filters used by "list" are supported.
+- agenda - show tasks of a selected day on a time line
 
 Most of the commands can be abbreviated. Please refer to built-in TTDL help to get a list of full command names and their aliases.
 
@@ -1086,6 +1088,87 @@ In the picture:
 - Today's date is 23rd of April
 - There is one todo is due on 25th
 - There are more than one todo that are due on 27th
+
+#### Agenda
+
+The command `agenda` (`ag` is a short alternative form) displays a selected day with all its tasks on a time line.
+A task is displayed on a time line only if its date (by default it is its due date, but you can use any custom tag) matches today or the date defined in the command line.
+The display is divided into two parts:
+
+1. Time line that includes tasks with defined time of a day when they are active. The active time (or time range) is set in the custom tag `time` (not customizable).
+2. The section `All day` that includes all tasks that do not have `time` tag. This section can be turned off.
+
+If a task has both correct date and `time` tag but its active time is out of displayed time line range, the task is ignored.
+
+Example: lets assume that today is `2025-10-14` and our todo.txt looks like this:
+
+```
+taskA due:2025-10-14 time:1200-1300
+taskB due:2025-10-14 time:1000-1100
+taskC due:2025-10-14 time:1230-1330
+taskD due:2025-10-14
+taskE due:2025-10-15
+```
+
+Displaying agenda for the time range between 12:00 and 14:00 prints this:
+
+```
+12:00 ┌   1.taskA due:2025-10-14 time:1200-1300
+12:30 │┌  3.taskC due:2025-10-14 time:1230-1330
+13:00 └│
+13:30  └
+14:00
+
+All day:
+ 4.taskD due:2025-10-14
+```
+
+Notes:
+
+- tasks `taskB` and `taskE` are ignored. Reason: `taskB` ends before the agenda starts, `taskE` is due the next day
+- tasks `taskA` and `taskC` overlap and are within agenda range
+- task `taskD` does not have tag `time`, so it is assumed that it lasts the whole day and it is printed in the section `All day`
+
+##### Agenda configuration
+
+Agenda has its own section `agenda` in the application configuration file.
+The options are:
+
+| Name | Default value | Definition |
+| --- | --- | --- |
+| hide_all_day | `false` | Do not show `All day` section |
+| slot | `30` - 30 minutes | A slot length in the time line. A bare number means number of minutes but you can use prefixes `m` and `h` to set custom values like `1h` |
+| time | `800-2000` - from 8:00 to 20:00 | Agenda time line display range. You can use `..` as a range separator instead of `-`. You can also omit any range end making it open. E.g, `-1500` shows agenda from `0:00` to `15:00`, and `1200-` means from `12:00` to `24:00`. You can use `am` and `pm` prefixes if you prefer 12-hour time format. E.g, `300am-300pm` |
+| fields | `due` | Field that defines whether task is displayed in the agenda. It comma-separated list, you can define more than one field at a time: `due,agenda`. In this case, the first non-empty tag of a task is checked |
+| marks | `┌│└╎╎─` | You can define your own symbols to draw the outline. The number of characters must be `6`. See the detailed description in the configuration file comments |
+
+##### Command-line options
+
+As a rule, command-line options override ones in the configuration file.
+The only exception for agenda is configuration option `fields` and command-line option `--on`:
+in some situations they can augment each other.
+It happens when you define the list of fields in the configuration file using `fields` option and pass in the command line only the agenda date `--on=<date>`.
+The defaults are the same as for configuration file options.
+If the last column contains `yes`, then read more detailed description in the [Agenda configuration](#agenda-configuration) section above.
+
+| Name | Corresponding config option | The same as config option |
+| --- | --- | --- |
+| `--hide-all-day` | `hide_all_day` | `yes` |
+| `--slot` | `slot` |  `yes` |
+| `--time` | `time` | `yes` |
+| `--on` | `fields` | `no` |
+
+The command line option is more powerful than its configuration sibling because you need a way to define an agenda date if it is not today.
+Available formats for the command line option:
+
+1. Only date `--on=<DATE>` - show an agenda for the date using `due` as a task's date tag
+2. Only field name(or list of names) `--on=due` or `--on=due,agenda` - the full equivalent of `fields` configuration option.
+3. Field name and date `--on="due,agenda=<DATE>"` - show agenda for `DATE` date using task's tags `due` and `agenda`
+
+Note: if the option's `--on` value does not contain `=` character, TTDL tries to detect what was passed: date or tag names.
+To do this, it tries to convert the value to a date first (so, values like `today` or `tomorrow` must work as expected).
+If conversion is successful, the value is considered a date.
+It means that you should not use tags that can be parsed as dates, see list of existing special values in the section [Human-readable dates](#human-readable-dates).
 
 ### Tags
 
