@@ -188,6 +188,7 @@ fn print_usage(program: &str, opts: &Options) {
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
     --interactive | -i, --init, --init-local, --group, --no-headers | -H, --hide-fields, --date-format
+    --hide-all-day, --time, --slot, --on
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -252,6 +253,8 @@ fn print_usage(program: &str, opts: &Options) {
     stats [--short] - shows todo list summary
         `ttdl stats --short` - displays only the number of total, active, done, overdue, and recurrent todos
         `ttdl stats` - detailed view with additional grouping by project and displaying total time spent on each group
+    agenda | ag - show a list of tasks for a single day as an agenda (i.e, dispalys a timetable and tasks in each time slot)
+        `ttdl agenda --hide-all-day` - show agenda without footer with tasks that do not have any time slot defined
     "#;
     println!("{commands}\n\n{filter}\n\n{newones}\n\n{extras}");
 }
