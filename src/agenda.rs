@@ -21,6 +21,34 @@ const SLOT_UNLIMITED: usize = 6;
 // It must the greatest index. So, adjust this constant if a new marker is added.
 pub const SLOT_NONE: usize = 7;
 
+// Agenda starts at 8:00
+const DEFAULT_AGENDA_START: u32 = 8 * SEC_IN_MINUTE_U32;
+// Agenda ends at 20:00
+const DEFAULT_AGENDA_END: u32 = 20 * SEC_IN_MINUTE_U32;
+// Default agenda slot time size - 30 minutes
+const DEFAULT_SLOT_SIZE: u32 = 30;
+// Minimal time slot size is 15 minutes
+const MIN_SLOT_SIZE: u32 = 15;
+// The end of the day 24:00 (or 0:00, or 12:00AM)
+const DAY_END: u32 = 24 * SEC_IN_MINUTE_U32;
+// Default set of characters to draw the outline. Charater indices:
+//   0 - Task starts
+//   1 - Task continues
+//   2 - Task finishes
+//   3 - Task has started before the agenda time range (e.g., task has `time:700-900` and you
+//       display agenda for 800-1200)
+//   4 - Task finishes after the agenda time range ends
+//   5 - Task is shorter than the time slot. It stars and ends within a single time slot
+//   6 - Task is "unlimited", i.e, it has start time but does not have end time (or end time is
+//       earlier than the start time)
+const DEFAULT_MARKS: &str = "┌│└╎╎─[";
+
+// Covert time in format "{hour}{zero-padded-minutes}" into the number of minutes since midnight.
+// E.g, "810" (that is 8:00) to 490 minutes.
+fn time_to_minutes(t: u32) -> u32 {
+    t / 100 * SEC_IN_MINUTE_U32 + t % 100
+}
+
 #[derive(PartialEq, Debug)]
 pub enum SlotKind {
     // Empty slot
@@ -178,18 +206,17 @@ pub struct Agenda {
 impl Agenda {
     pub fn new(dt: NaiveDate, conf: &conf::Conf) -> Self {
         let mut ag = Agenda {
-            time_start: 8 * SEC_IN_MINUTE_U32, // 8:00
-            time_end: 20 * SEC_IN_MINUTE_U32,  // 20:00
+            time_start: DEFAULT_AGENDA_START,
+            time_end: DEFAULT_AGENDA_END,
             date: dt,
             fields: Vec::new(),
-            slot_size: 30, // 30 minutes
+            slot_size: DEFAULT_SLOT_SIZE,
             slots: Vec::new(),
             all_day: Vec::new(),
-            marks: "┌│└╎╎─[".chars().collect(),
+            marks: DEFAULT_MARKS.chars().collect(),
         };
         if let Some(s) = &conf.marks {
             ag.marks = s.chars().collect();
-            ag.marks.push(' ');
         }
         // Slot size must be parsed before the parsing time range as time range uses the slot size
         if let Some(d_str) = &conf.slot {
@@ -199,9 +226,9 @@ impl Agenda {
                         eprintln!("Slot must be a positive integer number: '{d_str}'");
                     }
                     Ok(n) => {
-                        if !(15..24 * SEC_IN_MINUTE_U32).contains(&n) {
+                        if !(MIN_SLOT_SIZE..DAY_END).contains(&n) {
                             eprintln!(
-                                "Slot value must be between 15 minutes and 24 hours: '{d_str}'. Using default slot size"
+                                "Slot value must be between {MIN_SLOT_SIZE} minutes and 24 hours: '{d_str}'. Using default slot size"
                             );
                         } else {
                             ag.slot_size = n;
@@ -215,9 +242,9 @@ impl Agenda {
                     }
                     Some(dur) => {
                         let dur = (dur as u32) / SEC_IN_MINUTE_U32;
-                        if !(15..24 * SEC_IN_MINUTE_U32).contains(&dur) {
+                        if !(MIN_SLOT_SIZE..DAY_END).contains(&dur) {
                             eprintln!(
-                                "Slot value must be between 15 minutes and 24 hours: '{d_str}'. Using default slot size"
+                                "Slot value must be between {MIN_SLOT_SIZE} minutes and 24 hours: '{d_str}'. Using default slot size"
                             );
                         } else {
                             ag.slot_size = dur;
@@ -231,26 +258,26 @@ impl Agenda {
             match conv::str_to_time_interval(s) {
                 conv::TimeInterval::Single(val) => {
                     if let Some(t) = val {
-                        ag.time_start = t / 100 * SEC_IN_MINUTE_U32 + t % 100;
+                        ag.time_start = time_to_minutes(t);
                     }
                 }
                 conv::TimeInterval::Range(valb, vale) => {
                     if let Some(st) = valb {
-                        ag.time_start = st / 100 * SEC_IN_MINUTE_U32 + st % 100;
+                        ag.time_start = time_to_minutes(st);
                     } else {
                         ag.time_start = 0;
                     }
                     if let Some(en) = vale {
-                        ag.time_end = en / 100 * SEC_IN_MINUTE_U32 + en % 100;
+                        ag.time_end = time_to_minutes(en);
                     } else {
-                        ag.time_end = 24 * SEC_IN_MINUTE_U32;
+                        ag.time_end = DAY_END;
                     }
                 }
             }
             if ag.time_start >= ag.time_end {
                 eprintln!("Agenda start time is greater than the agenda end time: {s}. Reset values to the defaults");
-                ag.time_start = 8 * SEC_IN_MINUTE_U32;
-                ag.time_end = 20 * SEC_IN_MINUTE_U32;
+                ag.time_start = DEFAULT_AGENDA_START;
+                ag.time_end = DEFAULT_AGENDA_END;
             } else if ag.time_end - ag.time_start < ag.slot_size {
                 eprintln!(
                     "Too small difference between start and end time: {s}. It should be at least a slot size '{0}'. Update the end time",
@@ -272,6 +299,7 @@ impl Agenda {
         // `on_fields`. Reason: `on` is passed in command-line, so it has higher priority.
         if let Some(on_date) = &conf.on {
             if let Some((s_fields, s_date)) = on_date.split_once('=') {
+                // The value is a range (i.e, two values separated with '=')
                 if !s_date.is_empty() {
                     match conv::str_to_date(s_date, dt) {
                         Some(d) => ag.date = d,
@@ -285,8 +313,11 @@ impl Agenda {
                     }
                 }
             } else if let Some(dval) = conv::str_to_date(on_date, dt) {
+                // The value is a single word that looks like date. E.g `2025-10-11` or `today`
                 ag.date = dval;
             } else {
+                // The value is a single and cannot be converted to a date. Consider it a list of
+                // tag names separated with a comma
                 ag.fields.clear();
                 for f in on_date.split(',') {
                     ag.fields.push(f.to_string());
@@ -327,13 +358,13 @@ impl Agenda {
         let range = task.tags.get(TIME_FIELD).map(|sval| conv::str_to_time_interval(sval));
         match range {
             Some(conv::TimeInterval::Single(s)) => s.map(|sval| {
-                let st = sval / 100 * SEC_IN_MINUTE_U32 + sval % 100;
+                let st = time_to_minutes(sval);
                 let en = if st > 0 { st - 1 } else { 0 };
                 (st, en)
             }),
             Some(conv::TimeInterval::Range(sb, se)) => {
-                let st = if let Some(v) = sb { v / 100 * SEC_IN_MINUTE_U32 + v % 100 } else { 0 };
-                let en = if let Some(v) = se { v / 100 * SEC_IN_MINUTE_U32 + v % 100 } else { 24 * SEC_IN_MINUTE_U32 };
+                let st = if let Some(v) = sb { time_to_minutes(v) } else { 0 };
+                let en = if let Some(v) = se { time_to_minutes(v) } else { DAY_END };
                 Some((st, en))
             }
             None => None,
@@ -360,6 +391,67 @@ impl Agenda {
         ID_RESERVED
     }
 
+    fn kind_for_first_slot(
+        &self,
+        slot_id: usize,
+        slot_st: usize,
+        slot_en: usize,
+        time_st: u32,
+        time_en: u32,
+    ) -> SlotKind {
+        if self.slots[slot_id].time > time_st {
+            SlotKind::StartEarly
+        } else if slot_st == slot_en && time_en > time_st {
+            SlotKind::Single
+        } else if slot_st == slot_en {
+            SlotKind::Unlimited
+        } else {
+            SlotKind::Start
+        }
+    }
+
+    fn kind_for_middle_slot(
+        &self,
+        slot_id: usize,
+        slot_st: usize,
+        slot_en: usize,
+        time_st: u32,
+        time_en: u32,
+    ) -> SlotKind {
+        if slot_st == slot_en && time_en > time_st {
+            SlotKind::Single
+        } else if slot_st == slot_en {
+            SlotKind::Unlimited
+        } else if slot_id == slot_st {
+            SlotKind::Start
+        } else if slot_id == slot_en {
+            SlotKind::Finish
+        } else {
+            SlotKind::Middle
+        }
+    }
+
+    fn kind_for_last_slot(
+        &self,
+        slot_id: usize,
+        slot_st: usize,
+        slot_en: usize,
+        time_st: u32,
+        time_en: u32,
+    ) -> SlotKind {
+        if slot_id == slot_st {
+            SlotKind::Start
+        } else if self.slots[slot_id].time + self.slot_size < time_en {
+            SlotKind::FinishLate
+        } else if slot_st == slot_en && time_en > time_st {
+            SlotKind::Single
+        } else if slot_st == slot_en {
+            SlotKind::Unlimited
+        } else {
+            SlotKind::Finish
+        }
+    }
+
     // Fill the outline using the task data. The most important part of the function is to
     // determine what task state is in every slot.
     fn fill_column(&mut self, slot_st: usize, slot_en: usize, col: usize, task_id: usize, time_st: u32, time_en: u32) {
@@ -369,37 +461,11 @@ impl Agenda {
             }
             let new_slot = TaskSlot {
                 kind: if slot_id == 0 {
-                    if self.slots[slot_id].time > time_st {
-                        SlotKind::StartEarly
-                    } else if slot_st == slot_en && time_en > time_st {
-                        SlotKind::Single
-                    } else if slot_st == slot_en {
-                        SlotKind::Unlimited
-                    } else {
-                        SlotKind::Start
-                    }
+                    self.kind_for_first_slot(slot_id, slot_st, slot_en, time_st, time_en)
                 } else if slot_id == self.slots.len() - 1 {
-                    if slot_id == slot_st {
-                        SlotKind::Start
-                    } else if self.slots[slot_id].time + self.slot_size < time_en {
-                        SlotKind::FinishLate
-                    } else if slot_st == slot_en && time_en > time_st {
-                        SlotKind::Single
-                    } else if slot_st == slot_en {
-                        SlotKind::Unlimited
-                    } else {
-                        SlotKind::Finish
-                    }
-                } else if slot_st == slot_en && time_en > time_st {
-                    SlotKind::Single
-                } else if slot_st == slot_en {
-                    SlotKind::Unlimited
-                } else if slot_id == slot_st {
-                    SlotKind::Start
-                } else if slot_id == slot_en {
-                    SlotKind::Finish
+                    self.kind_for_last_slot(slot_id, slot_st, slot_en, time_st, time_en)
                 } else {
-                    SlotKind::Middle
+                    self.kind_for_middle_slot(slot_id, slot_st, slot_en, time_st, time_en)
                 },
                 id: task_id,
             };
@@ -418,7 +484,7 @@ impl Agenda {
             return;
         }
         let time_end = if time_end < time_start { time_start } else { time_end };
-        let start_diff = time_start - self.time_start;
+        let start_diff = time_start.saturating_sub(self.time_start);
         let end_diff = time_end - self.time_start;
         let slot_st = if time_start >= self.time_start { (start_diff / self.slot_size) as usize } else { 0 };
         let slot_start_at = slot_st as u32 * self.slot_size + self.time_start;
