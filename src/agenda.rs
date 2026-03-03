@@ -421,10 +421,23 @@ impl Agenda {
         let start_diff = time_start - self.time_start;
         let end_diff = time_end - self.time_start;
         let slot_st = if time_start >= self.time_start { (start_diff / self.slot_size) as usize } else { 0 };
-        let slot_en = {
+        let slot_start_at = slot_st as u32 * self.slot_size + self.time_start;
+        let mut slot_en = {
             let en = (end_diff / self.slot_size) as usize;
             if en >= self.slots.len() { self.slots.len() - 1 } else { en }
         };
+        // If a task spans over more than 1 time slot and its end time is in the middle of the last
+        // time slot, increase the last occupied slot index.
+        // Example: `time:1350-1410` with time slot `30` will be drawn in the outline slots:
+        //      1330, 1400, and 1430.
+        //      But `time:1400-1410` will be drawn in a single time slot 1400 with a special
+        //      character.
+        if (time_start < slot_start_at || time_end >= (slot_start_at + self.slot_size))
+            && slot_en < self.slots.len() - 1
+            && !end_diff.is_multiple_of(self.slot_size)
+        {
+            slot_en += 1;
+        }
         let mut max_cols = 0usize;
         let mut min_cols = ID_RESERVED;
         for slot in &self.slots {

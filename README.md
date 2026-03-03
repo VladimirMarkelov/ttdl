@@ -1140,7 +1140,7 @@ The options are:
 | slot | `30` - 30 minutes | A slot length in the time line. A bare number means number of minutes but you can use prefixes `m` and `h` to set custom values like `1h` |
 | time | `800-2000` - from 8:00 to 20:00 | Agenda time line display range. You can use `..` as a range separator instead of `-`. You can also omit any range end making it open. E.g, `-1500` shows agenda from `0:00` to `15:00`, and `1200-` means from `12:00` to `24:00`. You can use `am` and `pm` prefixes if you prefer 12-hour time format. E.g, `300am-300pm` |
 | fields | `due` | Field that defines whether task is displayed in the agenda. It comma-separated list, you can define more than one field at a time: `due,agenda`. In this case, the first non-empty tag of a task is checked |
-| marks | `┌│└╎╎─` | You can define your own symbols to draw the outline. The number of characters must be `6`. See the detailed description in the configuration file comments |
+| marks | `┌│└╎╎─[` | You can define your own symbols to draw the outline. The number of characters must be `7`. See the detailed description in the configuration file comments |
 
 ##### Command-line options
 

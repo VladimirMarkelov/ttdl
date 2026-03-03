@@ -3,7 +3,7 @@ ttdl (4.24.0) unstable; urgency=medium
   *  New top-level command `agenda` to show a selected day as an organizer
      with all day's task at a time line
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 01 Mar 2026 16:50:07 -0800
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Mon, 02 Mar 2026 21:33:40 -0800
 
 ttdl (4.23.0) unstable; urgency=medium
 

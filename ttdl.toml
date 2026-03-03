@@ -215,5 +215,6 @@ context_color = "green"
 #   2       Task finishes
 #   3       Task has started before the agenda time range (e.g., task has `time:700-900` and you display agenda for 800-1200)
 #   4       Task finishes after the agenda time range ends
-#   5       Task is shorter than the time slot. It stars and ends within this time slot
+#   5       Task is shorter than the time slot. It stars and ends within a single time slot
+#   6       Task is "unlimited", i.e, it has start time but does not have end time (or end time is earlier than the start time)
 # marks = "┌│└╎╎─["
