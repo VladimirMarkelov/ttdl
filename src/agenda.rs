@@ -13,14 +13,15 @@ const ID_RESERVED: usize = 999_999_999;
 // See enum SlotKind for detailed explanation.
 const SLOT_START: usize = 0;
 const SLOT_STARTEARLY: usize = 3;
-const SLOT_FINISH: usize = 2;
+pub const SLOT_FINISH: usize = 2;
 const SLOT_FINISHLATE: usize = 4;
 const SLOT_MIDDLE: usize = 1;
 const SLOT_SINGLE: usize = 5;
-// It must the biggest number. So, adjust this constant if a new marker is added.
-const SLOT_NONE: usize = 6;
+const SLOT_UNLIMITED: usize = 6;
+// It must the greatest index. So, adjust this constant if a new marker is added.
+pub const SLOT_NONE: usize = 7;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum SlotKind {
     // Empty slot
     None,
@@ -36,6 +37,8 @@ pub enum SlotKind {
     FinishLate,
     // A task that is shorter than a time slot
     Single,
+    // Unlimited - a task that does not have the end time, e.g `time:1000`
+    Unlimited,
 }
 
 impl SlotKind {
@@ -51,6 +54,7 @@ impl SlotKind {
             SlotKind::FinishLate => SLOT_FINISHLATE,
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_SINGLE,
+            SlotKind::Unlimited => SLOT_UNLIMITED,
         }
     }
     // When lines are duplicated, to avoid confusion, it is critical to display easy to read
@@ -66,6 +70,7 @@ impl SlotKind {
             SlotKind::FinishLate => SLOT_FINISHLATE,
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_NONE,
+            SlotKind::Unlimited => SLOT_NONE,
         }
     }
     // When lines are duplicated, to avoid confusion, it is critical to display easy to read
@@ -81,12 +86,16 @@ impl SlotKind {
             SlotKind::FinishLate => SLOT_MIDDLE,
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_NONE,
+            SlotKind::Unlimited => SLOT_NONE,
         }
     }
     // Returns true if the SlotKind means the start has just started (i.e, it is the first line
     // when the task appears in the outline)
     pub fn is_start(&self) -> bool {
-        *self == SlotKind::Start || *self == SlotKind::StartEarly || *self == SlotKind::Single
+        *self == SlotKind::Start
+            || *self == SlotKind::StartEarly
+            || *self == SlotKind::Single
+            || *self == SlotKind::Unlimited
     }
 }
 
@@ -176,7 +185,7 @@ impl Agenda {
             slot_size: 30, // 30 minutes
             slots: Vec::new(),
             all_day: Vec::new(),
-            marks: "┌│└╎╎─ ".chars().collect(),
+            marks: "┌│└╎╎─[".chars().collect(),
         };
         if let Some(s) = &conf.marks {
             ag.marks = s.chars().collect();
@@ -319,7 +328,7 @@ impl Agenda {
         match range {
             Some(conv::TimeInterval::Single(s)) => s.map(|sval| {
                 let st = sval / 100 * SEC_IN_MINUTE_U32 + sval % 100;
-                let en = st + self.slot_size;
+                let en = if st > 0 { st - 1 } else { 0 };
                 (st, en)
             }),
             Some(conv::TimeInterval::Range(sb, se)) => {
@@ -362,8 +371,10 @@ impl Agenda {
                 kind: if slot_id == 0 {
                     if self.slots[slot_id].time > time_st {
                         SlotKind::StartEarly
-                    } else if slot_st == slot_en {
+                    } else if slot_st == slot_en && time_en > time_st {
                         SlotKind::Single
+                    } else if slot_st == slot_en {
+                        SlotKind::Unlimited
                     } else {
                         SlotKind::Start
                     }
@@ -372,13 +383,17 @@ impl Agenda {
                         SlotKind::Start
                     } else if self.slots[slot_id].time + self.slot_size < time_en {
                         SlotKind::FinishLate
-                    } else if slot_st == slot_en {
+                    } else if slot_st == slot_en && time_en > time_st {
                         SlotKind::Single
+                    } else if slot_st == slot_en {
+                        SlotKind::Unlimited
                     } else {
                         SlotKind::Finish
                     }
-                } else if slot_st == slot_en {
+                } else if slot_st == slot_en && time_en > time_st {
                     SlotKind::Single
+                } else if slot_st == slot_en {
+                    SlotKind::Unlimited
                 } else if slot_id == slot_st {
                     SlotKind::Start
                 } else if slot_id == slot_en {
@@ -402,10 +417,12 @@ impl Agenda {
             self.all_day.push(id);
             return;
         }
-        let slot_st =
-            if time_start >= self.time_start { ((time_start - self.time_start) / self.slot_size) as usize } else { 0 };
+        let time_end = if time_end < time_start { time_start } else { time_end };
+        let start_diff = time_start - self.time_start;
+        let end_diff = time_end - self.time_start;
+        let slot_st = if time_start >= self.time_start { (start_diff / self.slot_size) as usize } else { 0 };
         let slot_en = {
-            let en = ((time_end - self.time_start) / self.slot_size) as usize;
+            let en = (end_diff / self.slot_size) as usize;
             if en >= self.slots.len() { self.slots.len() - 1 } else { en }
         };
         let mut max_cols = 0usize;
@@ -438,7 +455,10 @@ impl Agenda {
                 continue;
             }
             if let Some((task_st, task_en)) = self.task_time(&tasks[*tid]) {
-                if task_st > self.time_end || task_en < self.time_start {
+                let unlimited = task_st < task_en;
+                let before = !unlimited && (task_en < self.time_start);
+                let after = task_st > self.time_end;
+                if before || after {
                     continue;
                 }
                 self.add_task_to_agenda(task_st, task_en, *tid);
@@ -461,6 +481,6 @@ impl Agenda {
 
     // Returns a character for a certain task slot kind.
     pub fn mark(&self, idx: usize) -> char {
-        if idx > 5 { ' ' } else { self.marks[idx] }
+        if idx >= SLOT_NONE { ' ' } else { self.marks[idx] }
     }
 }

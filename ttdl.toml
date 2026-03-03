@@ -216,4 +216,4 @@ context_color = "green"
 #   3       Task has started before the agenda time range (e.g., task has `time:700-900` and you display agenda for 800-1200)
 #   4       Task finishes after the agenda time range ends
 #   5       Task is shorter than the time slot. It stars and ends within this time slot
-# marks = "┌│└╎╎─"
+# marks = "┌│└╎╎─["

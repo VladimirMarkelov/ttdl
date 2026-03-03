@@ -399,8 +399,9 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
 
     let width = fmt::number_of_digits(max_id);
     let col_cnt = ag.max_columns();
+    let mut last_signs = String::new();
 
-    for slot in &ag.slots {
+    for (slot_idx, slot) in ag.slots.iter().enumerate() {
         let start_cnt = slot.start_cnt();
         let duplicates = start_cnt.saturating_sub(1);
         for dbl in 0..=duplicates {
@@ -433,7 +434,18 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
                     signs.push(ag.mark(tslot.kind.to_char_index()));
                     subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
                 } else if idx < mutate_until {
-                    signs.push(ag.mark(tslot.kind.to_char_before_index()));
+                    let this_finish = tslot.kind == agenda::SlotKind::Finish;
+                    let last_finish = if this_finish && slot_idx > 0 {
+                        let c: Vec<char> = last_signs.chars().collect();
+                        c.len() > idx && c[idx] == ag.mark(agenda::SLOT_FINISH)
+                    } else {
+                        false
+                    };
+                    if last_finish || !this_finish {
+                        signs.push(ag.mark(tslot.kind.to_char_before_index()));
+                    } else {
+                        signs.push(ag.mark(tslot.kind.to_char_index()));
+                    }
                 } else {
                     signs.push(ag.mark(tslot.kind.to_char_after_index()));
                 }
@@ -443,6 +455,7 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
             } else {
                 writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", " ", signs, subj)?;
             }
+            last_signs = signs;
         }
     }
     if !conf.hide_all_day && !ag.all_day.is_empty() {

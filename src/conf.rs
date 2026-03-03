@@ -12,6 +12,7 @@ use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
 use unicode_width::UnicodeWidthStr;
 
+use crate::agenda::SLOT_NONE;
 use crate::conv::{self, SEC_IN_MINUTE_U32};
 use crate::fmt;
 use crate::subj_clean::Hide;
@@ -986,9 +987,9 @@ fn validate_agenda_config(conf: &Conf) -> Result<()> {
         }
     }
     if let Some(marks) = &conf.marks
-        && marks.chars().count() != 6
+        && marks.chars().count() != SLOT_NONE
     {
-        return Err(anyhow!("Agenda marks must contain 6 characters"));
+        return Err(anyhow!("Agenda marks must contain {0} characters", SLOT_NONE));
     }
     Ok(())
 }
