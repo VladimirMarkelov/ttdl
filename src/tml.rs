@@ -81,5 +81,5 @@ pub struct Conf {
     pub global: Global,
     pub syntax: Option<Syntax>,
     pub fields: Option<Vec<CustomField>>,
-    pub agenda: Agenda,
+    pub agenda: Option<Agenda>,
 }

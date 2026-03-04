@@ -995,14 +995,16 @@ fn validate_agenda_config(conf: &Conf) -> Result<()> {
 }
 
 fn update_agenda_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
-    if let Some(hide) = tc.agenda.hide_all_day {
-        conf.hide_all_day = hide;
+    if let Some(agenda_tml) = &tc.agenda {
+        if let Some(hide) = agenda_tml.hide_all_day {
+            conf.hide_all_day = hide;
+        }
+        conf.time_range = agenda_tml.time.clone();
+        conf.slot = agenda_tml.slot.clone();
+        conf.marks = agenda_tml.marks.clone();
+        conf.on_fields = agenda_tml.fields.clone();
+        validate_agenda_config(conf)?;
     }
-    conf.time_range = tc.agenda.time.clone();
-    conf.slot = tc.agenda.slot.clone();
-    conf.marks = tc.agenda.marks.clone();
-    conf.on_fields = tc.agenda.fields.clone();
-    validate_agenda_config(conf)?;
     Ok(())
 }
 
