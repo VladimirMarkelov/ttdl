@@ -61,6 +61,15 @@ pub fn hide_any(subj: &mut String, what: &str) {
     }
 }
 
+pub fn hide_all(subj: &str, fields: &[String]) -> String {
+    let mut subj = subj.to_string();
+    for fld in fields {
+        let tg = format!(" {fld}:");
+        hide_any(&mut subj, &tg);
+    }
+    subj
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

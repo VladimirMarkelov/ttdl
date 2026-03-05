@@ -30,6 +30,7 @@ use todotxt::CompletionConfig;
 
 use crate::cal::CalPrinter;
 use crate::human_date::{calendar_first_day, calendar_last_day};
+use crate::subj_clean::hide_all;
 use todo_lib::*;
 
 const TASK_HIDDEN_OFF: &str = "0";
@@ -451,6 +452,7 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
                     signs.push(ag.mark(tslot.kind.to_char_after_index()));
                 }
             }
+            subj = hide_all(&subj, &conf.fmt.hide_fields);
             if dbl == 0 {
                 writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", conv::format_time_in_minutes(slot.time), signs, subj)?;
             } else {
@@ -462,7 +464,8 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
     if !conf.hide_all_day && !ag.all_day.is_empty() {
         writeln!(stdout, "\nAll day:")?;
         for tid in &ag.all_day {
-            writeln!(stdout, "{0:width$}.{1}", *tid + 1, tasks[*tid].subject)?;
+            let desc = hide_all(&tasks[*tid].subject, &conf.fmt.hide_fields);
+            writeln!(stdout, "{0:width$}.{1}", *tid + 1, desc)?;
         }
     }
 

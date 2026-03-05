@@ -11,7 +11,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::colauto::cleanup_description;
 use crate::conv;
 use crate::human_date;
-use crate::subj_clean::{Hide, hide_any};
+use crate::subj_clean::{Hide, hide_all};
 
 const SPENT_WIDTH: usize = 6;
 const JSON_DESC: &str = "description";
@@ -856,12 +856,7 @@ fn print_line(
 
     let fs: Vec<&str> = flist.iter().map(|it| it.as_str()).collect();
     cleanup_description(&mut desc, &fs, c);
-    if !c.hide_fields.is_empty() {
-        for fld in c.hide_fields.iter() {
-            let tg = format!(" {fld}:");
-            hide_any(&mut desc, &tg);
-        }
-    }
+    desc = hide_all(&desc, &c.hide_fields);
     let mut subj_printed = false;
     for f in flist.iter() {
         match f.as_str() {

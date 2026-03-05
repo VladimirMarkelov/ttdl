@@ -1,3 +1,9 @@
+ttdl (4.24.3) unstable; urgency=medium
+
+  *  Agenda output supports option `--hide-fields`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 04 Mar 2026 19:23:34 -0800
+
 ttdl (4.24.2) unstable; urgency=medium
 
   *  Agenda configuration did not work (except 'marks' option)
