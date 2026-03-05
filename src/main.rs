@@ -29,6 +29,7 @@ use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 use todotxt::CompletionConfig;
 
 use crate::cal::CalPrinter;
+use crate::fmt::print_with_highlight;
 use crate::human_date::{calendar_first_day, calendar_last_day};
 use crate::subj_clean::hide_all;
 use todo_lib::*;
@@ -401,6 +402,7 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
     let width = fmt::number_of_digits(max_id);
     let col_cnt = ag.max_columns();
     let mut last_signs = String::new();
+    let fg = conf.fmt.colors.default_fg.clone();
 
     for (slot_idx, slot) in ag.slots.iter().enumerate() {
         let start_cnt = slot.start_cnt();
@@ -453,11 +455,14 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
                 }
             }
             subj = hide_all(&subj, &conf.fmt.hide_fields);
+            stdout.set_color(&fg)?;
             if dbl == 0 {
-                writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", conv::format_time_in_minutes(slot.time), signs, subj)?;
+                write!(stdout, "{0:5} ", conv::format_time_in_minutes(slot.time))?;
             } else {
-                writeln!(stdout, "{0:5} {1:<col_cnt$} {2}", " ", signs, subj)?;
+                write!(stdout, "{0:5} ", " ")?;
             }
+            print_with_highlight(stdout, &format!("{signs:<col_cnt$} {subj}"), &fg, &conf.fmt)?;
+            writeln!(stdout)?;
             last_signs = signs;
         }
     }

@@ -700,7 +700,7 @@ fn print_with_color(stdout: &mut StandardStream, msg: &str, color: &ColorSpec) -
     write!(stdout, "{msg}")
 }
 
-fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpec, c: &Conf) -> io::Result<()> {
+pub fn print_with_highlight(stdout: &mut StandardStream, msg: &str, color: &ColorSpec, c: &Conf) -> io::Result<()> {
     if !c.syntax {
         return print_with_color(stdout, msg, color);
     }
