@@ -189,7 +189,7 @@ fn print_usage(program: &str, opts: &Options) {
     let extras = r#"Extra options:
     --stdin, --dry-run, --sort | -s, --sort-rev, --wrap, --short, --width, --local, --no-colors, --syntax, --no-syntax, --clean-subject, --auto-hide-cols, --auto-show-cols, --always-hide-cols
     --interactive | -i, --init, --init-local, --group, --no-headers | -H, --hide-fields, --date-format
-    --hide-all-day, --time, --slot, --on
+    --hide-all-day, --no-hide-all-day --time, --slot, --on
     "#;
     let commands = r#"Available commands:
     list | l - list todos
@@ -1406,6 +1406,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optopt("", "time", "Show an agenda for this time interval. Time is defined without a separator between hours and minutes, e.g, '930' means '9:30'", "[START][-][END]");
     opts.optopt("", "slot", "A slot size for an agenda in minutes. Default is 30 minutes", "[SLOT_SIZE]");
     opts.optflag("", "hide-all-day", "Do not show section 'All day' in agenda");
+    opts.optflag("", "no-hide-all-day", "Show section 'All day' in agenda if it is off in the configuration file");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1537,9 +1538,14 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     }
 
     conf.on = matches.opt_str("on");
-    conf.time_range = matches.opt_str("time");
-    conf.slot = matches.opt_str("slot");
-    conf.hide_all_day = matches.opt_present("hide-all-day");
+    if matches.opt_present("time") {
+        conf.time_range = matches.opt_str("time");
+    }
+    if matches.opt_present("slot") {
+        conf.slot = matches.opt_str("slot");
+    }
+    conf.hide_all_day = conf.hide_all_day || matches.opt_present("hide-all-day");
+    conf.hide_all_day = conf.hide_all_day && !matches.opt_present("no-hide-all-day");
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

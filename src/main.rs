@@ -434,14 +434,15 @@ fn task_list_agenda(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
                     signs.push(ag.mark(tslot.kind.to_char_index()));
                     subj = format!("{0:width$}.{1}", tslot.id + 1, tasks[tslot.id].subject);
                 } else if idx < mutate_until {
-                    let this_finish = tslot.kind == agenda::SlotKind::Finish;
-                    let last_finish = if this_finish && slot_idx > 0 {
+                    // Extra checks to avoid duplication of end task symbol
+                    let this_line_finish = tslot.kind == agenda::SlotKind::Finish;
+                    let prev_line_finish = if this_line_finish && slot_idx > 0 {
                         let c: Vec<char> = last_signs.chars().collect();
                         c.len() > idx && c[idx] == ag.mark(agenda::SLOT_FINISH)
                     } else {
                         false
                     };
-                    if last_finish || !this_finish {
+                    if prev_line_finish || !this_line_finish {
                         signs.push(ag.mark(tslot.kind.to_char_before_index()));
                     } else {
                         signs.push(ag.mark(tslot.kind.to_char_index()));
