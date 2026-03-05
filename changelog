@@ -1,3 +1,10 @@
+ttdl (4.24.2) unstable; urgency=medium
+
+  *  Agenda configuration did not work (except 'marks' option)
+  *  New option `--no-hide-all-day` for case when it is `true` in the config
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 04 Mar 2026 18:53:52 -0800
+
 ttdl (4.24.0) unstable; urgency=medium
 
   *  New top-level command `agenda` to show a selected day as an organizer

@@ -1154,11 +1154,14 @@ If the last column contains `yes`, then read more detailed description in the [A
 | Name | Corresponding config option | The same as config option |
 | --- | --- | --- |
 | `--hide-all-day` | `hide_all_day` | `yes` |
+| `--no- hide-all-day` | `hide_all_day` | `yes*` |
 | `--slot` | `slot` |  `yes` |
 | `--time` | `time` | `yes` |
 | `--on` | `fields` | `no` |
 
-The command line option is more powerful than its configuration sibling because you need a way to define an agenda date if it is not today.
+The option `--no-hide-all-day` is useful when you disable showing `All day` section in the configuration file, but you want to see this list.
+
+The command line option `--on` is more powerful than its configuration sibling because you need a way to define an agenda date if it is not today.
 Available formats for the command line option:
 
 1. Only date `--on=<DATE>` - show an agenda for the date using `due` as a task's date tag
