@@ -108,6 +108,8 @@ pub struct Conf {
     pub hide_all_day: bool,
     // The list of special characters to display agenda
     pub marks: Option<String>,
+    // The optional resolution for a task: it is appended to a task subject after complition
+    pub resolution: Option<String>,
 }
 
 impl Default for Conf {
@@ -135,6 +137,7 @@ impl Default for Conf {
             hide_all_day: false,
             marks: None,
             on_fields: None,
+            resolution: None,
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -842,7 +845,7 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
             conf.done_file = pb;
         }
     }
-    if conf.done_file == PathBuf::from("") {
+    if *conf.done_file == *"" {
         conf.done_file = conf.todo_file.with_file_name(DONE_FILE);
     }
     if conf.done_file.is_dir() {
@@ -1198,7 +1201,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let program = args[0].clone();
     let mut conf = Conf::new();
 
-    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdgjlmnopqruxyz"
+    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdgjlmnopquxyz"
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
@@ -1407,6 +1410,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optopt("", "slot", "A slot size for an agenda in minutes. Default is 30 minutes", "[SLOT_SIZE]");
     opts.optflag("", "hide-all-day", "Do not show section 'All day' in agenda");
     opts.optflag("", "no-hide-all-day", "Show section 'All day' in agenda if it is off in the configuration file");
+    opts.optopt("r", "resolution", "A resolution is appended to every task that was completed", "[MESSAGE]");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1500,6 +1504,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         conf.add_completion_date_always = true;
     }
     conf.use_editor = matches.opt_present("interactive");
+    conf.resolution = matches.opt_str("resolution");
 
     if let Some(max_str) = matches.opt_str("max") {
         if let Ok(max) = max_str.parse::<usize>() {

@@ -36,6 +36,8 @@ use todo_lib::*;
 
 const TASK_HIDDEN_OFF: &str = "0";
 const TASK_HIDDEN_FLD: &str = "h";
+const COMPLETE_TASK: &str = "completed";
+const UNCOMPLETE_TASK: &str = "uncompleted";
 
 type FnDoneUndone =
     fn(tasks: &mut Vec<todotxt::Task>, ids: Option<&todo::IDVec>, mode: todotxt::CompletionConfig) -> todo::ChangedVec;
@@ -157,6 +159,20 @@ fn process_tasks(
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
         } else {
+            if action == COMPLETE_TASK
+                && let Some(resolution) = &c.resolution
+            {
+                for (idx, updated_task) in updated.iter().enumerate() {
+                    if !updated_task {
+                        continue;
+                    }
+                    if resolution.starts_with(' ') {
+                        clones[idx].subject = format!("{0}{resolution}", clones[idx].subject);
+                    } else {
+                        clones[idx].subject = format!("{0} {resolution}", clones[idx].subject);
+                    }
+                }
+            }
             let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
@@ -188,6 +204,21 @@ fn process_tasks(
             writeln!(stdout, "No todo was {action}")?;
             Ok(false)
         } else {
+            if action == COMPLETE_TASK
+                && let Some(resolution) = &c.resolution
+            {
+                for (idx, updated_task) in updated.iter().enumerate() {
+                    if !updated_task {
+                        continue;
+                    }
+                    let id = todos[idx];
+                    if resolution.starts_with(' ') {
+                        tasks[id].subject = format!("{0}{resolution}", tasks[id].subject);
+                    } else {
+                        tasks[id].subject = format!("{0} {resolution}", tasks[id].subject);
+                    }
+                }
+            }
             let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
@@ -376,7 +407,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         writeln!(stdout, "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete.")?;
         std::process::exit(1);
     }
-    let processed = process_tasks(stdout, tasks, conf, "completed", todo::done)?;
+    let processed = process_tasks(stdout, tasks, conf, COMPLETE_TASK, todo::done)?;
     if processed && let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
         eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
         std::process::exit(1);
@@ -490,7 +521,7 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         flt_conf.flt.all = tfilter::TodoStatus::Done;
     }
     let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
-    let processed = process_tasks(stdout, tasks, &flt_conf, "uncompleted", undone_adapter)?;
+    let processed = process_tasks(stdout, tasks, &flt_conf, UNCOMPLETE_TASK, undone_adapter)?;
     if processed && let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
         writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
         std::process::exit(1);
