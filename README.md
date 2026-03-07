@@ -459,6 +459,13 @@ When you complete a task and you do not want to see it in the default output any
 If you have completed an incorrect task by accident, you can get it back with the command `ttdl undone <ID>`.
 Where `ID` is the same that you used for `ttdo done` command, because marking a task completed does not change its ID.
 
+Task completion command `done` supports a command-line option `--resolution` (`-r` for short).
+The value of the option is a text that is added to all completed tasks.
+If the value does not start with a space character, the space is added automatically.
+The option is a smart equivalent for two consecutive commands: `ttdl append <task IDs> "resolution"` and `ttdl done <task IDs>`.
+It is smarter because, when using a command-line option, the tasks that are already completed do nto get extra text at the end.
+At the same time, `ttdl append` and `ttdl done`, especially with an extra option `-a`, could add the resolution to task that have been completed a long time ago.
+
 Hint: to remove an invalid task use `ttdl rm`. This command may change IDs of all or a few tasks. The command `ttdl rm` is irreversible.
 
 Hint: after some time, your `todo.txt` can grow long and can be full of completed tasks. You can use `ttdl archive` to move all completed tasks to `done.txt`. It may make TTDL faster.

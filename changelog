@@ -1,3 +1,10 @@
+ttdl (4.25.0) unstable; urgency=medium
+
+  *  New command-line option `--resolution` for the command `done`. If it
+     passsed in the command line, its value appended to completed tasks
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 06 Mar 2026 20:33:51 -0800
+
 ttdl (4.24.4) unstable; urgency=medium
 
   *  Agenda output supports option `--syntax`
