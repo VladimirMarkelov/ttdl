@@ -43,8 +43,8 @@ const DAY_END: u32 = 24 * SEC_IN_MINUTE_U32;
 //   5 - Task is shorter than the time slot. It stars and ends within a single time slot
 //   6 - Task is "unlimited", i.e, it has start time but does not have end time (or end time is
 //       earlier than the start time)
-//   7 - Task starts after the start of its time slot
-//   8 - Task ends before the end of its time slot
+//   7 - Task starts after the start of its first time slot  and the task is longer than 1 time slot
+//   8 - Task ends before the end of its last time slot  and the task is longer than 1 time slot
 const DEFAULT_MARKS: &str = "┌│└╎╎─[┬┴";
 
 // Covert time in format "{hour}{zero-padded-minutes}" into the number of minutes since midnight.
