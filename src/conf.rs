@@ -991,6 +991,7 @@ fn validate_agenda_config(conf: &Conf) -> Result<()> {
     }
     if let Some(marks) = &conf.marks
         && marks.chars().count() != SLOT_NONE
+        && marks.chars().count() != SLOT_NONE - 2
     {
         return Err(anyhow!("Agenda marks must contain {0} characters", SLOT_NONE));
     }

@@ -12,14 +12,16 @@ const ID_RESERVED: usize = 999_999_999;
 // Indexes in `agenda.marks` vector of various marks used when displaying an agenda.
 // See enum SlotKind for detailed explanation.
 const SLOT_START: usize = 0;
-const SLOT_STARTEARLY: usize = 3;
+const SLOT_START_EARLY: usize = 3;
 pub const SLOT_FINISH: usize = 2;
-const SLOT_FINISHLATE: usize = 4;
+const SLOT_FINISH_LATE: usize = 4;
 const SLOT_MIDDLE: usize = 1;
 const SLOT_SINGLE: usize = 5;
 const SLOT_UNLIMITED: usize = 6;
+const SLOT_START_AFTER: usize = 7;
+const SLOT_FINISH_BEFORE: usize = 8;
 // It must the greatest index. So, adjust this constant if a new marker is added.
-pub const SLOT_NONE: usize = 7;
+pub const SLOT_NONE: usize = 9;
 
 // Agenda starts at 8:00
 const DEFAULT_AGENDA_START: u32 = 8 * SEC_IN_MINUTE_U32;
@@ -41,7 +43,9 @@ const DAY_END: u32 = 24 * SEC_IN_MINUTE_U32;
 //   5 - Task is shorter than the time slot. It stars and ends within a single time slot
 //   6 - Task is "unlimited", i.e, it has start time but does not have end time (or end time is
 //       earlier than the start time)
-const DEFAULT_MARKS: &str = "┌│└╎╎─[";
+//   7 - Task starts after the start of its time slot
+//   8 - Task ends before the end of its time slot
+const DEFAULT_MARKS: &str = "┌│└╎╎─[┬┴";
 
 // Covert time in format "{hour}{zero-padded-minutes}" into the number of minutes since midnight.
 // E.g, "810" (that is 8:00) to 490 minutes.
@@ -67,6 +71,10 @@ pub enum SlotKind {
     Single,
     // Unlimited - a task that does not have the end time, e.g `time:1000`
     Unlimited,
+    // A task starts after its time slot starts
+    StartAfter,
+    // A task end before its time slot ends
+    FinishBefore,
 }
 
 impl SlotKind {
@@ -77,12 +85,14 @@ impl SlotKind {
         match self {
             SlotKind::None => SLOT_NONE,
             SlotKind::Start => SLOT_START,
-            SlotKind::StartEarly => SLOT_STARTEARLY,
+            SlotKind::StartEarly => SLOT_START_EARLY,
             SlotKind::Finish => SLOT_FINISH,
-            SlotKind::FinishLate => SLOT_FINISHLATE,
+            SlotKind::FinishLate => SLOT_FINISH_LATE,
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_SINGLE,
             SlotKind::Unlimited => SLOT_UNLIMITED,
+            SlotKind::StartAfter => SLOT_START_AFTER,
+            SlotKind::FinishBefore => SLOT_FINISH_BEFORE,
         }
     }
     // When lines are duplicated, to avoid confusion, it is critical to display easy to read
@@ -93,12 +103,14 @@ impl SlotKind {
         match self {
             SlotKind::None => SLOT_NONE,
             SlotKind::Start => SLOT_MIDDLE,
-            SlotKind::StartEarly => SLOT_STARTEARLY,
+            SlotKind::StartEarly => SLOT_START_EARLY,
             SlotKind::Finish => SLOT_NONE,
-            SlotKind::FinishLate => SLOT_FINISHLATE,
+            SlotKind::FinishLate => SLOT_FINISH_LATE,
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_NONE,
             SlotKind::Unlimited => SLOT_NONE,
+            SlotKind::StartAfter => SLOT_MIDDLE,
+            SlotKind::FinishBefore => SLOT_MIDDLE,
         }
     }
     // When lines are duplicated, to avoid confusion, it is critical to display easy to read
@@ -115,6 +127,8 @@ impl SlotKind {
             SlotKind::Middle => SLOT_MIDDLE,
             SlotKind::Single => SLOT_NONE,
             SlotKind::Unlimited => SLOT_NONE,
+            SlotKind::StartAfter => SLOT_NONE,
+            SlotKind::FinishBefore => SLOT_MIDDLE,
         }
     }
     // Returns true if the SlotKind means the start has just started (i.e, it is the first line
@@ -124,6 +138,7 @@ impl SlotKind {
             || *self == SlotKind::StartEarly
             || *self == SlotKind::Single
             || *self == SlotKind::Unlimited
+            || *self == SlotKind::StartAfter
     }
 }
 
@@ -217,6 +232,10 @@ impl Agenda {
         };
         if let Some(s) = &conf.marks {
             ag.marks = s.chars().collect();
+            if ag.marks.len() < SLOT_NONE {
+                ag.marks.push('┬');
+                ag.marks.push('┴');
+            }
         }
         // Slot size must be parsed before the parsing time range as time range uses the slot size
         if let Some(d_str) = &conf.slot {
@@ -399,14 +418,17 @@ impl Agenda {
         time_st: u32,
         time_en: u32,
     ) -> SlotKind {
+        let slot_time = self.slots[slot_id].time;
         if self.slots[slot_id].time > time_st {
             SlotKind::StartEarly
         } else if slot_st == slot_en && time_en > time_st {
             SlotKind::Single
         } else if slot_st == slot_en {
             SlotKind::Unlimited
-        } else {
+        } else if slot_id == slot_st && slot_time == time_st {
             SlotKind::Start
+        } else {
+            SlotKind::StartAfter
         }
     }
 
@@ -418,14 +440,19 @@ impl Agenda {
         time_st: u32,
         time_en: u32,
     ) -> SlotKind {
+        let slot_time = self.slots[slot_id].time;
         if slot_st == slot_en && time_en > time_st {
             SlotKind::Single
         } else if slot_st == slot_en {
             SlotKind::Unlimited
-        } else if slot_id == slot_st {
+        } else if slot_id == slot_st && slot_time == time_st {
             SlotKind::Start
-        } else if slot_id == slot_en {
+        } else if slot_id == slot_st {
+            SlotKind::StartAfter
+        } else if slot_id == slot_en && slot_time == time_en {
             SlotKind::Finish
+        } else if slot_id == slot_en {
+            SlotKind::FinishBefore
         } else {
             SlotKind::Middle
         }
@@ -439,16 +466,21 @@ impl Agenda {
         time_st: u32,
         time_en: u32,
     ) -> SlotKind {
-        if slot_id == slot_st {
+        let slot_time = self.slots[slot_id].time;
+        if slot_id == slot_st && slot_time == time_st {
             SlotKind::Start
-        } else if self.slots[slot_id].time + self.slot_size < time_en {
+        } else if slot_id == slot_st {
+            SlotKind::StartAfter
+        } else if self.slots[slot_id].time < time_en {
             SlotKind::FinishLate
         } else if slot_st == slot_en && time_en > time_st {
             SlotKind::Single
         } else if slot_st == slot_en {
             SlotKind::Unlimited
-        } else {
+        } else if slot_time == time_en {
             SlotKind::Finish
+        } else {
+            SlotKind::FinishBefore
         }
     }
 
@@ -485,7 +517,7 @@ impl Agenda {
         }
         let time_end = if time_end < time_start { time_start } else { time_end };
         let start_diff = time_start.saturating_sub(self.time_start);
-        let end_diff = time_end - self.time_start;
+        let end_diff = if time_end < self.time_start { 0 } else { time_end - self.time_start };
         let slot_st = if time_start >= self.time_start { (start_diff / self.slot_size) as usize } else { 0 };
         let slot_start_at = slot_st as u32 * self.slot_size + self.time_start;
         let mut slot_en = {
@@ -534,7 +566,7 @@ impl Agenda {
                 continue;
             }
             if let Some((task_st, task_en)) = self.task_time(&tasks[*tid]) {
-                let unlimited = task_st < task_en;
+                let unlimited = task_st > task_en;
                 let before = !unlimited && (task_en < self.time_start);
                 let after = task_st > self.time_end;
                 if before || after {

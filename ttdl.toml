@@ -218,3 +218,4 @@ context_color = "green"
 #   5       Task is shorter than the time slot. It stars and ends within a single time slot
 #   6       Task is "unlimited", i.e, it has start time but does not have end time (or end time is earlier than the start time)
 # marks = "┌│└╎╎─["
+# marks = "┌│└╎╎─[┬┴"
