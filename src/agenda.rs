@@ -34,18 +34,18 @@ const MIN_SLOT_SIZE: u32 = 15;
 // The end of the day 24:00 (or 0:00, or 12:00AM)
 const DAY_END: u32 = 24 * SEC_IN_MINUTE_U32;
 // Default set of characters to draw the outline. Charater indices:
-//   0 - Task starts
-//   1 - Task continues
-//   2 - Task finishes
-//   3 - Task has started before the agenda time range (e.g., task has `time:700-900` and you
+//   0 - ┌ - Task starts
+//   1 - │ - Task continues
+//   2 - └ - Task finishes
+//   3 - ╎ - Task has started before the agenda time range (e.g., task has `time:700-900` and you
 //       display agenda for 800-1200)
-//   4 - Task finishes after the agenda time range ends
-//   5 - Task is shorter than the time slot. It stars and ends within a single time slot
-//   6 - Task is "unlimited", i.e, it has start time but does not have end time (or end time is
+//   4 - ╎ - Task finishes after the agenda time range ends
+//   5 - ─ - Task is shorter than the time slot. It stars and ends within a single time slot
+//   6 - [ - Task is "unlimited", i.e, it has start time but does not have end time (or end time is
 //       earlier than the start time)
-//   7 - Task starts after the start of its first time slot  and the task is longer than 1 time slot
-//   8 - Task ends before the end of its last time slot  and the task is longer than 1 time slot
-const DEFAULT_MARKS: &str = "┌│└╎╎─[┬┴";
+//   7 - ~ - Task starts after the start of its first time slot  and the task is longer than 1 time slot
+//   8 - ~ - Task ends before the end of its last time slot  and the task is longer than 1 time slot
+const DEFAULT_MARKS: &str = "┌│└╎╎─[~~";
 
 // Covert time in format "{hour}{zero-padded-minutes}" into the number of minutes since midnight.
 // E.g, "810" (that is 8:00) to 490 minutes.
@@ -232,9 +232,10 @@ impl Agenda {
         };
         if let Some(s) = &conf.marks {
             ag.marks = s.chars().collect();
+            // Convert settings from v4.24 to v4.25
             if ag.marks.len() < SLOT_NONE {
-                ag.marks.push('┬');
-                ag.marks.push('┴');
+                ag.marks.push('~');
+                ag.marks.push('~');
             }
         }
         // Slot size must be parsed before the parsing time range as time range uses the slot size
@@ -517,7 +518,7 @@ impl Agenda {
         }
         let time_end = if time_end < time_start { time_start } else { time_end };
         let start_diff = time_start.saturating_sub(self.time_start);
-        let end_diff = if time_end < self.time_start { 0 } else { time_end - self.time_start };
+        let end_diff = time_end.saturating_sub(self.time_start);
         let slot_st = if time_start >= self.time_start { (start_diff / self.slot_size) as usize } else { 0 };
         let slot_start_at = slot_st as u32 * self.slot_size + self.time_start;
         let mut slot_en = {

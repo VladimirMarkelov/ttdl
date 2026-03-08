@@ -1147,21 +1147,21 @@ The options are:
 | slot | `30` - 30 minutes | A slot length in the time line. A bare number means number of minutes but you can use prefixes `m` and `h` to set custom values like `1h` |
 | time | `800-2000` - from 8:00 to 20:00 | Agenda time line display range. You can use `..` as a range separator instead of `-`. You can also omit any range end making it open. E.g, `-1500` shows agenda from `0:00` to `15:00`, and `1200-` means from `12:00` to `24:00`. You can use `am` and `pm` prefixes if you prefer 12-hour time format. E.g, `300am-300pm` |
 | fields | `due` | Field that defines whether task is displayed in the agenda. It comma-separated list, you can define more than one field at a time: `due,agenda`. In this case, the first non-empty tag of a task is checked |
-| marks | `┌│└╎╎─[┬┴` | You can define your own symbols to draw the outline. The number of characters must be `9`. See the detailed description in the configuration file comments |
+| marks | `┌│└╎╎─[~~` | You can define your own symbols to draw the outline. The number of characters must be `9`. See the detailed description in the configuration file comments |
 
 Explanation of the task marks:
 
 | Index | Mark | Meaning |
 | --- | --- | --- |
 | 0 | `┌` | Task starts at the beginning of the current slot |
-| 0 | `│` | Task is still active during the entire current slot |
-| 0 | `└` | Task finishes at this slot |
-| 0 | `╎` | Task starts before the agenda starts |
-| 0 | `╎` | Task ends after the agenda finishes |
-| 0 | `─` | Short task that spans over a single time slot |
-| 0 | `[` | Unlimited task - it has start time but the end time is undefined - start at the current time slot |
-| 0 | `┬` | Task starts in the middle of the current time slot |
-| 0 | `┴` | Task ends in the middle of the current time slot |
+| 1 | `│` | Task is still active during the entire current slot |
+| 2 | `└` | Task finishes at this slot |
+| 3 | `╎` | Task starts before the agenda starts |
+| 4 | `╎` | Task ends after the agenda finishes |
+| 5 | `─` | Short task that spans over a single time slot |
+| 6 | `[` | Unlimited task - it has start time but the end time is undefined - start at the current time slot |
+| 7 | `~` | Task starts in the middle of the current time slot |
+| 8 | `~` | Task ends in the middle of the current time slot |
 
 ##### Command-line options
 

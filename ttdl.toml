@@ -209,14 +209,14 @@ context_color = "green"
 # What fields to check when picking out tasks for an agenda
 # fields = "due"
 # Characters to use when drawing agenda
-#   Index   Used to display
-#   0       Task starts
-#   1       Task continues
-#   2       Task finishes
-#   3       Task has started before the agenda time range (e.g., task has `time:700-900` and you display agenda for 800-1200)
-#   4       Task finishes after the agenda time range ends
-#   5       Task is shorter than the time slot. It stars and ends within a single time slot
-#   6       Task is "unlimited", i.e, it has start time but does not have end time (or end time is earlier than the start time)
-#   7		Task starts after its first time slot starts and the task is longer than 1 time slot
-#   8		Task ends before its last time slot ends and the task is longer than 1 time slot
-# marks = "┌│└╎╎─[┬┴"
+#   Index Char  Used to display
+#   0     ┌     Task starts
+#   1     │     Task continues
+#   2     └     Task finishes
+#   3     ╎     Task has started before the agenda time range (e.g., task has `time:700-900` and you display agenda for 800-1200)
+#   4     ╎     Task finishes after the agenda time range ends
+#   5     ─     Task is shorter than the time slot. It stars and ends within a single time slot
+#   6     [     Task is "unlimited", i.e, it has start time but does not have end time (or end time is earlier than the start time)
+#   7     ~     Task starts after its first time slot starts and the task is longer than 1 time slot
+#   8     ~     Task ends before its last time slot ends and the task is longer than 1 time slot
+# marks = "┌│└╎╎─[~~"
