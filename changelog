@@ -1,3 +1,11 @@
+ttdl (4.25.1) unstable; urgency=medium
+
+  *  Two new special case for the agenda output added: a special mark when a
+     task starts after its time slot starts and when a task ends before its
+     last time slot ends
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sun, 08 Mar 2026 13:34:47 -0700
+
 ttdl (4.25.0) unstable; urgency=medium
 
   *  New command-line option `--resolution` for the command `done`. If it
