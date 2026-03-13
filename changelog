@@ -1,3 +1,16 @@
+ttdl (5.0.0) unstable; urgency=medium
+
+  *  Move toml crate from 0.x up to 1.x version
+  *  Bump all other crates including todo_lib
+  *  Major code cleanup: removed all custom-related code as todo_lib already
+     provides the same features
+  *  Instead of manual filtering tasks with custom filter, just pass the
+     filter value directly to thenew todo_lib
+  *  There were no new features or any changes, but due to huge code
+     refactoring I changed the major version 5.0.0
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 12 Mar 2026 20:59:47 -0700
+
 ttdl (4.25.1) unstable; urgency=medium
 
   *  Two new special case for the agenda output added: a special mark when a
