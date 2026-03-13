@@ -5,7 +5,6 @@ mod agenda;
 mod cal;
 mod colauto;
 mod conf;
-mod flt;
 mod fmt;
 mod stats;
 mod subj_clean;
@@ -78,41 +77,8 @@ fn is_filter_empty(flt: &tfilter::Conf) -> bool {
     true
 }
 
-fn filter_by_custom_tags(tasks: &[todotxt::Task], c: &conf::Conf, todos: todo::IDVec) -> todo::IDVec {
-    match &c.flt_ext {
-        None => todos,
-        Some(flt_str) => {
-            let mut flt_vec: Vec<flt::Filter> = Vec::new();
-            let or_char = if c.use_regex || flt_str.contains('~') { '~' } else { '|' };
-            for fstr in flt_str.split(or_char) {
-                if fstr.trim().is_empty() {
-                    continue;
-                }
-                let flt = flt::Filter::parse(fstr, c.use_regex);
-                if !flt.is_empty() {
-                    flt_vec.push(flt);
-                }
-            }
-            if flt_vec.is_empty() {
-                return todos;
-            }
-            let now = chrono::Local::now().date_naive();
-            let mut new_todos: todo::IDVec = Vec::new();
-            for filter in &flt_vec {
-                for idx in &todos {
-                    if filter.matches(&tasks[*idx], *idx + 1, now) {
-                        new_todos.push(*idx);
-                    }
-                }
-            }
-            new_todos
-        }
-    }
-}
-
 fn filter_tasks(tasks: &[todotxt::Task], c: &conf::Conf) -> todo::IDVec {
-    let todos = tfilter::filter(tasks, &c.flt);
-    let mut todos = filter_by_custom_tags(tasks, c, todos);
+    let mut todos = tfilter::filter(tasks, &c.flt);
     if !c.show_hidden {
         todos.retain(|&id| !task_is_hidden(&tasks[id]));
     }
