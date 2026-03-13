@@ -1,6 +1,6 @@
 [package]
 name = "ttdl"
-version = "4.25.1"
+version = "5.0.0"
 authors = ["Vladimir Markelov <vmatroskin@gmail.com>"]
 edition = "2024"
 keywords = ["todotxt", "terminal", "cli", "todo", "tasks"]
@@ -15,14 +15,13 @@ lto = true
 strip = "debuginfo"
 
 [dependencies]
-todo_lib = "10"
+todo_lib = "11"
 getopts = "^0.2"
 chrono = "^0.4"
 textwrap = "^0.16"
-lazy_static = "1"
 caseless = "^0.2"
 dirs = "6"
-toml = "^0.9"
+toml = "1"
 term_size = "^0.3"
 termcolor = "1"
 serde = "1"

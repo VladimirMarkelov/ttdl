@@ -84,7 +84,6 @@ pub struct Conf {
     pub fmt: fmt::Conf,
     pub flt: tfilter::Conf,
     pub sort: tsort::Conf,
-    pub flt_ext: Option<String>,
     pub postpone_threshold: bool,
     pub use_regex: bool,
 
@@ -150,7 +149,6 @@ impl Default for Conf {
             flt: Default::default(),
             sort: Default::default(),
             calendar: None,
-            flt_ext: None,
             postpone_threshold: false,
             use_regex: false,
         }
@@ -1521,21 +1519,21 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     conf.keep_empty = matches.opt_present("keep-empty");
     conf.keep_tags = matches.opt_present("keep-tags");
     // Parse filter must be called before checking `filter` or `fiter-tag`.
-    // Reason: fitter needs to know if regex is used beforehand.
+    // Reason: filter needs to know if regex is used beforehand.
     parse_filter(&matches, &mut conf.flt, soon_days)?;
     conf.use_regex = conf.flt.use_regex;
     if let Some(f_str) = matches.opt_str("filter-tag") {
         if !f_str.contains('=') {
-            conf.flt_ext = Some(format!("subj={f_str}"));
+            conf.flt.custom_filter = Some(format!("subj={f_str}"));
         } else {
-            conf.flt_ext = Some(f_str.clone());
+            conf.flt.custom_filter = Some(f_str.clone());
         }
     }
     if let Some(f_str) = matches.opt_str("filter") {
         if !f_str.contains('=') {
-            conf.flt_ext = Some(format!("subj={f_str}"));
+            conf.flt.custom_filter = Some(format!("subj={f_str}"));
         } else {
-            conf.flt_ext = Some(f_str.clone());
+            conf.flt.custom_filter = Some(f_str.clone());
         }
     }
     conf.postpone_threshold = matches.opt_present("update-threshold");
@@ -1685,8 +1683,9 @@ fn process_single_free_arg(conf: &mut Conf, soon_days: u8, edit_mode: bool, raw_
             .as_ref()
             .map_or(Some(subj.to_string()), |old_subj| Some([old_subj.as_str(), subj.as_str()].join(" ")));
     } else {
-        let flt_val = if let Some(f) = &conf.flt_ext { format!("subj={arg};{f}") } else { format!("subj={arg}") };
-        conf.flt_ext = Some(flt_val);
+        let flt_val =
+            if let Some(f) = &conf.flt.custom_filter { format!("subj={arg};{f}") } else { format!("subj={arg}") };
+        conf.flt.custom_filter = Some(flt_val);
     }
 }
 
