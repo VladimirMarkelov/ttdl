@@ -957,7 +957,7 @@ fn print_line(
                         None => String::new(),
                         Some(s) => s.to_string(),
                     };
-                    let value = conv::cut_string(&value, width);
+                    let value = cut_string(&value, width);
                     let clr = f.matches(value).unwrap_or_else(|| fg.clone());
                     print_with_color(stdout, &format!("{value:width$} "), &clr)?;
                 } else {
@@ -973,7 +973,7 @@ fn print_line(
                         }
                         Some(s) => s.to_string(),
                     };
-                    let value = conv::cut_string(&value, width);
+                    let value = cut_string(&value, width);
                     print_with_color(stdout, &format!("{value:width$} "), &fg)?;
                 }
             }
@@ -1534,6 +1534,17 @@ fn parse_subj(subj: &str) -> Vec<&str> {
         }
     }
     parts
+}
+
+fn cut_string(s: &str, max_width: usize) -> &str {
+    let w = s.width();
+    if max_width == 0 || w <= max_width {
+        return s;
+    }
+    match s.char_indices().nth(max_width) {
+        Some((pos, _)) => &s[..pos],
+        None => s,
+    }
 }
 
 #[cfg(test)]

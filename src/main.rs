@@ -1,13 +1,10 @@
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate serde_derive;
 
 mod agenda;
 mod cal;
 mod colauto;
 mod conf;
-mod conv;
 mod flt;
 mod fmt;
 mod stats;
