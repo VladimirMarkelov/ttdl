@@ -4,12 +4,12 @@
 //! bold, italic, inline code, and links — with optional OSC 8 hyperlinks
 //! and syntax highlighting of `+projects`, `@contexts`, and `tag:value` fields.
 
-use std::io::{self, Write};
+use std::io;
 use std::sync::OnceLock;
 
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use regex::Regex;
-use termcolor::{ColorSpec, HyperlinkSpec, StandardStream, WriteColor};
+use termcolor::{ColorSpec, HyperlinkSpec, WriteColor};
 
 use crate::fmt;
 
@@ -63,8 +63,8 @@ fn merge_md_style(base: &ColorSpec, bold: bool, italic: bool, underline: bool) -
 
 /// Writes `text` with syntax highlighting (projects, contexts, tags, hashtags)
 /// while preserving bold/italic/underline from the markdown stack.
-fn write_text_with_syntax(
-    stdout: &mut StandardStream,
+fn write_text_with_syntax<W: WriteColor>(
+    stdout: &mut W,
     text: &str,
     base: &ColorSpec,
     bold: bool,
@@ -97,7 +97,7 @@ fn write_text_with_syntax(
 
 /// Writes text, wrapping bare URLs in OSC 8 hyperlinks when running in a terminal.
 /// Trailing punctuation is stripped from matched URLs and printed as plain text.
-fn write_text_with_urls(stdout: &mut StandardStream, text: &str, color: &ColorSpec, c: &fmt::Conf) -> io::Result<()> {
+fn write_text_with_urls<W: WriteColor>(stdout: &mut W, text: &str, color: &ColorSpec, c: &fmt::Conf) -> io::Result<()> {
     if !c.atty || c.color_term == fmt::TermColorType::None {
         stdout.set_color(color)?;
         write!(stdout, "{text}")?;
@@ -134,7 +134,7 @@ fn write_text_with_urls(stdout: &mut StandardStream, text: &str, color: &ColorSp
 ///
 /// Supports bold, italic, inline code, links, and bare URLs.
 /// When `c.syntax` is true, also highlights +projects, @contexts, #hashtags, and tags.
-pub fn print_markdown(stdout: &mut StandardStream, text: &str, base: &ColorSpec, c: &fmt::Conf) -> io::Result<()> {
+pub fn print_markdown<W: WriteColor>(stdout: &mut W, text: &str, base: &ColorSpec, c: &fmt::Conf) -> io::Result<()> {
     let parser = Parser::new_ext(text, Options::empty());
     let mut bold = false;
     let mut italic = false;
@@ -192,8 +192,8 @@ pub fn print_markdown(stdout: &mut StandardStream, text: &str, base: &ColorSpec,
 /// Note: when `skip` or `limit` bisects a bare URL, the halves are rendered
 /// as plain text rather than hyperlinks.  This is a known limitation of the
 /// character-offset slicing approach; the output is visually correct.
-pub fn print_markdown_range(
-    stdout: &mut StandardStream,
+pub fn print_markdown_range<W: WriteColor>(
+    stdout: &mut W,
     text: &str,
     skip: usize,
     limit: usize,
@@ -304,6 +304,9 @@ pub fn print_markdown_range(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use termcolor::{Buffer, ColorSpec};
+
+    // ── visible_text ──────────────────────────────────────────────────────────
 
     #[test]
     fn visible_text_bold() {
@@ -351,6 +354,78 @@ mod tests {
         assert_eq!(visible_text("**bold** and *italic* and `code`"), "bold and italic and code");
     }
 
+    #[test]
+    fn visible_text_empty() {
+        assert_eq!(visible_text(""), "");
+    }
+
+    #[test]
+    fn visible_text_nested_formatting() {
+        assert_eq!(visible_text("**bold *and italic***"), "bold and italic");
+    }
+
+    #[test]
+    fn visible_text_soft_break() {
+        // pulldown-cmark emits SoftBreak between lines; visible_text renders it as a space
+        assert_eq!(visible_text("line one\nline two"), "line one line two");
+    }
+
+    #[test]
+    fn visible_text_multiple_links() {
+        assert_eq!(visible_text("[first](https://a.com) and [second](https://b.com)"), "first and second");
+    }
+
+    #[test]
+    fn visible_text_bare_url() {
+        // Bare URLs are plain text to the parser; they pass through unchanged
+        assert_eq!(visible_text("see https://example.com for details"), "see https://example.com for details");
+    }
+
+    // ── merge_md_style ────────────────────────────────────────────────────────
+
+    #[test]
+    fn merge_md_style_bold() {
+        let base = ColorSpec::new();
+        let result = merge_md_style(&base, true, false, false);
+        assert!(result.bold());
+        assert!(!result.italic());
+        assert!(!result.underline());
+    }
+
+    #[test]
+    fn merge_md_style_italic() {
+        let base = ColorSpec::new();
+        let result = merge_md_style(&base, false, true, false);
+        assert!(!result.bold());
+        assert!(result.italic());
+    }
+
+    #[test]
+    fn merge_md_style_underline() {
+        let base = ColorSpec::new();
+        let result = merge_md_style(&base, false, false, true);
+        assert!(result.underline());
+    }
+
+    #[test]
+    fn merge_md_style_all_flags() {
+        let base = ColorSpec::new();
+        let result = merge_md_style(&base, true, true, true);
+        assert!(result.bold());
+        assert!(result.italic());
+        assert!(result.underline());
+    }
+
+    #[test]
+    fn merge_md_style_preserves_base_color() {
+        use termcolor::Color;
+        let mut base = ColorSpec::new();
+        base.set_fg(Some(Color::Red));
+        let result = merge_md_style(&base, true, false, false);
+        assert_eq!(result.fg(), Some(&Color::Red));
+        assert!(result.bold());
+    }
+
     // ── trim_url_punctuation ──────────────────────────────────────────────────
 
     #[test]
@@ -379,5 +454,90 @@ mod tests {
         let (url, trailing) = trim_url_punctuation("https://example.com/path?q=1");
         assert_eq!(url, "https://example.com/path?q=1");
         assert_eq!(trailing, "");
+    }
+
+    // ── print_markdown output tests ───────────────────────────────────────────
+
+    fn make_conf() -> fmt::Conf {
+        fmt::Conf { atty: false, ..Default::default() }
+    }
+
+    fn render_markdown(text: &str) -> String {
+        let mut buf = Buffer::no_color();
+        let base = ColorSpec::new();
+        let c = make_conf();
+        print_markdown(&mut buf, text, &base, &c).unwrap();
+        String::from_utf8(buf.into_inner()).unwrap()
+    }
+
+    #[test]
+    fn print_markdown_plain_text() {
+        assert_eq!(render_markdown("hello world"), "hello world");
+    }
+
+    #[test]
+    fn print_markdown_bold() {
+        // Bold markers are consumed; visible text is the inner content
+        assert_eq!(render_markdown("**bold**"), "bold");
+    }
+
+    #[test]
+    fn print_markdown_italic() {
+        assert_eq!(render_markdown("*italic*"), "italic");
+    }
+
+    #[test]
+    fn print_markdown_code() {
+        assert_eq!(render_markdown("`code`"), "code");
+    }
+
+    #[test]
+    fn print_markdown_link() {
+        // Link label is the visible text; dest_url is only in hyperlink escape
+        assert_eq!(render_markdown("[label](https://example.com)"), "label");
+    }
+
+    #[test]
+    fn print_markdown_mixed() {
+        assert_eq!(render_markdown("**bold** and *italic*"), "bold and italic");
+    }
+
+    // ── print_markdown_range output tests ────────────────────────────────────
+
+    fn render_range(text: &str, skip: usize, limit: usize) -> String {
+        let mut buf = Buffer::no_color();
+        let base = ColorSpec::new();
+        let c = make_conf();
+        print_markdown_range(&mut buf, text, skip, limit, &base, &c).unwrap();
+        String::from_utf8(buf.into_inner()).unwrap()
+    }
+
+    #[test]
+    fn print_markdown_range_full() {
+        let text = "hello world";
+        let full = render_markdown(text);
+        let range = render_range(text, 0, full.chars().count());
+        assert_eq!(full, range);
+    }
+
+    #[test]
+    fn print_markdown_range_skip() {
+        // Skip first 6 chars of "hello world" → "world"
+        let result = render_range("hello world", 6, 5);
+        assert_eq!(result, "world");
+    }
+
+    #[test]
+    fn print_markdown_range_cut_through_formatted() {
+        // "**bold** text" → visible "bold text"; take first 4 chars → "bold"
+        let result = render_range("**bold** text", 0, 4);
+        assert_eq!(result, "bold");
+    }
+
+    #[test]
+    fn print_markdown_range_second_line() {
+        // "bold text" visible; skip 4 → " text"
+        let result = render_range("**bold** text", 4, 5);
+        assert_eq!(result, " text");
     }
 }
