@@ -31,6 +31,7 @@ unicode-width="^0.2"
 anyhow = "1"
 tempfile = "3"
 regex = "1"
+pulldown-cmark = { version = "0.13", default-features = false }
 
 [package.metadata.deb]
 section = "utility"
