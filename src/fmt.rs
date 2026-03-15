@@ -55,6 +55,7 @@ pub struct Colors {
     pub tag: ColorSpec,
     pub context: ColorSpec,
     pub project: ColorSpec,
+    #[cfg_attr(not(feature = "markdown"), allow(dead_code))]
     pub code: ColorSpec,
     pub default_fg: ColorSpec,
 
@@ -436,6 +437,7 @@ pub struct Conf {
     pub script_ext: String,
     pub script_prefix: String,
     pub syntax: bool,
+    #[cfg_attr(not(feature = "markdown"), allow(dead_code))]
     pub markdown: bool,
     pub custom_fields: Vec<CustomField>,
     pub custom_names: Vec<String>, // for performance
@@ -990,45 +992,67 @@ fn print_line(
     }
 
     if !subj_printed {
-        if c.markdown {
-            if c.width != 0 && c.long != LongLine::Simple {
-                let (skip, subj_w) = calc_width(c, flist, widths);
-                let visible = crate::md::visible_text(&desc);
-                let lines = textwrap::wrap(&visible, subj_w);
-                if c.long == LongLine::Cut || lines.len() == 1 {
-                    crate::md::print_markdown_range(stdout, &desc, 0, lines[0].chars().count(), &fg, c)?;
-                    writeln!(stdout)?;
+        #[cfg(feature = "markdown")]
+        {
+            if c.markdown {
+                if c.width != 0 && c.long != LongLine::Simple {
+                    let (skip, subj_w) = calc_width(c, flist, widths);
+                    let visible = crate::md::visible_text(&desc);
+                    let lines = textwrap::wrap(&visible, subj_w);
+                    if c.long == LongLine::Cut || lines.len() == 1 {
+                        crate::md::print_markdown_range(stdout, &desc, 0, lines[0].chars().count(), &fg, c)?;
+                        writeln!(stdout)?;
+                    } else {
+                        let mut char_offset = 0usize;
+                        for (i, line) in lines.iter().enumerate() {
+                            if i != 0 {
+                                print_with_color(stdout, &format!("{:width$}", " ", width = skip), &fg)?;
+                            }
+                            let line_len = line.chars().count();
+                            crate::md::print_markdown_range(stdout, &desc, char_offset, line_len, &fg, c)?;
+                            writeln!(stdout)?;
+                            char_offset += line_len;
+                        }
+                    }
                 } else {
-                    let mut char_offset = 0usize;
+                    crate::md::print_markdown(stdout, &desc, &fg, c)?;
+                    writeln!(stdout)?;
+                }
+            } else if c.width != 0 && c.long != LongLine::Simple {
+                let (skip, subj_w) = calc_width(c, flist, widths);
+                let lines = textwrap::wrap(&desc, subj_w);
+                if c.long == LongLine::Cut || lines.len() == 1 {
+                    print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
+                } else {
                     for (i, line) in lines.iter().enumerate() {
                         if i != 0 {
-                            print_with_color(stdout, &format!("{:width$}", " ", width = skip), &fg)?;
+                            print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
                         }
-                        let line_len = line.chars().count();
-                        crate::md::print_markdown_range(stdout, &desc, char_offset, line_len, &fg, c)?;
-                        writeln!(stdout)?;
-                        char_offset += line_len;
+                        print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
                     }
                 }
             } else {
-                crate::md::print_markdown(stdout, &desc, &fg, c)?;
-                writeln!(stdout)?;
+                print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
             }
-        } else if c.width != 0 && c.long != LongLine::Simple {
-            let (skip, subj_w) = calc_width(c, flist, widths);
-            let lines = textwrap::wrap(&desc, subj_w);
-            if c.long == LongLine::Cut || lines.len() == 1 {
-                print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
-            } else {
-                for (i, line) in lines.iter().enumerate() {
-                    if i != 0 {
-                        print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
+        }
+        #[cfg(not(feature = "markdown"))]
+        {
+            if c.width != 0 && c.long != LongLine::Simple {
+                let (skip, subj_w) = calc_width(c, flist, widths);
+                let lines = textwrap::wrap(&desc, subj_w);
+                if c.long == LongLine::Cut || lines.len() == 1 {
+                    print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
+                } else {
+                    for (i, line) in lines.iter().enumerate() {
+                        if i != 0 {
+                            print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
+                        }
+                        print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
                     }
-                    print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
                 }
+            } else {
+                print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
             }
-        } else {
-            print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
         }
     } else {
         print_with_highlight(stdout, "\n", &fg, c)?;

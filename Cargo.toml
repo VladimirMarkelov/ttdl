@@ -31,7 +31,11 @@ unicode-width="^0.2"
 anyhow = "1"
 tempfile = "3"
 regex = "1"
-pulldown-cmark = { version = "0.13", default-features = false }
+pulldown-cmark = { version = "0.13", default-features = false, optional = true }
+
+[features]
+default = ["markdown"]
+markdown = ["dep:pulldown-cmark"]
 
 [package.metadata.deb]
 section = "utility"

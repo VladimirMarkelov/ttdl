@@ -82,7 +82,16 @@ fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fi
         } else if default_caseless_match_str(field, "subject") {
             let mut desc = tasks[*id].subject.clone();
             cleanup_description(&mut desc, fields, c);
-            if c.markdown { crate::md::visible_text(&desc).width() } else { desc.width() }
+            {
+                #[cfg(feature = "markdown")]
+                if c.markdown {
+                    crate::md::visible_text(&desc).width()
+                } else {
+                    desc.width()
+                }
+                #[cfg(not(feature = "markdown"))]
+                desc.width()
+            }
         } else if let Some(val) = get_field(&tasks[*id], field, c) {
             val.trim().width()
         } else {

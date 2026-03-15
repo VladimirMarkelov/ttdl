@@ -938,6 +938,7 @@ fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "markdown")]
 fn update_markdown_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     if let Some(ref cfg) = tc.markdown {
         if let Some(b) = cfg.enabled {
@@ -1187,6 +1188,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
     update_syntax_from_config(&info_toml, conf)?;
+    #[cfg(feature = "markdown")]
     update_markdown_from_config(&info_toml, conf)?;
     update_fields_from_config(&info_toml, conf)?;
     update_agenda_from_config(&info_toml, conf)?;
@@ -1486,6 +1488,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     } else if matches.opt_present("no-syntax") {
         conf.fmt.syntax = false;
     }
+    #[cfg(feature = "markdown")]
     if matches.opt_present("markdown") {
         conf.fmt.markdown = true;
     } else if matches.opt_present("no-markdown") {

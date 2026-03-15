@@ -171,6 +171,10 @@ pub fn print_markdown(stdout: &mut StandardStream, text: &str, base: &ColorSpec,
 /// Skips the first `skip` visible characters, then renders up to `limit`
 /// visible characters. Used for wrapped/cut lines: line 1 uses skip=0,
 /// line 2 uses skip=len(line1), etc.
+///
+/// Note: when `skip` or `limit` bisects a bare URL, the halves are rendered
+/// as plain text rather than hyperlinks.  This is a known limitation of the
+/// character-offset slicing approach; the output is visually correct.
 pub fn print_markdown_range(
     stdout: &mut StandardStream,
     text: &str,
