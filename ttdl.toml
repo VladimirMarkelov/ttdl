@@ -181,6 +181,14 @@ hashtag_color = "cyan"
 project_color = "bright green"
 context_color = "green"
 
+[markdown]
+# Set enabled to 'true' to render Markdown formatting (bold, italic, code,
+#     links) in task subject text using terminal escape codes.
+# Bold, italic, inline code, and [links](url) are supported.
+# enabled = false
+# Color for inline `code` spans. Same format as other color options.
+# code_color = "yellow"
+
 # Example of a custom field of `date` type with conditional highlight.
 # [[fields]]
 # name = "chk" # tag name

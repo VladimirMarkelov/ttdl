@@ -6,6 +6,8 @@ mod cal;
 mod colauto;
 mod conf;
 mod fmt;
+#[cfg(feature = "markdown")]
+mod md;
 mod stats;
 mod subj_clean;
 mod tml;
