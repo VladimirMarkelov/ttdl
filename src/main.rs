@@ -6,6 +6,7 @@ mod cal;
 mod colauto;
 mod conf;
 mod fmt;
+mod md;
 mod stats;
 mod subj_clean;
 mod tml;

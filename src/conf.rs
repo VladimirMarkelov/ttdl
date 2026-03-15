@@ -938,6 +938,18 @@ fn update_syntax_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     Ok(())
 }
 
+fn update_markdown_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
+    if let Some(ref cfg) = tc.markdown {
+        if let Some(b) = cfg.enabled {
+            conf.fmt.markdown = b;
+        }
+        if let Some(ref clr) = cfg.code_color {
+            conf.fmt.colors.code = color_from_str(clr)?;
+        }
+    }
+    Ok(())
+}
+
 fn update_fields_from_config(tc: &tml::Conf, conf: &mut Conf) -> Result<()> {
     match tc.fields {
         None => {}
@@ -1175,6 +1187,7 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     update_ranges_from_conf(&info_toml, conf);
     update_global_from_conf(&info_toml, conf);
     update_syntax_from_config(&info_toml, conf)?;
+    update_markdown_from_config(&info_toml, conf)?;
     update_fields_from_config(&info_toml, conf)?;
     update_agenda_from_config(&info_toml, conf)?;
     if let Some(strict) = info_toml.global.strict_mode {
@@ -1350,6 +1363,8 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     );
     opts.optflag("", "syntax", "Enable keyword highlights when printing subject");
     opts.optflag("", "no-syntax", "Disable keyword highlights when printing subject");
+    opts.optflag("", "markdown", "Enable Markdown formatting in subject text");
+    opts.optflag("", "no-markdown", "Disable Markdown formatting in subject text");
     opts.optflag("", "keep-empty", "do not remove empty todos when cleaning up(archiving) the list");
     opts.optopt(
         "",
@@ -1470,6 +1485,11 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         conf.fmt.syntax = true;
     } else if matches.opt_present("no-syntax") {
         conf.fmt.syntax = false;
+    }
+    if matches.opt_present("markdown") {
+        conf.fmt.markdown = true;
+    } else if matches.opt_present("no-markdown") {
+        conf.fmt.markdown = false;
     }
     if let Some(s) = matches.opt_str("clean-subject") {
         conf.fmt.hide = str_to_hide(&s);
@@ -1759,6 +1779,9 @@ fn color_from_str(s: &str) -> Result<ColorSpec> {
             }
             "bold" => {
                 spc.set_bold(true);
+            }
+            "italic" => {
+                spc.set_italic(true);
             }
             _ => return Err(anyhow!("Unknown color '{}'", clr)),
         };

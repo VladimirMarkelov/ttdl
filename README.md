@@ -34,6 +34,7 @@
       - [Example](#example)
     - [Extra features](#extra-features)
       - [Syntax highlight](#syntax-highlight)
+      - [Markdown rendering](#markdown-rendering)
       - [Hide duplicated info](#hide-duplicated-info)
       - [Edit in keep-tags mode](#edit-in-keep-tags-mode)
       - [Interactive edit](#interactive-edit)
@@ -1527,6 +1528,32 @@ Besides turning highlighting on and off, the configuration allows tuning the key
 - hashtag color is cyan
 - project color is bright green
 - context color is green
+
+#### Markdown rendering
+
+TTDL can render a subset of Markdown in task subject text using terminal escape codes.
+The feature is disabled by default.
+To enable it, either pass `--markdown` on the command line or set `enabled = true` in the `[markdown]` section of `ttdl.toml`.
+Use `--no-markdown` to temporarily disable it when it is turned on in the configuration file.
+The command-line flag always takes precedence over the configuration file.
+
+Supported formatting:
+
+- `**bold**` — bold text
+- `*italic*` or `_italic_` — italic text
+- `` `code` `` — inline code (highlighted in a configurable color, default yellow)
+- `[link text](url)` — clickable hyperlinks using OSC 8 terminal escape sequences; link text is underlined
+- Bare `https://` and `http://` URLs are automatically turned into clickable hyperlinks
+
+Syntax highlighting of `+projects`, `@contexts`, and `tag:value` fields works alongside Markdown formatting.
+
+Configuration options in `ttdl.toml`:
+
+```toml
+[markdown]
+enabled = true        # set to false to disable (default)
+code_color = "yellow" # color for inline `code` spans
+```
 
 #### Hide duplicated info
 

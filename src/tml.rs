@@ -51,6 +51,12 @@ pub struct Syntax {
 }
 
 #[derive(Deserialize)]
+pub struct Markdown {
+    pub enabled: Option<bool>,
+    pub code_color: Option<String>,
+}
+
+#[derive(Deserialize)]
 pub struct CustomRule {
     pub range: String,
     pub color: String,
@@ -80,6 +86,7 @@ pub struct Conf {
     pub ranges: Ranges,
     pub global: Global,
     pub syntax: Option<Syntax>,
+    pub markdown: Option<Markdown>,
     pub fields: Option<Vec<CustomField>>,
     pub agenda: Option<Agenda>,
 }
