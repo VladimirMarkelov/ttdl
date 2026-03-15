@@ -52,7 +52,9 @@ pub struct Syntax {
 
 #[derive(Deserialize)]
 pub struct Markdown {
+    #[cfg_attr(not(feature = "markdown"), allow(dead_code))]
     pub enabled: Option<bool>,
+    #[cfg_attr(not(feature = "markdown"), allow(dead_code))]
     pub code_color: Option<String>,
 }
 
@@ -86,6 +88,7 @@ pub struct Conf {
     pub ranges: Ranges,
     pub global: Global,
     pub syntax: Option<Syntax>,
+    #[cfg_attr(not(feature = "markdown"), allow(dead_code))]
     pub markdown: Option<Markdown>,
     pub fields: Option<Vec<CustomField>>,
     pub agenda: Option<Agenda>,

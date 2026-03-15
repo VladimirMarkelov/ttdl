@@ -68,6 +68,14 @@ The application can be compiled from source, or installed using cargo:
 cargo install ttdl
 ```
 
+TTDL includes Markdown rendering support by default. To build without it:
+
+```shell
+cargo install ttdl --no-default-features
+```
+
+When built without the `markdown` feature, the `--markdown` flag is accepted but has no effect.
+
 You need Rust compiler that supports Rust 2018 edition (Rust 1.31 or newer) to do it. If you want to upgrade existing ttdl execute the following command:
 
 ```shell
@@ -1535,6 +1543,7 @@ TTDL can render a subset of Markdown in task subject text using terminal escape 
 The feature is disabled by default.
 To enable it, either pass `--markdown` on the command line or set `enabled = true` in the `[markdown]` section of `ttdl.toml`.
 Use `--no-markdown` to temporarily disable it when it is turned on in the configuration file.
+This feature can be excluded at compile time with `--no-default-features` to remove the `pulldown-cmark` dependency.
 The command-line flag always takes precedence over the configuration file.
 
 Supported formatting:

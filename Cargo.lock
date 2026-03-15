@@ -650,7 +650,6 @@ dependencies = [
  "dirs",
  "getopts",
  "json",
- "lazy_static",
  "pulldown-cmark",
  "regex",
  "serde",
