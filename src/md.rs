@@ -4,7 +4,7 @@
 //! bold, italic, inline code, and links — with optional OSC 8 hyperlinks
 //! and syntax highlighting of `+projects`, `@contexts`, and `tag:value` fields.
 
-use std::io;
+use std::io::{self, Write};
 use std::sync::OnceLock;
 
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
@@ -16,6 +16,18 @@ use crate::fmt;
 fn bare_url_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| Regex::new(r"https?://\S+").unwrap())
+}
+
+/// Strips common trailing punctuation characters from a bare URL match.
+///
+/// Greedy `\S+` can absorb trailing `.`, `,`, `)`, etc. that belong to the
+/// surrounding prose.  This helper peels them off so only the URL is linked.
+/// Returns `(url, trailing)` where `trailing` is the stripped suffix.
+fn trim_url_punctuation(url: &str) -> (&str, &str) {
+    let trim_chars: &[char] = &['.', ',', ')', ']', '!', '?', ';', ':'];
+    let trimmed = url.trim_end_matches(trim_chars);
+    let trailing = &url[trimmed.len()..];
+    (trimmed, trailing)
 }
 
 /// Returns the visible text that a terminal would display after markdown rendering.
@@ -84,6 +96,7 @@ fn write_text_with_syntax(
 }
 
 /// Writes text, wrapping bare URLs in OSC 8 hyperlinks when running in a terminal.
+/// Trailing punctuation is stripped from matched URLs and printed as plain text.
 fn write_text_with_urls(stdout: &mut StandardStream, text: &str, color: &ColorSpec, c: &fmt::Conf) -> io::Result<()> {
     if !c.atty || c.color_term == fmt::TermColorType::None {
         stdout.set_color(color)?;
@@ -97,13 +110,17 @@ fn write_text_with_urls(stdout: &mut StandardStream, text: &str, color: &ColorSp
             stdout.set_color(color)?;
             write!(stdout, "{}", &text[last..m.start()])?;
         }
-        let url = m.as_str();
+        let (url, trailing) = trim_url_punctuation(m.as_str());
         let mut url_color = color.clone();
         url_color.set_underline(true);
         stdout.set_hyperlink(&HyperlinkSpec::open(url.as_bytes()))?;
         stdout.set_color(&url_color)?;
         write!(stdout, "{url}")?;
         stdout.set_hyperlink(&HyperlinkSpec::close())?;
+        if !trailing.is_empty() {
+            stdout.set_color(color)?;
+            write!(stdout, "{trailing}")?;
+        }
         last = m.end();
     }
     if last < text.len() {
@@ -332,5 +349,35 @@ mod tests {
     #[test]
     fn visible_text_mixed() {
         assert_eq!(visible_text("**bold** and *italic* and `code`"), "bold and italic and code");
+    }
+
+    // ── trim_url_punctuation ──────────────────────────────────────────────────
+
+    #[test]
+    fn trim_url_trailing_period() {
+        let (url, trailing) = trim_url_punctuation("https://example.com.");
+        assert_eq!(url, "https://example.com");
+        assert_eq!(trailing, ".");
+    }
+
+    #[test]
+    fn trim_url_trailing_paren_comma() {
+        let (url, trailing) = trim_url_punctuation("https://example.com),");
+        assert_eq!(url, "https://example.com");
+        assert_eq!(trailing, "),");
+    }
+
+    #[test]
+    fn trim_url_no_trailing_punctuation() {
+        let (url, trailing) = trim_url_punctuation("https://example.com/path");
+        assert_eq!(url, "https://example.com/path");
+        assert_eq!(trailing, "");
+    }
+
+    #[test]
+    fn trim_url_query_string() {
+        let (url, trailing) = trim_url_punctuation("https://example.com/path?q=1");
+        assert_eq!(url, "https://example.com/path?q=1");
+        assert_eq!(trailing, "");
     }
 }
