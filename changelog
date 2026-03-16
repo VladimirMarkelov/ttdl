@@ -1,4 +1,4 @@
-ttdl (5.1.0) unstable; urgency=medium
+ttdl (5.1.2) unstable; urgency=medium
 
   *  Added optional highlight for markdown format. The feature was implemented
      by @83noit (Benoit Brard).
