@@ -1,8 +1,7 @@
 use chrono::NaiveDate;
-use todo_lib::{todo, todotxt};
+use todo_lib::{conv, todo, todotxt};
 
 use crate::conf;
-use crate::conv::{self, SEC_IN_MINUTE_U32};
 
 // Use this field to decide to what time slot in an agenda a task beholds
 const TIME_FIELD: &str = "time";
@@ -23,16 +22,18 @@ const SLOT_FINISH_BEFORE: usize = 8;
 // It must the greatest index. So, adjust this constant if a new marker is added.
 pub const SLOT_NONE: usize = 9;
 
+// Number of minutes in an hour
+pub(crate) const MIN_IN_HOUR: u32 = 60;
 // Agenda starts at 8:00
-const DEFAULT_AGENDA_START: u32 = 8 * SEC_IN_MINUTE_U32;
+const DEFAULT_AGENDA_START: u32 = 8 * MIN_IN_HOUR;
 // Agenda ends at 20:00
-const DEFAULT_AGENDA_END: u32 = 20 * SEC_IN_MINUTE_U32;
+const DEFAULT_AGENDA_END: u32 = 20 * MIN_IN_HOUR;
 // Default agenda slot time size - 30 minutes
 const DEFAULT_SLOT_SIZE: u32 = 30;
 // Minimal time slot size is 15 minutes
-const MIN_SLOT_SIZE: u32 = 15;
+pub(crate) const MIN_SLOT_SIZE: u32 = 15;
 // The end of the day 24:00 (or 0:00, or 12:00AM)
-const DAY_END: u32 = 24 * SEC_IN_MINUTE_U32;
+pub(crate) const DAY_END: u32 = 24 * MIN_IN_HOUR;
 // Default set of characters to draw the outline. Charater indices:
 //   0 - ┌ - Task starts
 //   1 - │ - Task continues
@@ -50,7 +51,7 @@ const DEFAULT_MARKS: &str = "┌│└╎╎─[~~";
 // Covert time in format "{hour}{zero-padded-minutes}" into the number of minutes since midnight.
 // E.g, "810" (that is 8:00) to 490 minutes.
 fn time_to_minutes(t: u32) -> u32 {
-    t / 100 * SEC_IN_MINUTE_U32 + t % 100
+    t / 100 * MIN_IN_HOUR + t % 100
 }
 
 #[derive(PartialEq, Debug)]
@@ -261,7 +262,7 @@ impl Agenda {
                         eprintln!("Failed to parse duration '{d_str}'");
                     }
                     Some(dur) => {
-                        let dur = (dur as u32) / SEC_IN_MINUTE_U32;
+                        let dur = (dur as u32) / MIN_IN_HOUR;
                         if !(MIN_SLOT_SIZE..DAY_END).contains(&dur) {
                             eprintln!(
                                 "Slot value must be between {MIN_SLOT_SIZE} minutes and 24 hours: '{d_str}'. Using default slot size"

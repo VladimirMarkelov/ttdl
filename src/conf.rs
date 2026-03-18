@@ -12,12 +12,12 @@ use getopts::{Matches, Options};
 use termcolor::{Color, ColorSpec};
 use unicode_width::UnicodeWidthStr;
 
-use crate::agenda::SLOT_NONE;
-use crate::conv::{self, SEC_IN_MINUTE_U32};
+use crate::agenda::DAY_END;
+use crate::agenda::{MIN_IN_HOUR, MIN_SLOT_SIZE, SLOT_NONE};
 use crate::fmt;
 use crate::subj_clean::Hide;
 use crate::tml;
-use todo_lib::{human_date, terr, tfilter, todo, todotxt, tsort};
+use todo_lib::{conv, human_date, terr, tfilter, todo, todotxt, tsort};
 
 const TODOFILE_VAR: &str = "TTDL_FILENAME";
 const APP_DIR: &str = "ttdl";
@@ -184,7 +184,7 @@ fn print_usage(program: &str, opts: &Options) {
     "#;
 
     let newones = r#"Modifying options are:
-    --set-pri, --set-due, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold, --set-tag, --set-hashtag, --del-tag, --del-hashtag, --repl-hashtag, --update-threshold
+    --set-pri, --set-due, --set-time, --set-rec, --set-proj, --set-ctx, --del-proj, --del-ctx, --repl-proj, --repl-ctx, --set-threshold, --set-tag, --set-hashtag, --del-tag, --del-hashtag, --repl-hashtag, --update-threshold
     "#;
 
     let extras = r#"Extra options:
@@ -512,6 +512,73 @@ fn comma_list_to_vec(list: &str) -> (Vec<String>, Vec<String>) {
     (incl, excl)
 }
 
+fn validate_time_range(s: &str) -> Result<(), terr::TodoError> {
+    if s.is_empty() || s == "-" || s == "none" {
+        return Ok(());
+    }
+    let parts = if let Some(spl) = s.split_once('-') {
+        vec![spl.0, spl.1]
+    } else if let Some(spl) = s.split_once("..") {
+        vec![spl.0, spl.1]
+    } else {
+        vec![s]
+    };
+    let start_is_set = !parts[0].is_empty();
+    let end_is_set = parts.len() == 2 && !parts[1].is_empty();
+    match conv::str_to_time_interval(s) {
+        conv::TimeInterval::Single(val) => match val {
+            None => return Err(terr::TodoError::InvalidValue(s.to_string(), "time".to_string())),
+            Some(tm) => {
+                if tm > DAY_END {
+                    return Err(terr::TodoError::InvalidValue(
+                        s.to_string(),
+                        "time. The slot must start between 0 and 24 hours".to_string(),
+                    ));
+                }
+            }
+        },
+        conv::TimeInterval::Range(tm_s, tm_e) => {
+            let (st, en) = match (tm_s, tm_e) {
+                (None, None) => return Err(terr::TodoError::InvalidValue(s.to_string(), "time range".to_string())),
+                (None, Some(val)) => {
+                    if start_is_set {
+                        return Err(terr::TodoError::InvalidValue(
+                            s.to_string(),
+                            "time. Failed to parse start time".to_string(),
+                        ));
+                    } else {
+                        (0, val)
+                    }
+                }
+                (Some(val), None) => {
+                    if end_is_set {
+                        return Err(terr::TodoError::InvalidValue(
+                            s.to_string(),
+                            "time. Failed to parse end time".to_string(),
+                        ));
+                    } else {
+                        (val, DAY_END)
+                    }
+                }
+                (Some(vals), Some(vale)) => (vals, vale),
+            };
+            if st > en {
+                return Err(terr::TodoError::InvalidValue(
+                    s.to_string(),
+                    "time. Start time is greater than the end time of the range".to_string(),
+                ));
+            }
+            if st + MIN_SLOT_SIZE > en {
+                return Err(terr::TodoError::InvalidValue(
+                    s.to_string(),
+                    format!("time. The different between time start and end must be at least {MIN_SLOT_SIZE} minutes"),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoError> {
     if let Some(s) = matches.opt_str("set-pri") {
         let s = if s.is_empty() { "none".to_owned() } else { s.to_lowercase() };
@@ -671,6 +738,44 @@ fn parse_todo(matches: &Matches, c: &mut todo::Conf) -> Result<(), terr::TodoErr
         }
         if !hmap.is_empty() {
             c.tags = todo::TagValuesChange { value: Some(hmap), action: todo::Action::Set };
+        }
+    }
+    if let Some(s) = matches.opt_str("set-time") {
+        validate_time_range(&s)?;
+        let no_tags_listed = match &c.tags.value {
+            None => true,
+            Some(h) => h.is_empty(),
+        };
+        let remove_time = s.is_empty() || s == "-" || s == "none";
+        if no_tags_listed {
+            let mut hmap: HashMap<String, String> = HashMap::new();
+            if remove_time {
+                hmap.insert("time".to_string(), String::new());
+                c.tags = todo::TagValuesChange { value: Some(hmap), action: todo::Action::Delete };
+            } else {
+                hmap.insert("time".to_string(), s.to_string());
+                c.tags = todo::TagValuesChange { value: Some(hmap), action: todo::Action::Set };
+            }
+        } else {
+            let mut hmap: HashMap<String, String> =
+                if let Some(h) = &c.tags.value { h.clone() } else { HashMap::new() };
+            let action = c.tags.action;
+            match (remove_time, action) {
+                (true, todo::Action::Delete) | (true, todo::Action::Set) => {
+                    hmap.insert("time".to_string(), String::new());
+                    c.tags.value = Some(hmap);
+                }
+                (false, todo::Action::Set) => {
+                    hmap.insert("time".to_string(), s.to_string());
+                    c.tags.value = Some(hmap);
+                }
+                (_, _) => {
+                    return Err(terr::TodoError::InvalidValue(
+                        "'command'".to_string(),
+                        "time. You cannot mix different edit modes (delete, set etc) in one one command".to_string(),
+                    ));
+                }
+            }
         }
     }
 
@@ -993,8 +1098,8 @@ fn validate_agenda_config(conf: &Conf) -> Result<()> {
         match conv::str_to_duration(slot) {
             None => return Err(anyhow!("Failed to parse duraion: '{slot}'")),
             Some(d) => {
-                let in_minutes = (d as u32) / SEC_IN_MINUTE_U32;
-                if !(15..24 * SEC_IN_MINUTE_U32).contains(&in_minutes) {
+                let in_minutes = (d as u32) / MIN_IN_HOUR;
+                if !(15..24 * MIN_IN_HOUR).contains(&in_minutes) {
                     return Err(anyhow!("The slot size must be between 15 minutes and 24 hours. It is '{slot}'"));
                 }
             }
@@ -1295,6 +1400,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "set-due",
         "Change due date for selected todos: remove due date or set a new one",
         "none | YYYY-MM-DD",
+    );
+    opts.optopt(
+        "",
+        "set-time",
+        "Change time tag selected todos: remove time tag or set a new value for it",
+        "none | TIME | TIME_RANGE",
     );
     opts.optopt(
         "",
