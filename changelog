@@ -1,3 +1,10 @@
+ttdl (5.2.0) unstable; urgency=medium
+
+  *  Added a command-line option `--set-time`. It is similar to the existing
+     `--set-tag="time:TIME"` but does extra validation checks
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 20 Mar 2026 19:10:15 -0700
+
 ttdl (5.1.2) unstable; urgency=medium
 
   *  Added optional highlight for markdown format. The feature was implemented
