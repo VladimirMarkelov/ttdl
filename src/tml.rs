@@ -83,6 +83,14 @@ pub struct Agenda {
 }
 
 #[derive(Deserialize)]
+pub struct Source {
+    pub name: Option<String>,
+    pub path: String,
+    pub archive_path: Option<String>,
+    pub default: Option<bool>,
+}
+
+#[derive(Deserialize)]
 pub struct Conf {
     pub colors: Colors,
     pub ranges: Ranges,
@@ -92,4 +100,5 @@ pub struct Conf {
     pub markdown: Option<Markdown>,
     pub fields: Option<Vec<CustomField>>,
     pub agenda: Option<Agenda>,
+    pub sources: Option<Vec<Source>>,
 }

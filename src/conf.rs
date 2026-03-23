@@ -55,6 +55,24 @@ pub enum RunMode {
     Agenda,
 }
 
+#[derive(Clone, Debug)]
+pub struct Source {
+    pub name: String,
+    pub path: PathBuf,
+    pub done_path: PathBuf,
+    pub default: bool,
+}
+impl Source {
+    fn from_tml(src: &tml::Source) -> Self {
+        Source {
+            name: if let Some(s) = &src.name { s.clone() } else { String::new() },
+            path: PathBuf::from(&src.path),
+            done_path: if let Some(p) = &src.archive_path { PathBuf::from(p) } else { PathBuf::from("") },
+            default: src.default.unwrap_or(false),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Conf {
     pub mode: RunMode,
@@ -73,6 +91,7 @@ pub struct Conf {
     editor_path: Option<String>,
     pub use_editor: bool,
     pub max_items: Option<usize>,
+    pub task_lists: Vec<Source>,
 
     pub auto_hide_columns: bool,
     pub auto_show_columns: bool,
@@ -137,6 +156,7 @@ impl Default for Conf {
             marks: None,
             on_fields: None,
             resolution: None,
+            task_lists: Vec::new(),
 
             auto_hide_columns: false,
             auto_show_columns: false,
@@ -917,18 +937,24 @@ fn parse_fmt(matches: &Matches, c: &mut fmt::Conf) {
 }
 
 fn detect_filenames(matches: &Matches, conf: &mut Conf) {
+    let mut passed_in_cli: bool = false;
+    let mut done_passed_in_cli: bool = false;
+
     if let Ok(val) = env::var(TODOFILE_VAR)
         && !val.is_empty()
     {
         conf.todo_file = PathBuf::from(val);
+        passed_in_cli = true;
     }
 
     if matches.opt_present("local") {
         conf.todo_file = PathBuf::from(TODO_FILE);
+        passed_in_cli = true;
     } else if let Some(val) = matches.opt_str("todo-file")
         && !val.is_empty()
     {
         conf.todo_file = PathBuf::from(val);
+        passed_in_cli = true;
     }
 
     resolve_home_directory(&mut conf.todo_file);
@@ -940,6 +966,11 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     if let Some(val) = matches.opt_str("done-file")
         && !val.is_empty()
     {
+        done_passed_in_cli = true;
+        if !passed_in_cli && conf.task_lists.len() > 1 {
+            eprintln!("Multiple task lists are detected. The option `--done` cannot be used in this case");
+            exit(1);
+        }
         let mut pb = PathBuf::from(val.clone());
         if pb.parent() == Some(&PathBuf::from("")) {
             conf.done_file = conf.todo_file.with_file_name(val);
@@ -953,6 +984,49 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     }
     if conf.done_file.is_dir() {
         conf.done_file.push(DONE_FILE);
+    }
+
+    // Final merge of config and passed in command-line options
+    if conf.task_lists.is_empty() {
+        let src = Source {
+            name: String::new(),
+            path: conf.todo_file.clone(),
+            done_path: conf.done_file.clone(),
+            default: true,
+        };
+        conf.task_lists.push(src);
+    } else if conf.task_lists.len() == 1 {
+        if passed_in_cli {
+            conf.task_lists[0].path = conf.todo_file.clone();
+            conf.task_lists[0].path = conf.done_file.clone();
+            conf.task_lists[0].name = String::new();
+        } else if done_passed_in_cli {
+            conf.task_lists[0].done_path = conf.done_file.clone();
+        }
+        conf.task_lists[0].default = true;
+    } else if passed_in_cli {
+        conf.task_lists.clear();
+        let src = Source {
+            name: String::new(),
+            path: conf.todo_file.clone(),
+            done_path: conf.done_file.clone(),
+            default: true,
+        };
+        conf.task_lists.push(src);
+    }
+    for src in conf.task_lists.iter_mut() {
+        if src.path.as_os_str().is_empty() {
+            eprintln!("A source in the configuration is missing path to the task file");
+            exit(1);
+        }
+        if !src.done_path.as_os_str().is_empty() {
+            continue;
+        }
+        src.done_path = src.path.with_file_name(DONE_FILE);
+    }
+    // DEBUG
+    for src in &conf.task_lists {
+        println!("Name: {0}\n    {1}\n    {2}\n    {3}", src.name, src.path.display(), src.done_path.display(), src.default);
     }
 }
 
@@ -1297,6 +1371,13 @@ fn load_from_config(conf: &mut Conf, conf_path: Option<PathBuf>) -> Result<()> {
     update_markdown_from_config(&info_toml, conf)?;
     update_fields_from_config(&info_toml, conf)?;
     update_agenda_from_config(&info_toml, conf)?;
+
+    if let Some(lists) = &info_toml.sources {
+        for s in lists {
+            conf.task_lists.push(Source::from_tml(s));
+        }
+    }
+
     if let Some(strict) = info_toml.global.strict_mode {
         conf.strict_mode = strict;
     }
