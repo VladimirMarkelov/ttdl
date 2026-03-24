@@ -58,16 +58,16 @@ pub enum RunMode {
 #[derive(Clone, Debug)]
 pub struct Source {
     pub name: String,
-    pub path: PathBuf,
-    pub done_path: PathBuf,
+    pub todo_file: PathBuf,
+    pub done_file: PathBuf,
     pub default: bool,
 }
 impl Source {
     fn from_tml(src: &tml::Source) -> Self {
         Source {
             name: if let Some(s) = &src.name { s.clone() } else { String::new() },
-            path: PathBuf::from(&src.path),
-            done_path: if let Some(p) = &src.archive_path { PathBuf::from(p) } else { PathBuf::from("") },
+            todo_file: PathBuf::from(&src.path),
+            done_file: if let Some(p) = &src.archive_path { PathBuf::from(p) } else { PathBuf::from("") },
             default: src.default.unwrap_or(false),
         }
     }
@@ -187,6 +187,9 @@ impl Conf {
             spth = p.clone();
         }
         if spth.is_empty() { None } else { Some(PathBuf::from(spth)) }
+    }
+    pub fn is_single_file_mode(&self) -> bool {
+        self.task_lists.len() == 1
     }
 }
 
@@ -990,43 +993,49 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
     if conf.task_lists.is_empty() {
         let src = Source {
             name: String::new(),
-            path: conf.todo_file.clone(),
-            done_path: conf.done_file.clone(),
+            todo_file: conf.todo_file.clone(),
+            done_file: conf.done_file.clone(),
             default: true,
         };
         conf.task_lists.push(src);
     } else if conf.task_lists.len() == 1 {
         if passed_in_cli {
-            conf.task_lists[0].path = conf.todo_file.clone();
-            conf.task_lists[0].path = conf.done_file.clone();
+            conf.task_lists[0].todo_file = conf.todo_file.clone();
+            conf.task_lists[0].done_file = conf.done_file.clone();
             conf.task_lists[0].name = String::new();
         } else if done_passed_in_cli {
-            conf.task_lists[0].done_path = conf.done_file.clone();
+            conf.task_lists[0].done_file = conf.done_file.clone();
         }
         conf.task_lists[0].default = true;
     } else if passed_in_cli {
         conf.task_lists.clear();
         let src = Source {
             name: String::new(),
-            path: conf.todo_file.clone(),
-            done_path: conf.done_file.clone(),
+            todo_file: conf.todo_file.clone(),
+            done_file: conf.done_file.clone(),
             default: true,
         };
         conf.task_lists.push(src);
     }
     for src in conf.task_lists.iter_mut() {
-        if src.path.as_os_str().is_empty() {
+        if src.todo_file.as_os_str().is_empty() {
             eprintln!("A source in the configuration is missing path to the task file");
             exit(1);
         }
-        if !src.done_path.as_os_str().is_empty() {
+        if !src.done_file.as_os_str().is_empty() {
             continue;
         }
-        src.done_path = src.path.with_file_name(DONE_FILE);
+        src.done_file = src.todo_file.with_file_name(DONE_FILE);
     }
     // DEBUG
     for src in &conf.task_lists {
-        println!("Name: {0}\n    {1}\n    {2}\n    {3}", src.name, src.path.display(), src.done_path.display(), src.default);
+        println!(
+            "Name: {0}\n    {1}\n    {2}\n    {3}",
+            src.name,
+            src.todo_file.display(),
+            src.done_file.display(),
+            src.default
+        );
     }
 }
 

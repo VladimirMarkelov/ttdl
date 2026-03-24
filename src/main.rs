@@ -1129,6 +1129,35 @@ fn task_list_hashtags(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf
     Ok(())
 }
 
+fn load_task_lists(conf: &conf::Conf) -> Result<todo::TaskVec, String> {
+    let mut tasks: todo::TaskVec = Vec::new();
+    let single = conf.is_single_file_mode();
+    let use_done = conf.use_done;
+
+    for (idx, tlist) in conf.task_lists.iter().enumerate() {
+        let mut curr_tasks = if use_done {
+            match todo::load(&tlist.done_file) {
+                Ok(l) => l,
+                Err(e) => return Err(format!("Failed to load done list from '{0}': {e:?}", tlist.done_file.display())),
+            }
+        } else {
+            match todo::load(&tlist.todo_file) {
+                Ok(l) => l,
+                Err(e) => return Err(format!("Failed to load task list from '{0}': {e:?}", tlist.todo_file.display())),
+            }
+        };
+        if !single {
+            let name = &conf.task_lists[idx].name;
+            for task in curr_tasks.iter_mut() {
+                task.set_source(name, idx);
+            }
+        }
+        tasks.append(&mut curr_tasks);
+    }
+
+    Ok(tasks)
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -1140,22 +1169,12 @@ fn main() {
         }
     };
 
-    let mut tasks: todo::TaskVec = if conf.use_done {
-        match todo::load(Path::new(&conf.done_file)) {
-            Ok(tlist) => tlist,
-            Err(e) => {
-                eprintln!("Failed to load todo list: {e:?}");
-                exit(1);
-            }
+    let mut tasks: todo::TaskVec = match load_task_lists(&conf) {
+        Err(e) => {
+            eprintln!("{e:?}");
+            exit(1);
         }
-    } else {
-        match todo::load(Path::new(&conf.todo_file)) {
-            Ok(tlist) => tlist,
-            Err(e) => {
-                eprintln!("Failed to load done list: {e:?}");
-                exit(1);
-            }
-        }
+        Ok(tlist) => tlist,
     };
     conf.fmt.max = tasks.len();
 
