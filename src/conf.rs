@@ -105,6 +105,7 @@ pub struct Conf {
     pub sort: tsort::Conf,
     pub postpone_threshold: bool,
     pub use_regex: bool,
+    pub source: String,
 
     pub calendar: Option<human_date::CalendarRange>,
     // For agenda: what fields to check.
@@ -171,6 +172,7 @@ impl Default for Conf {
             calendar: None,
             postpone_threshold: false,
             use_regex: false,
+            source: String::new(),
         }
     }
 }
@@ -190,6 +192,39 @@ impl Conf {
     }
     pub fn is_single_file_mode(&self) -> bool {
         self.task_lists.len() == 1
+    }
+    pub fn list_name_to_index(&self, name: &str) -> Option<usize> {
+        if name.contains(',') {
+            return None;
+        }
+        if let Ok(n) = name.parse::<usize>() {
+            if n < self.task_lists.len() {
+                return Some(n);
+            } else {
+                return None;
+            }
+        }
+        for (idx, tl) in self.task_lists.iter().enumerate() {
+            if tl.name.as_str() == name {
+                return Some(idx);
+            }
+        }
+        None
+    }
+    pub fn selected_task_list(&self) -> Option<usize> {
+        if self.source.is_empty() {
+            if self.task_lists.len() == 1 {
+                return Some(0);
+            }
+            for (idx, tl) in self.task_lists.iter().enumerate() {
+                if tl.default {
+                    return Some(idx);
+                }
+            }
+            None
+        } else {
+            self.list_name_to_index(&self.source)
+        }
     }
 }
 
@@ -1628,6 +1663,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     opts.optflag("", "hide-all-day", "Do not show section 'All day' in agenda");
     opts.optflag("", "no-hide-all-day", "Show section 'All day' in agenda if it is off in the configuration file");
     opts.optopt("r", "resolution", "A resolution is appended to every task that was completed", "[MESSAGE]");
+    opts.optopt(
+        "",
+        "src",
+        "Select a source task list for adding a task or for filtering (used only in multi-file mode",
+        "[MESSAGE]",
+    );
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1763,6 +1804,9 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     conf.postpone_threshold = matches.opt_present("update-threshold");
     if let Some(f_str) = matches.opt_str("hide-fields") {
         conf.fmt.hide_fields = f_str.split(',').map(|itm| itm.to_string()).collect();
+    }
+    if let Some(s) = matches.opt_str("src") {
+        conf.source = s.clone();
     }
 
     conf.on = matches.opt_str("on");

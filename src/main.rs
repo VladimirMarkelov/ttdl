@@ -12,7 +12,7 @@ mod stats;
 mod subj_clean;
 mod tml;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{File, read_to_string};
 use std::hash::Hasher;
@@ -201,6 +201,19 @@ fn process_tasks(
 }
 
 fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut conf::Conf) -> io::Result<()> {
+    let source_id = match conf.selected_task_list() {
+        None => {
+            if conf.source.is_empty() {
+                eprintln!(
+                    "Failed to choose a task list for adding a new task. Either pass it in command line with `--src` or mark one of task list as a default one"
+                );
+            } else {
+                eprintln!("Cannot find the todo list '{0}'", conf.source);
+            }
+            std::process::exit(1);
+        }
+        Some(idx) => idx,
+    };
     let subj = match &conf.todo.subject {
         None => {
             eprintln!("Subject is empty");
@@ -224,7 +237,8 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
     conf.todo.subject = Some(subj.clone());
 
     if conf.dry {
-        let t = todotxt::Task::parse(&subj, now);
+        let mut t = todotxt::Task::parse(&subj, now);
+        t.set_source(&conf.task_lists[source_id].name, source_id);
         let (cols, widths) = cols_with_width(std::slice::from_ref(&t), &[0], conf);
         writeln!(stdout, "To be added: ")?;
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
@@ -237,12 +251,13 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
         writeln!(stdout, "Failed to add: parse error '{subj}'")?;
         std::process::exit(1);
     }
+    tasks[id].set_source(&conf.task_lists[source_id].name, source_id);
 
     let (cols, widths) = cols_with_width(tasks, &[id], conf);
     writeln!(stdout, "Added todo:")?;
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
     fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &cols, &widths, false)?;
-    if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
+    if let Err(e) = save_task_lists(tasks, &[id], &[true], conf) {
         writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
         std::process::exit(1);
     }
@@ -1156,6 +1171,56 @@ fn load_task_lists(conf: &conf::Conf) -> Result<todo::TaskVec, String> {
     }
 
     Ok(tasks)
+}
+
+// In mutli-source mode, extract only tasks of a single task list.
+fn clone_list_by_id(tasks: &todo::TaskSlice, list_id: usize) -> todo::TaskVec {
+    let mut tlist: todo::TaskVec = Vec::new();
+    for t in tasks {
+        if let Some(src) = &t.source
+            && src.id == list_id
+        {
+            tlist.push(t.clone());
+        }
+    }
+    tlist
+}
+
+// Save only changes task lists.
+// In case of the config does not contain section 'sources', it saves the entire list.
+fn save_task_lists(
+    tasks: &todo::TaskSlice,
+    select: &todo::IDSlice,
+    updated: &todo::ChangedSlice,
+    conf: &conf::Conf,
+) -> Result<(), terr::TodoError> {
+    if conf.is_single_file_mode() {
+        println!("Single file mode. Saving to the first one: {0}", conf.task_lists[0].todo_file.display());
+        return todo::save(tasks, &conf.task_lists[0].todo_file);
+    }
+
+    println!("Selected tasks: {0:?} in {1}", select, tasks.len());
+    let mut list_ids: HashSet<usize> = HashSet::new();
+    for (idx, id) in select.iter().enumerate() {
+        if !updated[idx] {
+            continue;
+        }
+        println!("Task {idx} : {0:?}", tasks[*id].source);
+        if let Some(src) = &tasks[*id].source {
+            list_ids.insert(src.id);
+        }
+    }
+    println!("Changed list IDs: {0:?}", list_ids);
+    if list_ids.is_empty() {
+        return Ok(());
+    }
+
+    for list_id in &list_ids {
+        let task_list = clone_list_by_id(tasks, *list_id);
+        todo::save(&task_list, &conf.task_lists[*list_id].todo_file)?;
+    }
+
+    Ok(())
 }
 
 fn main() {
