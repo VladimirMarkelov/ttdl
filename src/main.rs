@@ -104,7 +104,7 @@ fn process_tasks(
     c: &conf::Conf,
     action: &str,
     f: FnDoneUndone,
-) -> io::Result<bool> {
+) -> io::Result<(bool, todo::IDVec, todo::ChangedVec)> {
     let todos = filter_tasks(tasks, c);
 
     let completion_config = CompletionConfig {
@@ -159,7 +159,7 @@ fn process_tasks(
             }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
         }
-        Ok(false)
+        Ok((false, Vec::new(), Vec::new()))
     } else {
         let old_len = tasks.len();
         let updated = f(tasks, Some(&todos), completion_config);
@@ -167,7 +167,7 @@ fn process_tasks(
 
         if updated_cnt == 0 {
             writeln!(stdout, "No todo was {action}")?;
-            Ok(false)
+            Ok((false, Vec::new(), Vec::new()))
         } else {
             if action == COMPLETE_TASK
                 && let Some(resolution) = &c.resolution
@@ -195,7 +195,7 @@ fn process_tasks(
                 }
             }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
-            Ok(true)
+            Ok((true, todos, updated))
         }
     }
 }
@@ -387,9 +387,9 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         writeln!(stdout, "Warning: you are going to mark all the tasks 'done'. Please specify tasks to complete.")?;
         std::process::exit(1);
     }
-    let processed = process_tasks(stdout, tasks, conf, COMPLETE_TASK, todo::done)?;
-    if processed && let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-        eprintln!("Failed to save to '{0:?}': {e}", &conf.todo_file);
+    let (processed, todos, updated) = process_tasks(stdout, tasks, conf, COMPLETE_TASK, todo::done)?;
+    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+        eprintln!("Failed to save to update tasks: {e}");
         std::process::exit(1);
     }
     Ok(())
@@ -501,9 +501,9 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         flt_conf.flt.all = tfilter::TodoStatus::Done;
     }
     let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
-    let processed = process_tasks(stdout, tasks, &flt_conf, UNCOMPLETE_TASK, undone_adapter)?;
-    if processed && let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file)) {
-        writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
+    let (processed, todos, updated) = process_tasks(stdout, tasks, &flt_conf, UNCOMPLETE_TASK, undone_adapter)?;
+    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+        writeln!(stdout, "Failed to save udpated tasks: {e}")?;
         std::process::exit(1);
     }
     Ok(())
