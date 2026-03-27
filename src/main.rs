@@ -257,7 +257,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
     writeln!(stdout, "Added todo:")?;
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
     fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &cols, &widths, false)?;
-    if let Err(e) = save_task_lists(tasks, &[id], &[true], conf) {
+    if let Err(e) = save_task_lists(tasks, &[id], &[true], None, conf) {
         writeln!(stdout, "{e:?}")?;
         std::process::exit(1);
     }
@@ -388,7 +388,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         std::process::exit(1);
     }
     let (processed, todos, updated) = process_tasks(stdout, tasks, conf, COMPLETE_TASK, todo::done)?;
-    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
         eprintln!("{e:?}");
         std::process::exit(1);
     }
@@ -502,7 +502,7 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     }
     let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
     let (processed, todos, updated) = process_tasks(stdout, tasks, &flt_conf, UNCOMPLETE_TASK, undone_adapter)?;
-    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+    if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
         writeln!(stdout, "{e:?}")?;
         std::process::exit(1);
     }
@@ -532,11 +532,29 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !flt_conf.dry {
+            // Collect all task IDs before remove the list
+            let mut task_ids: Vec<usize> = Vec::with_capacity(tasks.len());
+            for t in tasks.iter() {
+                if let Some(src) = &t.source {
+                    task_ids.push(src.id);
+                } else {
+                    task_ids.push(0);
+                }
+            }
             let removed = todo::remove(tasks, Some(&todos));
+            // Detect in what lists the command removed tasks
+            let mut updated_task_lists: HashSet<usize> = HashSet::new();
+            for (idx, rmd) in removed.iter().enumerate() {
+                if !*rmd {
+                    continue;
+                }
+                updated_task_lists.insert(idx);
+            }
+            println!("Tasks to save: {updated_task_lists:?}");
             if calculate_updated(&removed) != 0
-                && let Err(e) = todo::save(tasks, Path::new(&flt_conf.todo_file))
+                && let Err(e) = save_task_lists(tasks, &todos, &removed, Some(updated_task_lists), conf)
             {
-                writeln!(stdout, "Failed to save to '{0:?}': {e}", &flt_conf.todo_file)?;
+                writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
         }
@@ -715,6 +733,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
                         added_cnt += 1;
                     }
                 }
+                // In editor mode only single task list is supported: it is OK to call todo::save
                 if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
                     writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
                     std::process::exit(1);
@@ -782,8 +801,8 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-            if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+            if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
+                writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
         }
@@ -859,8 +878,8 @@ fn task_add_text(
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
         fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-        if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-            writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+        if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
+            writeln!(stdout, "{e:?}")?;
             std::process::exit(1);
         }
     }
@@ -905,7 +924,7 @@ fn task_start_stop(
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-            if let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+            if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
                 writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
@@ -1072,7 +1091,7 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-            if let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+            if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
                 writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
@@ -1192,6 +1211,7 @@ fn save_task_lists(
     tasks: &todo::TaskSlice,
     select: &todo::IDSlice,
     updated: &todo::ChangedSlice,
+    to_save: Option<HashSet<usize>>,
     conf: &conf::Conf,
 ) -> Result<(), terr::TodoError> {
     if conf.is_single_file_mode() {
@@ -1200,16 +1220,21 @@ fn save_task_lists(
     }
 
     println!("Selected tasks: {0:?} in {1}", select, tasks.len());
-    let mut list_ids: HashSet<usize> = HashSet::new();
-    for (idx, id) in select.iter().enumerate() {
-        if !updated[idx] {
-            continue;
+    let list_ids: HashSet<usize> = if let Some(h) = to_save {
+        h
+    } else {
+        let mut ids = HashSet::new();
+        for (idx, id) in select.iter().enumerate() {
+            if !updated[idx] {
+                continue;
+            }
+            println!("Task {idx} : {0:?}", tasks[*id].source);
+            if let Some(src) = &tasks[*id].source {
+                ids.insert(src.id);
+            }
         }
-        println!("Task {idx} : {0:?}", tasks[*id].source);
-        if let Some(src) = &tasks[*id].source {
-            list_ids.insert(src.id);
-        }
-    }
+        ids
+    };
     println!("Changed list IDs: {0:?}", list_ids);
     if list_ids.is_empty() {
         return Ok(());
@@ -1218,7 +1243,10 @@ fn save_task_lists(
     for list_id in &list_ids {
         let task_list = clone_list_by_id(tasks, *list_id);
         if let Err(e) = todo::save(&task_list, &conf.task_lists[*list_id].todo_file) {
-            return Err(terr::TodoError::IOError(format!("Failed to save task list to '{0}': {e:?}", conf.task_lists[*list_id].todo_file.display())));
+            return Err(terr::TodoError::IOError(format!(
+                "Failed to save task list to '{0}': {e:?}",
+                conf.task_lists[*list_id].todo_file.display()
+            )));
         }
     }
 
