@@ -1340,6 +1340,20 @@ fn values_of_field(task: &todotxt::Task, field: &str) -> Vec<String> {
         "prj" | "project" => task.projects.clone(),
         "ctx" | "context" => task.contexts.clone(),
         "hash" | "hashtag" => task.hashtags.clone(),
+        "src" => {
+            if let Some(src) = &task.source {
+                vec![src.name.clone()]
+            } else {
+                vec![String::new()]
+            }
+        }
+        "src_id" => {
+            if let Some(src) = &task.source {
+                vec![format!("{0}", src.id + 1)]
+            } else {
+                vec![String::new()]
+            }
+        }
         tag => {
             if let Some(s) = task.tags.get(tag) {
                 vec![s.clone()]
