@@ -258,7 +258,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
     fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &cols, &widths, false)?;
     if let Err(e) = save_task_lists(tasks, &[id], &[true], conf) {
-        writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+        writeln!(stdout, "{e:?}")?;
         std::process::exit(1);
     }
     Ok(())
@@ -389,7 +389,7 @@ fn task_done(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
     }
     let (processed, todos, updated) = process_tasks(stdout, tasks, conf, COMPLETE_TASK, todo::done)?;
     if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
-        eprintln!("Failed to save to update tasks: {e}");
+        eprintln!("{e:?}");
         std::process::exit(1);
     }
     Ok(())
@@ -503,7 +503,7 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     let undone_adapter: FnDoneUndone = |tasks, ids, config| todo::undone(tasks, ids, config.completion_mode);
     let (processed, todos, updated) = process_tasks(stdout, tasks, &flt_conf, UNCOMPLETE_TASK, undone_adapter)?;
     if processed && let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
-        writeln!(stdout, "Failed to save udpated tasks: {e}")?;
+        writeln!(stdout, "{e:?}")?;
         std::process::exit(1);
     }
     Ok(())
@@ -905,8 +905,8 @@ fn task_start_stop(
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-            if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+            if let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+                writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
         }
@@ -1072,8 +1072,8 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
             fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
-            if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+            if let Err(e) = save_task_lists(tasks, &todos, &updated, conf) {
+                writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
         }
@@ -1217,7 +1217,9 @@ fn save_task_lists(
 
     for list_id in &list_ids {
         let task_list = clone_list_by_id(tasks, *list_id);
-        todo::save(&task_list, &conf.task_lists[*list_id].todo_file)?;
+        if let Err(e) = todo::save(&task_list, &conf.task_lists[*list_id].todo_file) {
+            return Err(terr::TodoError::IOError(format!("Failed to save task list to '{0}': {e:?}", conf.task_lists[*list_id].todo_file.display())));
+        }
     }
 
     Ok(())
