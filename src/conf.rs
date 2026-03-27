@@ -98,6 +98,7 @@ pub struct Conf {
     pub always_hide_columns: Vec<String>,
     pub priority_on_done: todotxt::CompletionMode,
     pub add_completion_date_always: bool,
+    pub list_sources: bool,
 
     pub todo: todo::Conf,
     pub fmt: fmt::Conf,
@@ -164,6 +165,7 @@ impl Default for Conf {
             always_hide_columns: Vec::new(),
             priority_on_done: todotxt::CompletionMode::JustMark,
             add_completion_date_always: false,
+            list_sources: false,
 
             fmt: Default::default(),
             todo: Default::default(),
@@ -1685,6 +1687,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "Select a source task list for adding a task or for filtering (used only in multi-file mode",
         "[MESSAGE]",
     );
+    opts.optflag("", "list-sources", "Show info about all task lists");
 
     let matches: Matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1839,6 +1842,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     }
     conf.hide_all_day = conf.hide_all_day || matches.opt_present("hide-all-day");
     conf.hide_all_day = conf.hide_all_day && !matches.opt_present("no-hide-all-day");
+    conf.list_sources = matches.opt_present("list-sources");
 
     let mut idx: usize = 0;
     if idx >= matches.free.len() && !conf.stdin {

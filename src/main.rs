@@ -1308,6 +1308,11 @@ fn main() {
         }
     };
 
+    if conf.list_sources {
+        conf.print_task_lists();
+        exit(0);
+    }
+
     let mut tasks: todo::TaskVec = match load_task_lists(&conf) {
         Err(e) => {
             eprintln!("{e:?}");
