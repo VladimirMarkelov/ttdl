@@ -509,6 +509,30 @@ fn task_undone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
     Ok(())
 }
 
+fn task_source_ids(tasks: &todo::TaskVec) -> todo::IDVec {
+    let mut task_ids = Vec::with_capacity(tasks.len());
+    for t in tasks.iter() {
+        if let Some(src) = &t.source {
+            task_ids.push(src.id);
+        } else {
+            task_ids.push(0);
+        }
+    }
+    task_ids
+}
+
+fn removed_source_ids(ids: &todo::IDSlice, todos: &todo::IDSlice, removed: &todo::ChangedSlice) -> HashSet<usize> {
+    let mut updated_task_lists: HashSet<usize> = HashSet::new();
+    for (idx, rmd) in removed.iter().enumerate() {
+        if !*rmd {
+            continue;
+        }
+        let task_id = todos[idx];
+        updated_task_lists.insert(ids[task_id]);
+    }
+    updated_task_lists
+}
+
 fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
     if is_filter_empty(&conf.flt) {
         writeln!(stdout, "Warning: deletion of all tasks requested. Please specify tasks to delete.")?;
@@ -533,23 +557,10 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !flt_conf.dry {
             // Collect all task IDs before remove the list
-            let mut task_ids: Vec<usize> = Vec::with_capacity(tasks.len());
-            for t in tasks.iter() {
-                if let Some(src) = &t.source {
-                    task_ids.push(src.id);
-                } else {
-                    task_ids.push(0);
-                }
-            }
+            let task_ids = task_source_ids(tasks);
             let removed = todo::remove(tasks, Some(&todos));
             // Detect in what lists the command removed tasks
-            let mut updated_task_lists: HashSet<usize> = HashSet::new();
-            for (idx, rmd) in removed.iter().enumerate() {
-                if !*rmd {
-                    continue;
-                }
-                updated_task_lists.insert(idx);
-            }
+            let updated_task_lists = removed_source_ids(&task_ids, &todos, &removed);
             println!("Tasks to save: {updated_task_lists:?}");
             if calculate_updated(&removed) != 0
                 && let Err(e) = save_task_lists(tasks, &todos, &removed, Some(updated_task_lists), conf)
@@ -590,16 +601,19 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
         if !conf.dry {
             let cloned = todo::clone_tasks(tasks, &done_todos);
             if !conf.wipe
-                && let Err(e) = todo::archive(&cloned, &conf.done_file)
+                && let Err(e) = archive_task_lists(&cloned, &conf)
             {
                 eprintln!("{e:?}");
                 exit(1);
             }
+            let task_ids = task_source_ids(tasks);
             let removed = todo::remove(tasks, Some(&todos));
+            let updated_task_lists = removed_source_ids(&task_ids, &todos, &removed);
+            println!("Tasks to save: {updated_task_lists:?}");
             if calculate_updated(&removed) != 0
-                && let Err(e) = todo::save(tasks, Path::new(&conf.todo_file))
+                && let Err(e) = save_task_lists(tasks, &todos, &removed, Some(updated_task_lists), &conf)
             {
-                writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+                writeln!(stdout, "{e:?}")?;
                 std::process::exit(1);
             }
         }
@@ -1246,6 +1260,38 @@ fn save_task_lists(
             return Err(terr::TodoError::IOError(format!(
                 "Failed to save task list to '{0}': {e:?}",
                 conf.task_lists[*list_id].todo_file.display()
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+// Archive only changes task lists.
+// In case of the config does not contain section 'sources', it saves the entire list.
+fn archive_task_lists(tasks: &todo::TaskSlice, conf: &conf::Conf) -> Result<(), terr::TodoError> {
+    if conf.is_single_file_mode() {
+        return todo::archive(tasks, &conf.task_lists[0].done_file);
+    }
+    let mut list_ids = HashSet::new();
+    for task in tasks.iter() {
+        if let Some(src) = &task.source {
+            list_ids.insert(src.id);
+        }
+    }
+
+    println!("ARC:Changed list IDs: {0:?}", list_ids);
+    if list_ids.is_empty() {
+        return Ok(());
+    }
+
+    for list_id in &list_ids {
+        let task_list = clone_list_by_id(tasks, *list_id);
+        println!("Saving task {0} to {1}", *list_id, conf.task_lists[*list_id].done_file.display());
+        if let Err(e) = todo::archive(&task_list, &conf.task_lists[*list_id].done_file) {
+            return Err(terr::TodoError::IOError(format!(
+                "Failed to archive task list to '{0}': {e:?}",
+                conf.task_lists[*list_id].done_file.display()
             )));
         }
     }
