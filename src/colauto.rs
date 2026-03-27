@@ -2,7 +2,8 @@ use caseless::default_caseless_match_str;
 use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
-use crate::fmt::{Conf, done_str, duration_str, number_of_digits, priority_str};
+use crate::conf;
+use crate::fmt::{Conf, SRC_ID_LENGTH, done_str, duration_str, number_of_digits, priority_str};
 use crate::subj_clean::{hide_contexts, hide_projects, hide_tags};
 
 // Through the entire module `field` is either a tag or special task field like `priority` or `project`.
@@ -67,11 +68,19 @@ fn header_width(field: &str) -> usize {
         "thr" => "threshold".width(),
         "prj" => "project".width(),
         "ctx" => "context".width(),
+        "src" => "source".width(),
+        "src_id" => SRC_ID_LENGTH,
         _ => field.width(),
     }
 }
 
-fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fields: &[&str], c: &Conf) -> usize {
+fn max_field_width(
+    tasks: &todo::TaskSlice,
+    ids: &todo::IDSlice,
+    field: &str,
+    fields: &[&str],
+    c: &conf::Conf,
+) -> usize {
     let mut max = 0;
     for id in ids.iter() {
         if *id >= tasks.len() {
@@ -79,12 +88,16 @@ fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fi
         }
         let w = if default_caseless_match_str(field, "id") {
             number_of_digits(*id)
+        } else if default_caseless_match_str(field, "src") {
+            if let Some(src) = &tasks[*id].source { c.todo_list_name_length(src.id) } else { 0 }
+        } else if default_caseless_match_str(field, "src_id") {
+            if let Some(src) = &tasks[*id].source { number_of_digits(src.id) } else { 0 }
         } else if default_caseless_match_str(field, "subject") {
             let mut desc = tasks[*id].subject.clone();
-            cleanup_description(&mut desc, fields, c);
+            cleanup_description(&mut desc, fields, &c.fmt);
             {
                 #[cfg(feature = "markdown")]
-                if c.markdown {
+                if c.fmt.markdown {
                     crate::md::visible_text(&desc).width()
                 } else {
                     desc.width()
@@ -92,7 +105,7 @@ fn max_field_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, field: &str, fi
                 #[cfg(not(feature = "markdown"))]
                 desc.width()
             }
-        } else if let Some(val) = get_field(&tasks[*id], field, c) {
+        } else if let Some(val) = get_field(&tasks[*id], field, &c.fmt) {
             val.trim().width()
         } else {
             0
@@ -139,11 +152,14 @@ pub fn cleanup_description(desc: &mut String, fields: &[&str], c: &Conf) {
 }
 
 // Calculate them maximum width of all fields in `fields` list.
-pub fn col_widths(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[&str], c: &Conf) -> Vec<usize> {
+pub fn col_widths(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[&str], c: &conf::Conf) -> Vec<usize> {
     let mut widths = Vec::new();
     for field in fields.iter() {
-        let (w, c_hdr_len) =
-            if let Some(f) = c.custom_field(field) { (c.custom_field_width(field), f.title.width()) } else { (0, 0) };
+        let (w, c_hdr_len) = if let Some(f) = c.fmt.custom_field(field) {
+            (c.fmt.custom_field_width(field), f.title.width())
+        } else {
+            (0, 0)
+        };
         let mut w = if w == 0 { max_field_width(tasks, ids, field, fields, c) } else { w };
         if c_hdr_len > 0 && w < c_hdr_len {
             w = c_hdr_len;
@@ -159,15 +175,15 @@ pub fn col_widths(tasks: &todo::TaskSlice, ids: &todo::IDSlice, fields: &[&str],
             break;
         }
     }
-    if subj_found && c.width != 0 {
+    if subj_found && c.fmt.width != 0 {
         let mut total_width = 0;
         for (f, w) in fields.iter().zip(widths.iter()) {
             if !default_caseless_match_str(f, "subject") {
                 total_width += w;
             }
         }
-        if total_width + 10 < c.width.into() {
-            widths[subj_idx] = usize::from(c.width) - total_width;
+        if total_width + 10 < c.fmt.width.into() {
+            widths[subj_idx] = usize::from(c.fmt.width) - total_width;
         }
     }
     widths

@@ -9,6 +9,7 @@ use todo_lib::{timer, todo, todotxt};
 use unicode_width::UnicodeWidthStr;
 
 use crate::colauto::cleanup_description;
+use crate::conf;
 use crate::conv;
 use crate::human_date;
 use crate::subj_clean::{Hide, hide_all};
@@ -27,6 +28,7 @@ const INT_LENGTH: usize = 12;
 const FLOAT_LENGTH: usize = 15;
 const DURATION_LENGTH: usize = 10;
 const BYTES_LENGTH: usize = 8;
+pub const SRC_ID_LENGTH: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Format {
@@ -602,6 +604,8 @@ fn print_header_line(stdout: &mut StandardStream, c: &Conf, fields: &[String], w
             "prj" => write!(stdout, "{:wid$}", "Project", wid = width + 1)?,
             "ctx" => write!(stdout, "{:wid$}", "Context", wid = width + 1)?,
             "until" => write!(stdout, "{:wid$}", "Until", wid = width + 1)?,
+            "src" => write!(stdout, "{:wid$} ", "Source", wid = width)?,
+            "src_id" => write!(stdout, "{:wid$} ", "Src#", wid = width)?,
             n => {
                 subj_printed = default_caseless_match_str(n, "subject");
                 if let Some(f) = c.custom_field(n) {
@@ -850,10 +854,11 @@ fn print_line(
     stdout: &mut StandardStream,
     task: &todotxt::Task,
     id: usize,
-    c: &Conf,
+    conf: &conf::Conf,
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
+    let c = &conf.fmt;
     let id_width = field_width_cached("id", flist, widths);
     let fg = if task.finished { c.colors.done.clone() } else { c.colors.default_fg.clone() };
 
@@ -943,6 +948,22 @@ fn print_line(
                     v += ctx;
                 }
                 print_with_color(stdout, &format!("{v:width$} "), &fg)?;
+            }
+            "src" => {
+                let width = field_width_cached(f, flist, widths);
+                let value = if let Some(src) = &task.source
+                    && src.id < conf.task_lists.len()
+                {
+                    src.name.clone()
+                } else {
+                    String::new()
+                };
+                print_with_color(stdout, &format!("{value:width$} "), &fg)?;
+            }
+            "src_id" => {
+                let width = field_width_cached(f, flist, widths);
+                let value = if let Some(src) = &task.source { format!("{0}", src.id + 1) } else { String::new() };
+                print_with_color(stdout, &format!("{value:width$} "), &fg)?;
             }
             "until" => {
                 let width = field_width_cached(f, flist, widths);
@@ -1305,7 +1326,7 @@ pub fn print_body_single(
     tasks: &todo::TaskSlice,
     idx: usize,
     id: usize,
-    c: &Conf,
+    c: &conf::Conf,
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
@@ -1389,10 +1410,11 @@ fn print_body_selected(
     tasks: &todo::TaskSlice,
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
-    c: &Conf,
+    conf: &conf::Conf,
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
+    let c = &conf.fmt;
     let group = match &c.group {
         None => String::new(),
         Some(g) => g.clone(),
@@ -1416,10 +1438,10 @@ fn print_body_selected(
                 if print_groups {
                     let vals = values_of_field(&tasks[*id], &group);
                     if vals.contains(&g) {
-                        print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
+                        print_line(stdout, &tasks[*id], *id + 1, conf, flist, widths)?;
                     }
                 } else {
-                    print_line(stdout, &tasks[*id], *id + 1, c, flist, widths)?;
+                    print_line(stdout, &tasks[*id], *id + 1, conf, flist, widths)?;
                 }
             }
         }
@@ -1432,10 +1454,11 @@ fn print_body_all(
     tasks: &todo::TaskSlice,
     selected: &todo::IDSlice,
     updated: &todo::ChangedSlice,
-    c: &Conf,
+    conf: &conf::Conf,
     flist: &[String],
     widths: &[usize],
 ) -> io::Result<()> {
+    let c = &conf.fmt;
     let group = match &c.group {
         None => String::new(),
         Some(g) => g.clone(),
@@ -1458,10 +1481,10 @@ fn print_body_all(
                 if print_groups {
                     let vals = values_of_field(t, &group);
                     if vals.contains(&g) {
-                        print_line(stdout, t, id + 1, c, flist, widths)?;
+                        print_line(stdout, t, id + 1, conf, flist, widths)?;
                     }
                 } else {
-                    print_line(stdout, t, id + 1, c, flist, widths)?;
+                    print_line(stdout, t, id + 1, conf, flist, widths)?;
                 }
             }
         }
@@ -1498,7 +1521,7 @@ pub fn print_todos(
     tasks: &todo::TaskSlice,
     select: &todo::IDSlice,
     updated: &todo::ChangedSlice,
-    c: &Conf,
+    conf: &conf::Conf,
     fields: &[String],
     widths: &[usize],
     all: bool,
@@ -1508,9 +1531,9 @@ pub fn print_todos(
     }
 
     if all {
-        print_body_all(stdout, tasks, select, updated, c, fields, widths)
+        print_body_all(stdout, tasks, select, updated, conf, fields, widths)
     } else {
-        print_body_selected(stdout, tasks, select, updated, c, fields, widths)
+        print_body_selected(stdout, tasks, select, updated, conf, fields, widths)
     }
 }
 

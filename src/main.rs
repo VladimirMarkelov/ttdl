@@ -140,20 +140,12 @@ fn process_tasks(
             let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, c, &cols, &widths, false)?;
             writeln!(stdout, "\nReplace with:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &c.fmt, &cols, &widths, true)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, c, &cols, &widths, true)?;
             if clones.len() > old_len {
                 for idx in old_len..clones.len() {
-                    fmt::print_body_single(
-                        stdout,
-                        &clones,
-                        idx,
-                        tasks.len() + idx - old_len + 1,
-                        &c.fmt,
-                        &cols,
-                        &widths,
-                    )?;
+                    fmt::print_body_single(stdout, &clones, idx, tasks.len() + idx - old_len + 1, c, &cols, &widths)?;
                 }
             }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
@@ -186,11 +178,11 @@ fn process_tasks(
             let (cols, widths) = cols_with_width(tasks, &todos, c);
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &c.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, c, &cols, &widths, false)?;
             if old_len < tasks.len() {
                 writeln!(stdout, "\nAdded todos:")?;
                 for idx in old_len..tasks.len() {
-                    fmt::print_body_single(stdout, tasks, idx, idx + 1, &c.fmt, &cols, &widths)?;
+                    fmt::print_body_single(stdout, tasks, idx, idx + 1, c, &cols, &widths)?;
                 }
             }
             fmt::print_footer(stdout, tasks, &todos, &updated, &c.fmt, &cols, &widths)?;
@@ -241,7 +233,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
         let (cols, widths) = cols_with_width(std::slice::from_ref(&t), &[0], conf);
         writeln!(stdout, "To be added: ")?;
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-        fmt::print_todos(stdout, &[t], &[0], &[true], &conf.fmt, &cols, &widths, true)?;
+        fmt::print_todos(stdout, &[t], &[0], &[true], conf, &cols, &widths, true)?;
         return Ok(());
     }
 
@@ -255,7 +247,7 @@ fn task_add(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &mut c
     let (cols, widths) = cols_with_width(tasks, &[id], conf);
     writeln!(stdout, "Added todo:")?;
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-    fmt::print_todos(stdout, tasks, &[id], &[true], &conf.fmt, &cols, &widths, false)?;
+    fmt::print_todos(stdout, tasks, &[id], &[true], conf, &cols, &widths, false)?;
     if let Err(e) = save_task_lists(tasks, &[id], &[true], None, conf) {
         writeln!(stdout, "{e:?}")?;
         std::process::exit(1);
@@ -296,7 +288,7 @@ fn build_col_list(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Con
 fn cols_with_width(tasks: &todo::TaskSlice, ids: &todo::IDSlice, conf: &conf::Conf) -> (Vec<String>, Vec<usize>) {
     let cols = build_col_list(tasks, ids, conf);
     let fs: Vec<&str> = cols.iter().map(|it| it.as_str()).collect();
-    let widths = colauto::col_widths(tasks, ids, &fs, &conf.fmt);
+    let widths = colauto::col_widths(tasks, ids, &fs, conf);
     (cols, widths)
 }
 
@@ -309,7 +301,7 @@ fn print_task_table(stdout: &mut StandardStream, tasks: &todo::TaskSlice, conf: 
         todos.truncate(max);
     }
     fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-    fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+    fmt::print_todos(stdout, tasks, &todos, &[], conf, &cols, &widths, false)?;
     fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)
 }
 
@@ -552,7 +544,7 @@ fn task_remove(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &co
         }
         let (cols, widths) = cols_with_width(tasks, &todos, conf);
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+        fmt::print_todos(stdout, tasks, &todos, &[], conf, &cols, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !flt_conf.dry {
             // Collect all task IDs before remove the list
@@ -594,7 +586,7 @@ fn task_clean(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &con
         }
         let (cols, widths) = cols_with_width(tasks, &todos, &conf);
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths, false)?;
+        fmt::print_todos(stdout, tasks, &todos, &[], &conf, &cols, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &[], &conf.fmt, &cols, &widths)?;
         if !conf.dry {
             let cloned = todo::clone_tasks(tasks, &done_todos);
@@ -784,9 +776,9 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, conf, &cols, &widths, true)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
@@ -815,7 +807,7 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
                 writeln!(stdout, "{e:?}")?;
@@ -869,9 +861,9 @@ fn task_add_text(
         let (cols, widths) = cols_with_width(tasks, &todos, conf);
         writeln!(stdout, "Todos to be changed:")?;
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+        fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
         writeln!(stdout, "\nNew todos:")?;
-        fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+        fmt::print_todos(stdout, &clones, &todos, &updated, conf, &cols, &widths, true)?;
         fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
     } else {
         let updated: Vec<bool> = vec![true; todos.len()];
@@ -892,7 +884,7 @@ fn task_add_text(
         let (cols, widths) = cols_with_width(tasks, &todos, conf);
         writeln!(stdout, "Changed todos:")?;
         fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-        fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+        fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
         fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
             writeln!(stdout, "{e:?}")?;
@@ -923,9 +915,9 @@ fn task_start_stop(
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be {action}:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, conf, &cols, &widths, true)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
@@ -938,7 +930,7 @@ fn task_start_stop(
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
                 writeln!(stdout, "{e:?}")?;
@@ -1055,9 +1047,9 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Todos to be postponed:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             writeln!(stdout, "\nNew todos:")?;
-            fmt::print_todos(stdout, &clones, &todos, &updated, &conf.fmt, &cols, &widths, true)?;
+            fmt::print_todos(stdout, &clones, &todos, &updated, conf, &cols, &widths, true)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
         }
     } else {
@@ -1105,7 +1097,7 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
             let (cols, widths) = cols_with_width(tasks, &todos, conf);
             writeln!(stdout, "Changed todos:")?;
             fmt::print_header(stdout, &conf.fmt, &cols, &widths)?;
-            fmt::print_todos(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths, false)?;
+            fmt::print_todos(stdout, tasks, &todos, &updated, conf, &cols, &widths, false)?;
             fmt::print_footer(stdout, tasks, &todos, &updated, &conf.fmt, &cols, &widths)?;
             if let Err(e) = save_task_lists(tasks, &todos, &updated, None, conf) {
                 writeln!(stdout, "{e:?}")?;

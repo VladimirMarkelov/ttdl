@@ -228,6 +228,9 @@ impl Conf {
             self.list_name_to_index(&self.source)
         }
     }
+    pub fn todo_list_name_length(&self, idx: usize) -> usize {
+        if idx < self.task_lists.len() { self.task_lists[idx].name.width() } else { 0 }
+    }
     pub fn default_todo_file(&self) -> &Path {
         if let Some(idx) = self.selected_task_list() {
             return &self.task_lists[idx].todo_file;
