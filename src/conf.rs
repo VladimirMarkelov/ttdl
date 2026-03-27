@@ -1088,16 +1088,6 @@ fn detect_filenames(matches: &Matches, conf: &mut Conf) {
         }
         src.done_file = src.todo_file.with_file_name(DONE_FILE);
     }
-    // DEBUG
-    for src in &conf.task_lists {
-        println!(
-            "Name: {0}\n    {1}\n    {2}\n    {3}",
-            src.name,
-            src.todo_file.display(),
-            src.done_file.display(),
-            src.default
-        );
-    }
 }
 
 fn resolve_home_directory(path: &mut PathBuf) {
