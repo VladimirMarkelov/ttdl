@@ -198,8 +198,8 @@ impl Conf {
             return None;
         }
         if let Ok(n) = name.parse::<usize>() {
-            if n < self.task_lists.len() {
-                return Some(n);
+            if n > 0 && n <= self.task_lists.len() {
+                return Some(n - 1);
             } else {
                 return None;
             }
@@ -231,6 +231,26 @@ impl Conf {
             return &self.task_lists[idx].todo_file;
         }
         &self.task_lists[0].todo_file
+    }
+    pub fn print_task_lists(&self) {
+        for (i, src) in self.task_lists.iter().enumerate() {
+            let idx = i + 1;
+            let def_mark = if src.default { '*' } else { ' ' };
+            if src.name.is_empty() {
+                println!(
+                    "{def_mark} {idx:2}. Main file: {0}\n      Archive file: {1}",
+                    src.todo_file.display(),
+                    src.done_file.display()
+                );
+            } else {
+                println!(
+                    "{def_mark} {idx:2}. Name: {0}\n      Main file: {1}\n      Archive file: {2}",
+                    src.name,
+                    src.todo_file.display(),
+                    src.done_file.display()
+                );
+            }
+        }
     }
 }
 
@@ -1729,7 +1749,12 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
 
     detect_filenames(&matches, &mut conf);
     if conf.verbose {
-        println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
+        if conf.is_single_file_mode() {
+            println!("Using main file: {:?}\n   archive file: {:?}", conf.todo_file, conf.done_file);
+        } else {
+            println!("Using multiple sources:");
+            conf.print_task_lists();
+        }
     }
     if matches.opt_present("syntax") {
         conf.fmt.syntax = true;

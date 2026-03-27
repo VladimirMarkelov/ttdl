@@ -681,6 +681,10 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
         )?;
         std::process::exit(1);
     }
+    if conf.use_editor && !conf.is_single_file_mode() {
+        writeln!(stdout, "Using an external editor is not supported in multi-file mode")?;
+        std::process::exit(1);
+    }
     if is_filter_empty(&conf.flt) && !conf.use_editor {
         writeln!(stdout, "Warning: modifying of all tasks requested. Please specify tasks to edit.")?;
         std::process::exit(1);
