@@ -219,7 +219,7 @@ pub fn collect_non_empty(tasks: &todo::TaskSlice, ids: &todo::IDSlice) -> Vec<St
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fmt;
+    use crate::conf;
     use chrono::NaiveDate;
     use todo_lib::todotxt;
 
@@ -344,7 +344,7 @@ mod tests {
             },
         ];
         let base = NaiveDate::from_ymd_opt(2020, 2, 2).unwrap();
-        let c: fmt::Conf = Default::default();
+        let c: conf::Conf = Default::default();
         for (idx, test) in tests.iter().enumerate() {
             let mut tasks: todo::TaskVec = Vec::new();
             let mut ids: Vec<usize> = Vec::new();
