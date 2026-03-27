@@ -17,7 +17,6 @@ use std::env;
 use std::fs::{File, read_to_string};
 use std::hash::Hasher;
 use std::io::{self, Read, Write};
-use std::path::Path;
 use std::process::{Command, exit};
 use std::str::FromStr;
 
@@ -748,8 +747,9 @@ fn task_edit(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf
                     }
                 }
                 // In editor mode only single task list is supported: it is OK to call todo::save
-                if let Err(e) = todo::save(tasks, Path::new(&conf.todo_file)) {
-                    writeln!(stdout, "Failed to save to '{0:?}': {e}", &conf.todo_file)?;
+                let todo_path = conf.default_todo_file();
+                if let Err(e) = todo::save(tasks, todo_path) {
+                    writeln!(stdout, "Failed to save to '{0:?}': {e}", todo_path)?;
                     std::process::exit(1);
                 }
                 writeln!(stdout, "Removed {removed_cnt} tasks, added {added_cnt} tasks.")?;
@@ -1229,8 +1229,9 @@ fn save_task_lists(
     conf: &conf::Conf,
 ) -> Result<(), terr::TodoError> {
     if conf.is_single_file_mode() {
-        println!("Single file mode. Saving to the first one: {0}", conf.task_lists[0].todo_file.display());
-        return todo::save(tasks, &conf.task_lists[0].todo_file);
+        let todo_path = conf.default_todo_file();
+        println!("Single file mode. Saving to the first one: {0}", todo_path.display());
+        return todo::save(tasks, todo_path);
     }
 
     println!("Selected tasks: {0:?} in {1}", select, tasks.len());

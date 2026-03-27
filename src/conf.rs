@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, IsTerminal, Read, Write, stdout};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::str::FromStr;
 use std::{env, io};
@@ -225,6 +225,12 @@ impl Conf {
         } else {
             self.list_name_to_index(&self.source)
         }
+    }
+    pub fn default_todo_file(&self) -> &Path {
+        if let Some(idx) = self.selected_task_list() {
+            return &self.task_lists[idx].todo_file;
+        }
+        &self.task_lists[0].todo_file
     }
 }
 
