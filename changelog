@@ -1,3 +1,26 @@
+ttdl (6.0.0) unstable; urgency=medium
+
+  *  New big feature: multi-todo-file support. You can list all your todo
+     files in the configuration file and work with them as a single one.
+     Though, there are some restrictions in multi-file mode:
+     - editing tasks in an external editor is not supported if more than one
+     file is used
+     - if no file is marked as default, the command 'add' requires a
+     command-line option `--src`
+  *  New command-line `--src` for the command `add` to define where the new
+     task should be saved
+  *  If you pass a path to a task list in the command line, any other files
+     in the configuration are ignored, i.e. it enables the old one-file mode
+  *  It is possible to sort by file nick-name and file index
+  *  Filtering also supports `src`(user-defined name) and `src_id`
+  *  List task with grouping also supports `src` and `src_id`
+  *  New columns, hidden by default, are `src` and `src_id`
+  *  New command-line option to list the current list of all task lists:
+     --list-sources
+  * In verbose mode, all used task files are listed
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Fri, 27 Mar 2026 15:36:22 -0700
+
 ttdl (5.2.0) unstable; urgency=medium
 
   *  Added a command-line option `--set-time`. It is similar to the existing

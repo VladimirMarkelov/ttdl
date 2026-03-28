@@ -228,3 +228,23 @@ context_color = "green"
 #   7     ~     Task starts after its first time slot starts and the task is longer than 1 time slot
 #   8     ~     Task ends before its last time slot ends and the task is longer than 1 time slot
 # marks = "┌│└╎╎─[~~"
+
+# Multiple task list configuration.
+# All files mentioned in the section `sources` are processed by TTDL as one big list of tasks.
+# Field `path` is mandatory. The rest are optional.
+#   name - user-defined name of the list. For more convenient sort/filter/group calls
+#   path - path to the file that contains the current tasks. Path can be a directory. In this case the final file path
+#          is `path/todo.txt`
+#   archive_path - path to the archive file (where completed tasks are moved by the command 'archive').
+#                  If is not defined, TTDL makes it from `path` by replacing filename with `done.txt`.
+#   default - use this task list as the default one for the command `add`.
+#             If more than one list have `default=true`, the first one is always used.
+# [[sources]]
+# name = "main"
+# path = "todo.txt"
+# default = true
+#
+# [[sources]]
+# name = "secondary"
+# path = "another.txt"
+# archive_path = "done.log"

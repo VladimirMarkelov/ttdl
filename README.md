@@ -41,6 +41,7 @@
     - [Human-readable dates](#human-readable-dates)
     - [Custom columns](#custom-columns)
       - [Custom column example]($custom-column-example)
+    - [Multiple task lists](#multiple-task-lists)
   - [Command line examples](#command-line-examples)
     - [List and filter](#list-and-filter)
     - [Add a new todo](#add-a-new-todo)
@@ -1891,6 +1892,94 @@ Let's assume that today is `2022-12-31` and your `todo.txt` looks like this:
 After that, if your the command `ttdl --fields=who,est,chk`, you'll see this output in the terminal window:
 
 <img src="./images/custom-columns.png" alt="Custom columns">
+
+### Multiple task lists
+
+TTDL provides command-line options `--todo-file` and `--done-file` to switch between todo lists.
+It could be very inconvenient if you have to do it often.
+
+TTDL version `6.0.0` introduces a new feature: managing multiple todo files in a single run.
+To do that, you should modify the configuration file and all todo lists that you want to manage this way.
+Note that in multi-file mode some commands, which modify the list, can display "virtual" IDs for tasks after they finishes, so use task IDs carefully.
+Commands that does not change the tasks, such as `list` or `agenda`, always show the real task IDs.
+
+### Compatibility with the existing features
+
+Some command-line options are unavailable if multi-file mode is on:
+
+- interactive editing in an external editor is forbidden if more than one todo file is used
+- passing only `--done-file` without `--todo-file` in multi-file mode raises error
+
+Some commands or options work a bit different:
+
+- the old command `add` may fail. Now, if more than one todo file is defined, you have to either mark one todo list a default one, or pass the new option `--src` in the command line
+- passing only `--done-file` raises an error when more than one file is defined
+- passing `--todo-file` overrides all settings in the configuration, switching the TTDL to a single-file mode. That makes it possible to use an external editor to modify tasks
+- when more than one file is used, verbose option `-v` shows more detailed information about all todo files
+
+Configuration options change:
+
+- the existing `global.filename` still works. But if the section `sources` exists, it overrides the `global.filename` option.
+
+### Added features
+
+New command-line options:
+
+- `--src` is used by command `add`. It defines to which todo file the new task must be added. If `--src` is not passed, TTDL adds the new task to a file that is marked `default = true` in the configuration
+- `--list-sources` shows detailed information about todo files
+
+The option `--src` supports both numeric (the ordinal number of a todo list in the source section, starting from `1`)
+and string (the value of `name` field of a source in the configuration) values.
+
+New columns: 
+
+- `Source` is the user defined name of the todo list (the column name is `src`)
+- `Src#` is the ordinal number of the todo list (the column name is `src_id`)
+
+By default, the columns are hidden.
+You should manually enable them in the configuration or pass in the command line like `--fields=src,src_id`.
+
+### Filtering, sorting, and grouping
+
+In opposite to the smart `--src` option, `--group`, `--sort`, and `--filter` require explicit selection of the value:
+
+- `src` means using the user-defined name of a todo list
+- `src_id` means using the ordinal number of a todo list in the configuration. Starts from `1`
+
+Only `src_id` supports ranges. But both field support partial equality, e.g, `--filter="src=home*"` filters all tasks that have their user-defined names starting from `home`.
+
+### Configuration file example
+
+The section is missing in the default configuration file.
+You have to add the whole section manually.
+Let's add two task lists as an example:
+
+```toml
+[[sources]]
+name = "main"
+path = "todo.txt"
+default = true
+
+[[sources]]
+name = "secondary"
+path = "another.txt"
+archive_path = "done.log"
+```
+
+Both task list are located in the current working directory.
+The `main` one is marked a default one, so it is used for commands like `add` if you do not pass `--src` option manually.
+
+Every task list must one mandatory option: `path`. The rest options are optional and calculated on the fly if needed.
+Fields description:
+
+- `name` is a user-defined task list name. It may be convenient for filtering, grouping, and sorting
+- `path` is the path to the task list. It can be a directory. In this case, TTDL automatically adds `/todo.txt` to the `path`
+- `archive_path` is the path to the archive file. If it is not set, it is made from the `path` by replacing the file name with `done.txt`
+- `default` marks a task list as the default one for some operations (e.g, adding a new task). If more than one task list have `default = true`, the first one is always used.
+
+Tip: a few task lists can share the same name.
+It allows logical grouping of the task lists.
+Though, in this case, you will have to pass the ordinal number of a task list in the `--src` command-line option always to avoid ambiguity.
 
 ## Command line examples
 
