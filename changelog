@@ -1,3 +1,12 @@
+ttdl (6.1.0) unstable; urgency=medium
+
+  *  Fix `--filter` when multiple projects, contexts, or hashtags are used
+     either in a fitler or in a task. Kudos to Benoit (@83noit) for fixing
+     the todo_lib crate.
+  *  Bump dependencies
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Wed, 22 Apr 2026 19:06:46 -0700
+
 ttdl (6.0.0) unstable; urgency=medium
 
   *  New big feature: multi-todo-file support. You can list all your todo
