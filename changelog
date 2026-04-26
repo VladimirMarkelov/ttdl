@@ -1,4 +1,11 @@
-ttdl (6.1.0) unstable; urgency=medium
+ttdl (6.1.1) unstable; urgency=medium
+
+  *  Remove stray println! that printed a message about single file mode
+  *  Bump dependencies
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 25 Apr 2026 21:12:42 -0700
+
+1.0) unstable; urgency=medium
 
   *  Fix `--filter` when multiple projects, contexts, or hashtags are used
      either in a fitler or in a task. Kudos to Benoit (@83noit) for fixing

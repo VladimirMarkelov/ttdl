@@ -1224,7 +1224,6 @@ fn save_task_lists(
 ) -> Result<(), terr::TodoError> {
     if conf.is_single_file_mode() {
         let todo_path = conf.default_todo_file();
-        println!("Single file mode. Saving to the first one: {0}", todo_path.display());
         return todo::save(tasks, todo_path);
     }
 
