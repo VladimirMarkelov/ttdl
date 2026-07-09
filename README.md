@@ -649,7 +649,7 @@ Use the following command-line options to filter by:
 - due date `--due`
 - threshold date `--thr`
 - date of creation `--created`
-- completion date `--completed`
+- completion date `--completed`. If you do not pass `-a` or `-A` in the command line, this option automatically enables `-A`
 
 Field `threshold` is the only field with a specific default value.
 All other fields have empty default value which means the filter is off.
@@ -664,7 +664,7 @@ Examples (note the difference between ranges and single values):
 - `ttdl list --due today..tomorrow` - show todos that are due only today or tomorrow
 - `ttdl list --due tomorrow..today` - the same as above
 - `ttdl list --completed -1w.. -a` - show todos that were done within the last 7 days(a week from today)
-- `ttdl list --completed -first.. -a` - show todos that were done this month(or the previous month if today is the 1st)
+- `ttdl list --completed -first..` - show todos that were done this month(or the previous month if today is the 1st), `-a` and `-A` are optional and can be omitted
 - `ttdl list --due -first..last -a` - show todos that are due this month(including overdue ones); in corner cases(today is the 1st or the last day of month) it shows todos for 2 months range instead of a month range
 - `ttdl list --created -mon..` - show todos that were created this week(or the previous week if today is Monday)
 - `ttdl list --created -mon` - show todos that were created last Monday
