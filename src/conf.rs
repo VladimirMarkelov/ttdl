@@ -550,6 +550,9 @@ fn parse_filter(matches: &Matches, c: &mut tfilter::Conf, soon_days: u8) -> Resu
             Some(s) => s.to_lowercase(),
         };
         parse_filter_completed(&dstr, c, soon_days)?;
+        if c.all != tfilter::TodoStatus::All && c.all != tfilter::TodoStatus::Done {
+            c.all = tfilter::TodoStatus::Done;
+        }
     }
     if matches.opt_present("threshold") {
         let dstr = match matches.opt_str("threshold") {
