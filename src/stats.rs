@@ -184,19 +184,19 @@ fn show_full_stats(stdout: &mut StandardStream, tasks: &todo::TaskSlice) -> io::
 
         let div_by = if s.ctx.is_empty() { length } else { proj_total };
         let sn = format!("{}({:>3}%)", s.total, s.total * 100 / div_by);
-        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
+        write!(stdout, "{:>w$} ", sn, w = NUM_WIDTH)?;
 
         let sn = if s.done == 0 { String::new() } else { format!("{}({:>3}%)", s.done, s.done * 100 / s.total) };
-        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
+        write!(stdout, "{:>w$} ", sn, w = NUM_WIDTH)?;
 
         let sn =
             if s.overdue == 0 { String::new() } else { format!("{}({:>3}%)", s.overdue, s.overdue * 100 / s.total) };
-        write!(stdout, "{:>w$} ", &sn, w = NUM_WIDTH)?;
+        write!(stdout, "{:>w$} ", sn, w = NUM_WIDTH)?;
 
         if s.spent.num_seconds() == 0 {
             writeln!(stdout)?;
         } else {
-            writeln!(stdout, "{}", &fmt::duration_str(s.spent))?;
+            writeln!(stdout, "{}", fmt::duration_str(s.spent))?;
         }
     }
     Ok(())

@@ -916,7 +916,7 @@ fn print_line(
             "spent" => {
                 print_with_color(
                     stdout,
-                    &format!("{:wid$} ", &duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
+                    &format!("{:wid$} ", duration_str(timer::spent_time(task)), wid = SPENT_WIDTH),
                     &fg,
                 )?;
             }
@@ -1043,17 +1043,17 @@ fn print_line(
                 let (skip, subj_w) = calc_width(c, flist, widths);
                 let lines = textwrap::wrap(&desc, subj_w);
                 if c.long == LongLine::Cut || lines.len() == 1 {
-                    print_with_highlight(stdout, &format!("{}\n", &lines[0]), &fg, c)?;
+                    print_with_highlight(stdout, &format!("{}\n", lines[0]), &fg, c)?;
                 } else {
                     for (i, line) in lines.iter().enumerate() {
                         if i != 0 {
                             print_with_highlight(stdout, &format!("{:width$}", " ", width = skip), &fg, c)?;
                         }
-                        print_with_highlight(stdout, &format!("{}\n", &line), &fg, c)?;
+                        print_with_highlight(stdout, &format!("{}\n", line), &fg, c)?;
                     }
                 }
             } else {
-                print_with_highlight(stdout, &format!("{}\n", &desc), &fg, c)?;
+                print_with_highlight(stdout, &format!("{}\n", desc), &fg, c)?;
             }
         }
         #[cfg(not(feature = "markdown"))]
@@ -1083,7 +1083,7 @@ fn print_line(
 
 fn customize(task: &todotxt::Task, c: &Conf) -> Option<json::JsonValue> {
     let mut ext_cmds: Vec<String> = Vec::new();
-    for (key, _val) in task.tags.iter() {
+    for key in task.tags.keys() {
         if key.starts_with('!') {
             ext_cmds.push(key.to_string());
         }

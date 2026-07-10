@@ -1,10 +1,11 @@
-ttdl (6.2.0) unstable; urgency=medium
+ttdl (6.2.1) unstable; urgency=medium
 
   *  The filter option `--completed` now automatically enables the option `-A`
      if neither `-A` nor `-a` is set
+  *  Fixed clippy warnings
   *  Bump dependencies
 
- -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 09 Jul 2026 18:38:14 -0700
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Thu, 09 Jul 2026 18:48:39 -0700
 
 ttdl (6.1.1) unstable; urgency=medium
 
