@@ -1469,7 +1469,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
     let program = args[0].clone();
     let mut conf = Conf::new();
 
-    // Free short options: BCDEFGIJKLMNOPQRSTUVWXYZbdgjlmnopquxyz"
+    // Free short options: BDEFGIJKLMNOPQRSTUVWXYZbdgjlmnopquxyz"
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "Show this help");
@@ -1501,7 +1501,7 @@ pub fn parse_args(args: &[String]) -> Result<Conf> {
         "any | none | today| tomorrow | yesterday | soon | 'range'",
     );
     opts.optopt(
-        "",
+        "C",
         "completed",
         "Select records without completion date(none), with any completion date(any), completed within a date range",
         "any | none | today| tomorrow | yesterday | soon | 'range'",

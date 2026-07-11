@@ -1,3 +1,9 @@
+ttdl (6.2.2) unstable; urgency=medium
+
+  *  Added shorthand `-C` for the filter option `--completed`
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 11 Jul 2026 11:31:59 -0700
+
 ttdl (6.2.1) unstable; urgency=medium
 
   *  The filter option `--completed` now automatically enables the option `-A`
