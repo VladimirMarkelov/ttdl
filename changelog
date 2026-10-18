@@ -1,3 +1,11 @@
+ttdl (6.2.3) unstable; urgency=medium
+
+  *  Fixed postponing a task with missing due date. It was not possible to
+     postpone such tasks. Now if you pass `--update-threshold` for a such
+     task, its threshold dates moves by the passed time interval
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 17 Oct 2026 17:08:28 -0700
+
 ttdl (6.2.2) unstable; urgency=medium
 
   *  Added shorthand `-C` for the filter option `--completed`

@@ -968,6 +968,8 @@ fn threshold_diff(task: &todotxt::Task) -> Option<chrono::Duration> {
     if let (Some(ddue), Some(dthr)) = (task.due_date, task.threshold_date) { Some(dthr - ddue) } else { None }
 }
 
+// Moves threshold date and keep the original difference between due and threshold dates for the
+// task. `diff` is the ofiginal difference.
 fn postpone_threshold(task: &mut todotxt::Task, diff: Option<chrono::Duration>, conf: &conf::Conf) {
     if !conf.postpone_threshold {
         return;
@@ -979,6 +981,20 @@ fn postpone_threshold(task: &mut todotxt::Task, diff: Option<chrono::Duration>, 
         task.update_tag_with_value(todotxt::THR_TAG, &todotxt::format_date(new_date));
         task.threshold_date = Some(new_date);
     };
+}
+
+// Moves threshold date by an absolute value - the task's due date does not affect it.
+fn postpone_threshold_absolute(task: &mut todotxt::Task, rec: &todotxt::Recurrence, conf: &conf::Conf) -> bool {
+    if !conf.postpone_threshold {
+        return false;
+    }
+    if let Some(dt) = task.threshold_date {
+        let new_date = rec.next_date(dt);
+        task.update_tag_with_value(todotxt::THR_TAG, &todotxt::format_date(new_date));
+        task.threshold_date = Some(new_date);
+        return true;
+    };
+    false
 }
 
 fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &conf::Conf) -> io::Result<()> {
@@ -1009,8 +1025,11 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
         let mut new_tasks: todo::TaskVec = Vec::new();
         for clone in clones.iter_mut() {
             let thr_diff = threshold_diff(clone);
-            if clone.finished || clone.due_date.is_none() {
+            if clone.finished || (clone.due_date.is_none() && clone.threshold_date.is_none()) {
                 updated.push(false);
+            } else if clone.due_date.is_none() && clone.threshold_date.is_some() {
+                let changed = postpone_threshold_absolute(clone, &rec, conf);
+                updated.push(changed);
             } else if let Some(dt) = clone.due_date {
                 let task_rec = if let Some(rr) = &clone.recurrence {
                     rr.clone()
@@ -1058,6 +1077,9 @@ fn task_postpone(stdout: &mut StandardStream, tasks: &mut todo::TaskVec, conf: &
         for idx in todos.iter() {
             if *idx >= tasks.len() || tasks[*idx].finished {
                 updated.push(false);
+            } else if tasks[*idx].due_date.is_none() && tasks[*idx].threshold_date.is_some() {
+                let changed = postpone_threshold_absolute(&mut tasks[*idx], &rec, conf);
+                updated.push(changed);
             } else if let Some(dt) = tasks[*idx].due_date {
                 let thr_diff = threshold_diff(&tasks[*idx]);
                 let task_rec = if let Some(rr) = &tasks[*idx].recurrence {
