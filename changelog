@@ -1,3 +1,11 @@
+ttdl (6.2.4) unstable; urgency=medium
+
+  *  Fixed duplicated todos in the output when a todo matches more than one
+     rule of a custom filter
+  *  Bump dependencies
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 07 Nov 2026 14:01:53 -0800
+
 ttdl (6.2.3) unstable; urgency=medium
 
   *  Fixed postponing a task with missing due date. It was not possible to
@@ -28,7 +36,7 @@ ttdl (6.1.1) unstable; urgency=medium
 
  -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 25 Apr 2026 21:12:42 -0700
 
-1.0) unstable; urgency=medium
+ttdl (6.1.0) unstable; urgency=medium
 
   *  Fix `--filter` when multiple projects, contexts, or hashtags are used
      either in a fitler or in a task. Kudos to Benoit (@83noit) for fixing
