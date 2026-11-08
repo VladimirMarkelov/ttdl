@@ -1,3 +1,9 @@
+ttdl (6.2.5) unstable; urgency=medium
+
+  *  Update the binary version
+
+ -- Vladimir Markelov <vmatroskin@gmail.com>  Sat, 07 Nov 2026 17:26:48 -0800
+
 ttdl (6.2.4) unstable; urgency=medium
 
   *  Fixed duplicated todos in the output when a todo matches more than one
